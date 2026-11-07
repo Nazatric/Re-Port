@@ -1,0 +1,173 @@
+{
+  "comment": "Source registry for catalog research; scripts/fetch-sources.mjs refreshes its supported feeds. New discovery feeds require independent Android project evidence.",
+  "lists": [
+    {
+      "id": "napl",
+      "name": "NAPL - Native Android Port List",
+      "url": "https://docs.google.com/spreadsheets/d/1CO7dH7mbj9sl67g4e94wczHESp0NAsOa7_chKKii9OA/export?format=csv",
+      "type": "csv",
+      "target": "napl-sheet.csv",
+      "credit": "Community spreadsheet behind fe2rr.github.io",
+      "license": "community data",
+      "enabled": true
+    },
+    {
+      "id": "awesome-android-native-ports",
+      "name": "Awesome Android Native Ports",
+      "url": "https://raw.githubusercontent.com/abduznik/awesome-android-native-ports/main/README.md",
+      "type": "markdown-table",
+      "target": "awesome-android-native-ports.md",
+      "credit": "Curated by abduznik",
+      "license": "CC BY 4.0",
+      "enabled": true
+    },
+    {
+      "id": "openportsgames",
+      "name": "OpenPortsGames",
+      "url": "https://openportsgames.com/api/ports.json",
+      "type": "openportsgames",
+      "target": "openports.json",
+      "credit": "OpenPortsGames catalog API",
+      "license": "CC BY 4.0",
+      "enabled": true
+    },
+    {
+      "id": "decomp-games",
+      "name": "Awesome Decomp Games",
+      "url": "https://raw.githubusercontent.com/SubmitGame/awesome-decomp-games/main/data/games.json",
+      "type": "decomp-games",
+      "target": "decompgames.json",
+      "screenshotBase": "https://raw.githubusercontent.com/SubmitGame/awesome-decomp-games/main/",
+      "credit": "Awesome Decomp Games auto-refreshed data",
+      "license": "project metadata",
+      "enabled": true
+    },
+    {
+      "id": "portcove",
+      "name": "PortCove Android candidate research",
+      "url": "https://api.github.com/repos/boburning/portcove/issues/410",
+      "type": "github-issue-table",
+      "target": "portcove.json",
+      "credit": "PortCove issue research",
+      "license": "research notes",
+      "enabled": true
+    },
+    {
+      "id": "awesome-unofficial-pc-ports",
+      "name": "Awesome Unofficial PC Ports",
+      "url": "https://raw.githubusercontent.com/Sebastrion/awesome-unofficial-pc-ports/main/README.md",
+      "type": "markdown-table",
+      "target": "awesome-unofficial-pc-ports.md",
+      "credit": "Curated by Sebastrion",
+      "license": "community list",
+      "enabled": true
+    },
+    {
+      "id": "awesome-x360-recomps",
+      "name": "Awesome Xbox 360 Recomps",
+      "url": "https://raw.githubusercontent.com/abduznik/awesome-x360-recomps/main/README.md",
+      "type": "markdown-table",
+      "target": "awesome-x360-recomps.md",
+      "credit": "Curated by abduznik",
+      "license": "CC BY 4.0",
+      "enabled": true
+    },
+    {
+      "id": "libretro-art",
+      "name": "Libretro thumbnail database",
+      "url": "https://thumbnails.libretro.com/",
+      "type": "artwork",
+      "credit": "Libretro community thumbnail project",
+      "license": "community artwork",
+      "enabled": true
+    },
+    {
+      "id": "wikipedia",
+      "name": "Wikipedia and Wikidata",
+      "url": "https://en.wikipedia.org/",
+      "type": "artwork",
+      "credit": "Wikipedia (CC BY-SA 4.0) and Wikidata",
+      "license": "CC BY-SA 4.0 / CC0",
+      "enabled": true
+    },
+    {
+      "id": "steam",
+      "name": "Steam store artwork",
+      "url": "https://store.steampowered.com/",
+      "type": "artwork",
+      "credit": "Steam library art and screenshots, exact title matches only",
+      "license": "for identification",
+      "enabled": true
+    },
+    {
+      "id": "droid-recomp",
+      "name": "DroidRecomp",
+      "url": "https://raw.githubusercontent.com/MooPuu/droid-recomp/main/catalog.json",
+      "type": "discovery-json",
+      "target": "discovery-lists.json",
+      "credit": "https://github.com/MooPuu/droid-recomp",
+      "license": "MIT",
+      "enabled": true
+    },
+    {
+      "id": "android-ports-master",
+      "name": "Android Ports Master",
+      "url": "https://raw.githubusercontent.com/keika-sy/android-ports-master/main/data/ports.json",
+      "type": "discovery-json",
+      "target": "discovery-lists.json",
+      "credit": "https://github.com/keika-sy/android-ports-master",
+      "license": "not specified",
+      "enabled": true
+    },
+    {
+      "id": "porthub",
+      "name": "PortHub Catalog",
+      "url": "https://raw.githubusercontent.com/orev7s/porthub-catalog/main/games.json",
+      "type": "discovery-json",
+      "target": "discovery-lists.json",
+      "credit": "https://github.com/orev7s/porthub-catalog",
+      "license": "source-dependent; OpenPortsGames CC BY 4.0",
+      "enabled": true
+    },
+    {
+      "id": "porting-room",
+      "name": "Porting Room",
+      "url": "https://raw.githubusercontent.com/vimehub/porting-room/main/games.json",
+      "type": "discovery-json",
+      "target": "discovery-lists.json",
+      "credit": "https://github.com/vimehub/porting-room",
+      "license": "not specified",
+      "enabled": true
+    },
+    {
+      "id": "reddit-research",
+      "name": "Reddit community research",
+      "url": "https://www.reddit.com/r/AndroidNativePorts/",
+      "type": "curated-discovery",
+      "target": "reddit-candidates.json",
+      "credit": "Individual discussion links are stored with each research lead",
+      "license": "links and factual identifiers only",
+      "enabled": true
+    },
+    {
+      "id": "project-research",
+      "name": "Project research",
+      "url": "https://github.com/DogParty/iPodClickWheelRecomps",
+      "type": "curated-discovery",
+      "target": "manual-discovery.json",
+      "credit": "Individual project links are stored with each lead",
+      "license": "links and factual identifiers only",
+      "enabled": true
+    },
+    {
+      "id": "opengamedb",
+      "name": "OpenGameDB genre metadata",
+      "url": "https://github.com/karlforshaw/opengamedb",
+      "type": "game-metadata",
+      "target": "opengamedb-index.json",
+      "credit": "karlforshaw/opengamedb; exact-title and release-aware metadata",
+      "license": "MIT",
+      "enabled": true
+    }
+  ]
+}

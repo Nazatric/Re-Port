@@ -1,0 +1,11 @@
+[
+  { "title": "PokéSurvivor", "project": "Poké Survivors Android", "url": "https://github.com/JayElDragon/poke-survivor", "platform": "pc", "sourceUrl": "https://www.reddit.com/r/AndroidNativePorts/comments/1xbeeow/poke_survivors_50_is_out_android_port_of/" },
+  { "title": "Minecraft: Java Edition", "project": "Horizon Android", "url": "https://github.com/Vasysik/horizon-android", "platform": "pc", "sourceUrl": "https://www.reddit.com/r/AndroidNativePorts/comments/1xibtil/unofficial_horizon_android_port_rust_minecraft/" },
+  { "title": "Fallout 2", "project": "Fallout 2 CE Mobile", "url": "https://github.com/imbaner/fallout2-ce-mobile", "platform": "pc", "sourceUrl": "https://www.reddit.com/r/AndroidNativePorts/comments/1vvsgi8/android_native_ports_list/" },
+  { "title": "Resident Evil 4", "project": "CubeEvil4 Android", "url": "https://github.com/Andiweli/CubeEvil4-Android", "platform": "gamecube", "sourceUrl": "https://www.reddit.com/r/AndroidNativePorts/comments/1vvsgi8/android_native_ports_list/" },
+  { "title": "Blood Pong", "project": "Blood Pong Native", "url": "https://github.com/kandowontu/blood-pong-native", "platform": "pc", "sourceUrl": "https://www.reddit.com/r/SBCGaming/comments/1tlanti/created_a_list_of_unofficial_android_ports/" },
+  { "title": "Pong Kombat Trilogy", "project": "Pong Kombat Trilogy", "url": "https://github.com/kandowontu/pong-kombat-trilogy", "platform": "pc", "sourceUrl": "https://www.reddit.com/r/SBCGaming/comments/1tlanti/created_a_list_of_unofficial_android_ports/" },
+  { "title": "Sonic Adventure 2", "project": "OpenSA2", "url": "https://github.com/kittycache9/OpenSA2", "platform": "gamecube", "sourceUrl": "https://www.reddit.com/r/AndroidNativePorts/comments/1x5ev5j/all_android_ports_game_files_list/" },
+  { "title": "Need for Speed: Carbon", "project": "NFS Carbon Recomp", "url": "https://github.com/Sampreeth004/nfs-carbon-recomp", "platform": "xbox360", "sourceUrl": "https://www.reddit.com/r/AndroidNativePorts/comments/1wz70c8/nfs_carbon_android_port_alpha_build/" },
+  { "title": "Super Mario Galaxy", "project": "Galaxy Android", "url": "https://github.com/OpenPort-Labs/Galaxy-Android", "platform": "wii", "sourceUrl": "https://www.reddit.com/r/AndroidNativePorts/comments/1x5t7x2/galaxy_android_v001_is_now_released_gameplay_on/" }
+]

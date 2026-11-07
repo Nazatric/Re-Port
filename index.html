@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b4fb3" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="Re:Port is a library of unofficial native Android ports, recompilations and engine rebuilds of PC and console games, with direct links to every release." />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="preconnect" href="https://wsrv.nl" crossorigin />
+    <title>Re:Port - Unofficial Android Port Library</title>
+    <script>
+      try {
+        const saved = JSON.parse(localStorage.getItem('portdeck.settings.v1') || '{}');
+        const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = saved.theme === 'lime' || saved.theme === 'graphite' || saved.theme === 'azure'
+          ? saved.theme
+          : dark ? 'graphite' : 'azure';
+        document.documentElement.dataset.theme = theme;
+        document.querySelector('meta[name="theme-color"]').content = theme === 'graphite' ? '#1b1e22' : theme === 'lime' ? '#2f7d12' : '#0b4fb3';
+      } catch {
+        document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'graphite' : 'azure';
+      }
+    </script>
+    <style>
+      html, body { margin: 0; min-height: 100%; background: #111418; }
+      .boot-shell { min-height: 100dvh; background: #14171b; color: white; font: 15px system-ui, sans-serif; }
+      html[data-theme="azure"] .boot-shell, html[data-theme="lime"] .boot-shell { background: #edf2f3; }
+      .boot-hero { padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 35px; background: linear-gradient(180deg, #090a0c, #333b45); }
+      html[data-theme="azure"] .boot-hero { background: linear-gradient(180deg, #0a3f94, #3c98e5); }
+      html[data-theme="lime"] .boot-hero { background: linear-gradient(180deg, #1f6209, #70b921); }
+      .boot-brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; height: 46px; }
+      .boot-brand img { width: 38px; height: 38px; object-fit: contain; border-radius: 22%; }
+      .boot-kicker { margin: 18px 0 7px; font-size: 12px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; }
+      .boot-title { margin: 0 0 18px; font-size: clamp(2.7rem, 13vw, 4.2rem); line-height: .98; font-weight: 300; }
+      .boot-search { height: 54px; box-sizing: border-box; display: flex; align-items: center; padding: 0 22px; border-radius: 99px; background: #ffffffd9; color: #59636b; }
+      .boot-content { display: flex; justify-content: center; gap: 12px; padding: 24px 16px; }
+      .boot-cover { width: min(26vw, 140px); height: min(36vw, 195px); border-radius: 12px; background: linear-gradient(145deg, #3b434a, #22272b); }
+      .boot-cover:nth-child(2) { transform: translateY(-8px); }
+    </style>
+  </head>
+  <body>
+    <div id="root"><div class="boot-shell" role="status" aria-label="Loading Re:Port"><div class="boot-hero"><div class="boot-brand"><img src="./header-logo.png" alt="" /><span>Re:Port</span></div><p class="boot-kicker">Re:Port</p><p class="boot-title">Spotlight</p><div class="boot-search">Find a game or port</div></div><div class="boot-content" aria-hidden="true"><div class="boot-cover"></div><div class="boot-cover"></div><div class="boot-cover"></div></div></div></div>
+    <noscript>Re:Port needs JavaScript to run.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
