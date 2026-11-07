@@ -1,6 +1,6 @@
 # Signed Android release
 
-The Android workflow builds a release APK and signs it with a persistent key stored in GitHub Actions secrets. It does not generate an ephemeral key or publish a debug APK. The app is a Capacitor Android application: the React interface is bundled inside the APK, not deployed as a separate website.
+The Android workflow normally builds a release APK signed with a persistent key stored in GitHub Actions secrets. For an explicitly requested one-time build only, a push commit containing `[one-time-apk]` may use a temporary signing key if the secrets are absent. The temporary key is deleted after the build and is not retained, so future APKs signed with a different key cannot update it in place. The workflow does not publish a debug APK. The app is a Capacitor Android application: the React interface is bundled inside the APK, not deployed as a separate website.
 
 ## One-time signing setup
 
