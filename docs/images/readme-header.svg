@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="430" viewBox="0 0 1600 430" role="img" aria-labelledby="title description">
+  <title id="title">Re:Port</title>
+  <desc id="description">A library for Android game ports</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#173a67"/><stop offset=".5" stop-color="#102033"/><stop offset="1" stop-color="#080c13"/>
+    </linearGradient>
+    <radialGradient id="orb" cx=".3" cy=".2" r=".8">
+      <stop stop-color="#fff" stop-opacity=".65"/><stop offset=".5" stop-color="#d3e7f8" stop-opacity=".22"/><stop offset="1" stop-color="#b4d2eb" stop-opacity=".02"/>
+    </radialGradient>
+    <linearGradient id="wave" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#cce9ff" stop-opacity=".24"/><stop offset="1" stop-color="#9bbbd5" stop-opacity=".05"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="430" fill="url(#sky)"/>
+  <circle cx="1360" cy="75" r="105" fill="url(#orb)"/><circle cx="1150" cy="220" r="58" fill="url(#orb)"/>
+  <circle cx="1540" cy="255" r="136" fill="url(#orb)"/><circle cx="990" cy="48" r="32" fill="url(#orb)"/>
+  <path d="M0 306 C275 209 417 346 760 302 S1265 328 1600 193 V430 H0Z" fill="url(#wave)"/>
+  <path d="M0 332 C275 234 434 360 766 321 S1264 346 1600 214 V430 H0Z" fill="#e5f5ff" fill-opacity=".10"/>
+  <path d="M0 306 C275 209 417 346 760 302 S1265 328 1600 193" fill="none" stroke="#f2a910" stroke-width="5"/>
+  <path d="M0 328 C275 231 434 357 766 318 S1264 343 1600 211" fill="none" stroke="#fff" stroke-opacity=".78" stroke-width="2"/>
+  <text x="92" y="141" fill="#f4f8fc" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="7">ANDROID PORTS, IN ONE PLACE</text>
+  <text x="88" y="255" fill="#fff" font-family="Arial, sans-serif" font-size="108" font-weight="400" letter-spacing="-4">Re:Port</text>
+</svg>
