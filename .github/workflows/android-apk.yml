@@ -41,7 +41,7 @@ jobs:
             cat "$RUNNER_TEMP/native-build.log"
           else
             cat "$RUNNER_TEMP/native-build.log"
-            python3 -c 'import pathlib,sys; s=pathlib.Path(sys.argv[1]).read_text(errors="replace")[-24000:]; print("::error::"+s.replace("%","%25").replace("\r","%0D").replace("\n","%0A"))' "$RUNNER_TEMP/native-build.log"
+            python3 -c 'import pathlib,sys; lines=pathlib.Path(sys.argv[1]).read_text(errors="replace").splitlines(); errors=[x for x in lines if x.startswith("e: ") or "FAILURE:" in x or "What went wrong:" in x or "Execution failed" in x]; [print("::error::"+s.replace("%","%25")) for s in (errors or lines[-20:])]' "$RUNNER_TEMP/native-build.log"
             exit 1
           fi
       - name: Verify APK includes the catalog and no WebView bridge

@@ -159,9 +159,9 @@ fun LibraryScreen(catalog: Catalog, filters: Filters, onFilter: (Filters) -> Uni
             Choice("Platform", filters.platform, listOf("" to "All platforms") + catalog.platforms.map { it.id to it.name }) { onFilter(filters.copy(platform = it)) }
             val sourceTypes = remember(catalog) { catalog.games.flatMap { it.ports.map(Port::kind) }.filter(String::isNotBlank).distinct().sorted() }
             Choice("Release source", filters.source, listOf("" to "All sources") + sourceTypes.map { it to it.replaceFirstChar(Char::uppercase) }) { onFilter(filters.copy(source = it)) }
-            ToggleRow("Reported working", filters.works) { onFilter(filters.copy(works = it)) }
-            ToggleRow("No game files needed", filters.noFiles) { onFilter(filters.copy(noFiles = it)) }
-            ToggleRow("Controller supported", filters.controller) { onFilter(filters.copy(controller = it)) }
+            ToggleRow("Reported working", filters.works, { onFilter(filters.copy(works = it)) })
+            ToggleRow("No game files needed", filters.noFiles, { onFilter(filters.copy(noFiles = it)) })
+            ToggleRow("Controller supported", filters.controller, { onFilter(filters.copy(controller = it)) })
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(onClick = { onFilter(Filters()) }, modifier = Modifier.weight(1f)) { Text("Reset") }
                 Button(onClick = { sheet = false }, modifier = Modifier.weight(1f)) { Text("Show results") }

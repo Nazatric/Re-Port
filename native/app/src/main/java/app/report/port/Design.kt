@@ -60,7 +60,7 @@ fun ReportTheme(settings: AppSettings, content: @Composable () -> Unit) {
         onPrimary = palette.accentText, background = palette.background, surface = palette.surface, onSurface = palette.text, onBackground = palette.text)
     val density = androidx.compose.ui.platform.LocalDensity.current
     val adjusted = remember(density, settings.textSize) { androidx.compose.ui.unit.Density(density.density, density.fontScale * listOf(1f, 1.12f, 1.25f)[settings.textSize.coerceIn(0, 2)]) }
-    CompositionLocalProvider(LocalReportColors provides palette, LocalDataSaver provides settings.dataSaver, LocalHaptics provides settings.haptics && !settings.reduceMotion, androidx.compose.ui.platform.LocalDensity provides adjusted) {
+    CompositionLocalProvider(LocalReportColors provides palette, LocalDataSaver provides settings.dataSaver, LocalHaptics provides (settings.haptics && !settings.reduceMotion), androidx.compose.ui.platform.LocalDensity provides adjusted) {
         MaterialTheme(colorScheme = colors, content = content)
     }
 }
