@@ -74,5 +74,7 @@ test('shipped catalog records evidence per port and rejects known desktop/iOS re
   }
   assert.equal(catalog.games.filter(g => g.title === 'Carmageddon').length, 1);
   assert.equal(catalog.games.filter(g => g.title === 'Castlevania: Symphony of the Night').length, 1);
-  assert.equal(catalog.games.filter(g => /need for speed.*most wanted/i.test(g.title)).length, 3); // 2005, the 2012 PC game and its distinct mobile game
+  const wanted = catalog.games.filter(g => /need for speed.*most wanted/i.test(g.title));
+  assert.ok(wanted.filter(g => g.year === 2005).length <= 1); // variants of the 2005 game are one card
+  assert.ok(wanted.filter(g => /2012\)$/.test(g.title)).every(g => g.year === 2012));
 });

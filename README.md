@@ -3,7 +3,7 @@
 A library of **unofficial native Android ports**: source ports, engine rebuilds, decompilation projects and static recompilations of PC and console games. Mobile portrait first, with a 2010s glossy "Aero" look inspired by the Xbox 360 dashboard, Windows Phone Metro tiles and PS3 cover flow.
 
 - The bundled catalog contains Android-targeted ports of PC and console games. Source platforms describe the original games, not the target OS.
-- The **Download** button on a port opens the developer's release page: `/releases/latest` for GitHub projects, or the Telegram post, Discord server, Google Play listing, itch.io page and so on where the port is published
+- The **Download** button opens an Android-containing GitHub release when one is known, otherwise the project page or the source's Telegram, Discord, Google Play, itch.io or other link.
 - Artwork from LaunchBox, Steam, Libretro and port projects, plus developer avatars and a Poly Haven sky. Some titles do not have available images.
 - Artwork is **streamed and cached on demand**, nothing is bundled. The app shell, catalog, icons and fonts are local, so everything opens offline. Missing artwork falls back to generated covers
 - Accessibility first: semantic landmarks, skip link, focus management on every page change, visible focus rings, 44px touch targets, text size, high contrast, reduced motion, screen-reader labels, status never conveyed by colour alone
@@ -27,7 +27,7 @@ The catalog is plain JSON (`src/data/catalog.json`), so a Kotlin Multiplatform c
 | `npm test` | Unit tests for catalog integrity, ranking, live updates, navigation, validation, and cover-flow geometry |
 | `npm run typecheck` | TypeScript check |
 | `npm run data` | Rebuild `src/data/catalog.json` from `data/source/` |
-| `npm run sync` | Fetch every list in `data/sources.json` and import its games |
+| `npm run sync` | Refresh the supported upstream source caches; import and build separately |
 | `node scripts/enrich-console-art.mjs` | Rebuild the exact title-and-platform Libretro image index using GitHub CLI |
 | `npm run audit` | Check that GitHub, Play Store and itch.io release links still exist (dead ones are dropped on the next data build) |
 | `node scripts/e2e-smoke.mjs` | 70+ browser checks in real Chromium (needs `npm i -D playwright` and a running `vite preview`) |
@@ -72,10 +72,9 @@ data/sources.json                      every list, one entry each
   ├─ decompgames.json                  Awesome Decomp Games: 2,435 projects + screenshots
   ├─ awesome-*.md                      curated markdown lists
   └─ portcove.json                     candidate research
-        │  scripts/import-catalog-lists.mjs   group by normalised title → one card per game,
-        │                                     only Android-evidenced ports attached, strongest ranked first
-        │  scripts/enrich-art.mjs             Libretro box art + in-game screenshots
-        │  scripts/verify-android.mjs         GitHub release evidence: stars, APK downloads
+        │  scripts/verify-android.mjs         check GitHub Android packages and README claims
+        │  scripts/import-catalog-lists.mjs   group titles, attach only evidenced ports
+        │  scripts/enrich-console-art.mjs     Libretro box art + in-game screenshots
         v
 data/source/extras.json + art-map.json
         │  scripts/build-data.mjs             merge, dedupe, rank, normalise genres/dates
