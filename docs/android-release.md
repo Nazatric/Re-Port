@@ -1,6 +1,6 @@
 # Signed Android release
 
-The current Android workflow builds the debug variant for testing, as requested, and names the download RePort. The app is a Capacitor Android application: the React interface is bundled inside the APK, not deployed as a separate website. A future production release would require changing the workflow to build and sign a release variant using a persistent key; the notes below describe how to prepare that key.
+The current Android workflow builds the native Kotlin and Compose debug variant for testing, and names the download RePort. A future production release would require changing the workflow to build and sign a release variant using a persistent key; the notes below describe how to prepare that key.
 
 ## One-time signing setup
 

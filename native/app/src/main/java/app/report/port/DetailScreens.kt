@@ -126,6 +126,9 @@ fun DetailScreen(game: Game, catalog: Catalog, saved: Boolean, onBack: () -> Uni
                 OutlinedButton(onClick = { openLink(context, port.download.ifBlank { port.url }) }) { Text("View release") }
             }
         }
+        game.ports.firstOrNull { it.kind == "github" }?.let { github ->
+            item { GithubReleaseCard(github) { openLink(context, it) } }
+        }
         if (related.isNotEmpty()) { item { Box(Modifier.padding(16.dp)) { SectionTitle("You may also like") } }; item { GameRail(related, onGame) } }
         item {
             Panel(Modifier.fillMaxWidth().padding(16.dp)) {
