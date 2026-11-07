@@ -226,5 +226,11 @@
       "https://raw.githubusercontent.com/sp00nznet/vig8/4a6860a6e6c6a819506a6b7651920ce7a2a49b9a/docs/screenshots/combat.png",
       "https://raw.githubusercontent.com/sp00nznet/vig8/4a6860a6e6c6a819506a6b7651920ce7a2a49b9a/docs/screenshots/oil-fields.png"
     ]
+  },
+  "need-for-speed-most-wanted": {
+    "note": "Original Xbox gameplay screenshot from Libretro thumbnails; the Android port may look different.",
+    "shots": [
+      "https://thumbnails.libretro.com/Microsoft%20-%20Xbox/Named_Snaps/Need%20for%20Speed%20-%20Most%20Wanted%20(USA).png"
+    ]
   }
 }

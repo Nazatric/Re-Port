@@ -1,4 +1,5 @@
-import { useContext, useEffect, useId, useRef, type ReactNode } from 'react';
+import { useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon, type IconName } from './Icons';
 import { ScreenshotImage } from './ScreenshotImage';
 import { DataSaverContext } from './Cover';
@@ -194,7 +195,7 @@ export function Sheet({ open, onClose, title, children, footer }: { open: boolea
     };
   }, [open]);
   if (!open) return null;
-  return (
+  return createPortal(
     <>
       <div className="backdrop" onClick={onClose} aria-hidden="true" />
       <div ref={ref} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} className="sheet outline-none">
@@ -208,73 +209,93 @@ export function Sheet({ open, onClose, title, children, footer }: { open: boolea
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4">{children}</div>
         {footer && <div className="border-t border-line px-5 py-3">{footer}</div>}
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
 
 /* ----------------------------------------------------- image viewer */
 export function ImageViewer({ images, index, title, onClose }: { images: string[]; index: number; title: string; onClose: () => void }) {
   const scroller = useRef<HTMLDivElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const [current, setCurrent] = useState(() => Math.max(0, Math.min(images.length - 1, index)));
 
   const go = (i: number, smooth = true) => {
     const el = scroller.current;
     if (!el) return;
     const n = Math.max(0, Math.min(images.length - 1, i));
+    setCurrent(n);
     el.scrollTo({ left: n * el.clientWidth, behavior: smooth && document.documentElement.dataset.motion !== 'reduce' ? 'smooth' : 'auto' });
   };
-  const current = () => {
+  const currentIndex = () => {
     const el = scroller.current;
-    return el ? Math.round(el.scrollLeft / el.clientWidth) : 0;
+    return el?.clientWidth ? Math.round(el.scrollLeft / el.clientWidth) : 0;
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     go(index, false);
     const previous = document.activeElement as HTMLElement | null;
-    closeRef.current?.focus({ preventScroll: true });
-    const overflow = document.body.style.overflow;
+    const bodyOverflow = document.body.style.overflow;
+    const rootOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    closeRef.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowRight') go(current() + 1);
-      if (e.key === 'ArrowLeft') go(current() - 1);
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onCloseRef.current();
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        go(currentIndex() + (e.key === 'ArrowRight' ? 1 : -1));
+      } else if (e.key === 'Tab' && dialog.current) {
+        const items = [...dialog.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((x) => x.offsetParent !== null);
+        if (!items.length) return;
+        const first = items[0], last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus({ preventScroll: true }); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus({ preventScroll: true }); }
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = overflow;
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overflow = rootOverflow;
       previous?.focus?.({ preventScroll: true });
     };
+    // The viewer is mounted anew for each opening; its initial index is fixed for that session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <div role="dialog" aria-modal="true" aria-label={`${title} screenshots`} className="fixed inset-0 z-[70] flex flex-col bg-black/95 text-white">
-      <div className="flex items-center justify-between px-4 pb-2 pt-[calc(env(safe-area-inset-top)+10px)]">
-        <p className="text-sm font-semibold" aria-live="polite">
-          {title}
-        </p>
-        <button ref={closeRef} type="button" onClick={onClose} aria-label="Close viewer" className="grid h-11 w-11 place-items-center rounded-full bg-white/15">
+  return createPortal(
+    <div ref={dialog} role="dialog" aria-modal="true" aria-label={`${title} screenshots`} className="image-viewer">
+      <div className="image-viewer-bar">
+        <p className="min-w-0 truncate text-sm font-semibold">{title}</p>
+        <button ref={closeRef} type="button" onClick={onClose} aria-label="Close viewer" className="viewer-button shrink-0">
           <Icon name="close" />
         </button>
       </div>
-      <div ref={scroller} className="no-scrollbar flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+      <div ref={scroller} onScroll={() => setCurrent(currentIndex())} className="image-viewer-scroll no-scrollbar" aria-label="Screenshots">
         {images.map((src, i) => (
-          <div key={src} className="grid w-full flex-none snap-center place-items-center px-2">
-            <ScreenshotImage src={src} full alt={`${title} screenshot ${i + 1} of ${images.length}`} className="max-h-[78dvh] max-w-full rounded-lg object-contain" />
+          <div key={src} className="image-viewer-slide">
+            <ScreenshotImage src={src} full alt={`${title} screenshot ${i + 1} of ${images.length}`} className="image-viewer-image" />
           </div>
         ))}
       </div>
-      <div className="flex items-center justify-center gap-4 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-2">
-        <button type="button" onClick={() => go(current() - 1)} aria-label="Previous screenshot" className="grid h-12 w-12 place-items-center rounded-full bg-white/15">
+      <div className="image-viewer-controls">
+        <button type="button" onClick={() => go(currentIndex() - 1)} disabled={current === 0} aria-label="Previous screenshot" className="viewer-button">
           <Icon name="chevronLeft" />
         </button>
-        <span className="text-sm text-white/80">{images.length} screenshots</span>
-        <button type="button" onClick={() => go(current() + 1)} aria-label="Next screenshot" className="grid h-12 w-12 place-items-center rounded-full bg-white/15">
+        <span className="min-w-[5rem] text-center text-sm font-semibold text-white/80" aria-live="polite">{current + 1} / {images.length}</span>
+        <button type="button" onClick={() => go(currentIndex() + 1)} disabled={current >= images.length - 1} aria-label="Next screenshot" className="viewer-button">
           <Icon name="chevron" />
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

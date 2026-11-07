@@ -15,7 +15,7 @@ export const collections: (Collection & { count: number })[] = [];
 export const collectionById = new Map(collections.map((c) => [c.id, c]));
 export const platforms: Platform[] = [];
 
-const OTHER: Collection = { id: 'other', name: 'More games', blurb: 'Titles that have no genre tag yet.' };
+const OTHER: Collection = { id: 'other', name: 'Genre unknown', blurb: 'Games whose genre has not been established yet.' };
 
 /* --------------------------------------------------------- search index */
 interface Entry {
@@ -311,13 +311,21 @@ const LIST_GROUPS: Record<string, string[]> = {
   'android-native-ports': ['Awesome Android Native Ports'],
   openports: ['OpenPortsGames'],
   decomp: ['Awesome Decomp Games'],
-  curated: ['Community research (GitHub)', 'research', 'manual'],
+  'ports-master': ['Android Ports Master'],
+  porthub: ['PortHub Catalog'],
+  'porting-room': ['Porting Room'],
+  'droid-recomp': ['DroidRecomp'],
+  curated: ['Community research (GitHub)', 'research', 'manual', 'Reddit research', 'Project research', 'PortCove candidate research'],
 };
 export const LIST_OPTIONS = [
   { id: 'napl', label: 'NAPL community sheet' },
   { id: 'android-native-ports', label: 'Awesome Android Native Ports' },
   { id: 'openports', label: 'OpenPortsGames' },
   { id: 'decomp', label: 'Awesome Decomp Games' },
+  { id: 'ports-master', label: 'Android Ports Master' },
+  { id: 'porthub', label: 'PortHub Catalog' },
+  { id: 'porting-room', label: 'Porting Room' },
+  { id: 'droid-recomp', label: 'DroidRecomp' },
   { id: 'curated', label: 'Curated and researched' },
 ];
 
@@ -342,15 +350,19 @@ export const SORT_OPTIONS: { id: SortKey; label: string }[] = [
 
 const platformName = (id: string) => platformById.get(id)?.name ?? id;
 
-export const DEFAULT_FILTERS: Filters = { q: '', genre: '', platform: '', source: '', works: '', files: '', controller: '', sort: 'popular' };
+export const DEFAULT_FILTERS: Filters = { q: '', genre: '', platform: '', list: '', source: '', works: '', files: '', controller: '', sort: 'popular' };
 
 export function filtersFromParams(p: URLSearchParams): Filters {
   const sort = p.get('sort') as SortKey | null;
+  const source = p.get('source') || '';
+  // Older app links stored both list and release-site choices in source.
+  const legacyList = Object.prototype.hasOwnProperty.call(LIST_GROUPS, source) ? source : '';
   return {
     q: (p.get('q') || '').slice(0, 80),
     genre: p.get('genre') || '',
     platform: p.get('platform') || '',
-    source: p.get('source') || '',
+    list: p.get('list') || legacyList,
+    source: legacyList ? '' : source,
     works: p.get('works') === 'yes' ? 'yes' : '',
     files: p.get('files') === 'none' ? 'none' : '',
     controller: p.get('controller') === 'yes' ? 'yes' : '',
@@ -367,24 +379,26 @@ export function filtersToParams(f: Filters): Record<string, string> {
 }
 
 export function activeFilterCount(f: Filters): number {
-  return (['genre', 'platform', 'source', 'works', 'files', 'controller'] as const).filter((k) => f[k]).length;
+  return (['genre', 'platform', 'list', 'source', 'works', 'files', 'controller'] as const).filter((k) => f[k]).length;
 }
 
 const hasController = (p: Port) => p.controller === 'both' || p.controller === 'controller';
 
-function matches(g: Game, f: Filters): boolean {
-  if (f.genre && !genresOf(g).includes(f.genre)) return false;
+export function matches(g: Game, f: Filters): boolean {
+  if (f.genre && (g.platform === 'engine' || !genresOf(g).includes(f.genre))) return false;
   if (f.platform && !platformIdsOf(g).includes(f.platform)) return false;
-  if (f.source) {
-    const kinds = SOURCE_GROUPS[f.source];
-    const lists = LIST_GROUPS[f.source];
-    const hit = kinds ? g.ports.some((p) => kinds.includes(p.kind)) : lists ? g.ports.some((p) => lists.includes(p.source || '')) : false;
-    if (!hit) return false;
-  }
-  if (f.works === 'yes' && !g.ports.some((p) => p.works === 'yes')) return false;
-  if (f.files === 'none' && !g.ports.some((p) => p.files === 'none')) return false;
-  if (f.controller === 'yes' && !g.ports.some(hasController)) return false;
-  return true;
+  const kinds = f.source ? SOURCE_GROUPS[f.source] : null;
+  const lists = f.list ? LIST_GROUPS[f.list] : null;
+  if ((f.source && !kinds) || (f.list && !lists)) return false;
+  // Port attributes must be true of the same port, not different ports on one card.
+  return g.ports.some((p) => {
+    if (kinds && !kinds.includes(p.kind)) return false;
+    if (lists && !lists.includes(p.source || '')) return false;
+    if (f.works === 'yes' && p.works !== 'yes') return false;
+    if (f.files === 'none' && p.files !== 'none') return false;
+    if (f.controller === 'yes' && !hasController(p)) return false;
+    return true;
+  });
 }
 
 export function queryGames(f: Filters): Game[] {

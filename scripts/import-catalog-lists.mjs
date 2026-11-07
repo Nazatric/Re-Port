@@ -59,28 +59,6 @@ const GENRE = {
   horror: 'horror',
   indie: 'indie',
 };
-/** When a list publishes no genre, infer one from its own description text rather than guessing from the title. */
-const TEXT_GENRE = [
-  [/\b(racing|race|driving|rally|kart|karting)\b/i, 'racing'],
-  [/\b(football|soccer|basketball|hockey|boxing|wrestling|golf|sport|tennis)\b/i, 'sports'],
-  [/\b(shooter|first-person shooter|third-person shooter|fps|shoot \'em up|shmup)\b/i, 'shooter'],
-  [/\b(platformer|platform game|jump and run)\b/i, 'platformer'],
-  [/\b(role-playing|rpg|dungeon crawler|roguelike)\b/i, 'rpg'],
-  [/\b(strategy|real-time strategy|turn-based|tower defense|city-building|management)\b/i, 'strategy'],
-  [/\b(fighting game|fighting|beat \'em up|brawler)\b/i, 'fighting'],
-  [/\b(horror|survival horror)\b/i, 'horror'],
-  [/\b(simulator|simulation|flight sim|life sim|tycoon)\b/i, 'simulation'],
-  [/\b(puzzle)\b/i, 'puzzle'],
-  [/\b(sandbox|open world|open-world|crafting|survival)\b/i, 'sandbox'],
-  [/\b(adventure|point-and-click|visual novel)\b/i, 'adventure'],
-  [/\b(action)\b/i, 'action'],
-  [/\b(indie|casual|party|music|rhythm)\b/i, 'casual'],
-];
-const genreFromText = (text) => {
-  for (const [re, genre] of TEXT_GENRE) if (re.test(text || '')) return [genre];
-  return [];
-};
-
 const mapGenres = (raw) =>
   String(raw || '')
     .split(/[,;/|]/)
@@ -90,16 +68,20 @@ const mapGenres = (raw) =>
 const PLATFORM = {
   PC: 'pc', Windows: 'pc', Linux: 'pc', DOS: 'pc', 'MS-DOS': 'pc', Mac: 'pc', Macintosh: 'pc',
   N64: 'n64', 'Nintendo 64': 'n64',
-  'Xbox 360': 'xbox360', 'xbox 360': 'xbox360', 'OG Xbox': 'xbox', 'og xbox': 'xbox', Xbox: 'xbox',
+  'Xbox 360': 'xbox360', xbox360: 'xbox360', 'OG Xbox': 'xbox', Xbox: 'xbox',
   PS1: 'ps1', PSX: 'ps1', PlayStation: 'ps1', 'PlayStation': 'ps1',
   PS2: 'ps2', PS3: 'ps3', PS4: 'ps4', PSP: 'psp',
   GameCube: 'gamecube', GCN: 'gamecube', Wii: 'wii', 'Wii U': 'wiiu', Switch: 'switch',
   GBA: 'gba', 'Game Boy Advance': 'gba', GBC: 'gbc', 'Game Boy Color': 'gbc', 'Game Boy': 'gb', GB: 'gb',
   NES: 'nes', SNES: 'snes', 'Nintendo DS': 'nds', DS: 'nds', 'Nintendo 3DS': 'n3ds', '3DS': 'n3ds',
   'Nintendo Entertainment System': 'nes', 'Super Nintendo': 'snes',
-  Arcade: 'pc', 'Mobile': 'pc', Amiga: 'pc', '': 'pc',
+  Arcade: 'unknown', Mobile: 'unknown', Amiga: 'unknown',
 };
-const mapPlatform = (raw) => PLATFORM[String(raw || '').trim()] || 'pc';
+const mapPlatform = (raw) => {
+  const value = String(raw || '').trim();
+  const entry = Object.entries(PLATFORM).find(([name]) => name && name.toLowerCase() === value.toLowerCase());
+  return entry?.[1] || 'unknown';
+};
 
 const repoEvidence = read('github-repos.json', { repos: {} }).repos || {};
 const evidence = (url) => repoEvidence[githubRepo(url)] || {};
@@ -141,7 +123,7 @@ for (const p of openports) {
   const title = p.game || p.title;
   if (!title) continue;
   const game = card(title, p.originalYear);
-  if (!game.genres.length) game.genres = mapGenres(p.genre).length ? mapGenres(p.genre) : genreFromText(`${p.summary || ''} ${p.notes || ''} ${p.title || ''}`);
+  if (!game.genres.length) game.genres = mapGenres(p.genre);
   if (!game.year && p.originalYear) game.year = Number(p.originalYear) || 0;
   if (!game.description && p.summary) game.description = String(p.summary).trim();
   const cover = p.cover?.src ? String(p.cover.src).split('?')[0] : '';
@@ -198,7 +180,7 @@ for (const g of decomp) {
   if (ev.missing || !androidEvidence) continue;
   const game = card(gameTitle, 0);
   if (!game.description && g.note) game.description = String(g.note).trim();
-  if (!game.genres.length) game.genres = genreFromText(`${g.note || ''} ${g.title || ''}`);
+  // Descriptive prose is not a genre field: words such as "race" or "action" can be misleading.
   if (!game.cover) {
     const og = g.og_image || (g.thumb_src ? `https://raw.githubusercontent.com/SubmitGame/awesome-decomp-games/main/${g.thumb_src}` : '');
     if (og && /^https?:\/\//.test(og)) game.cover = og;
@@ -286,7 +268,7 @@ for (const row of discoveryRows) {
   const game = card(title, year);
   addPort(game, {
     title: row.project && normTitle(row.project) !== normTitle(title) ? row.project : '',
-    developer: repo.split('/')[0], platform: originalPlatforms[repo] || existing?.platform || PLATFORM[row.platform] || '',
+    developer: repo.split('/')[0], platform: originalPlatforms[repo] || mapPlatform(row.platform),
     url: row.url, kind: 'github', download: ev.apkRelease || row.url,
     version: ev.apkVersion || '', updated: ev.apkDate || '', stars: ev.stars || 0,
     downloads: ev.apkDownloads || 0, files: '', works: '',

@@ -66,6 +66,8 @@ export interface Game {
   platform: string;
   platforms?: string[];
   genres: string[];
+  /** Source of independently matched original-game genre metadata, when known. */
+  genreSource?: string;
   summary: string;
   description: string;
   cover?: string;
@@ -118,6 +120,7 @@ export interface Filters {
   q: string;
   genre: string;
   platform: string;
+  list: string;
   source: string;
   works: string;
   files: string;

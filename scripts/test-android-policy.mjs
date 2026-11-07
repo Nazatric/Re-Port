@@ -6,6 +6,7 @@ import path from 'node:path';
 import { githubRepo, isAndroidPackage, nonAndroidLink, explicitAndroidTarget, documentedEvidence, openPortsEvidence, rankPorts, readmeAndroidLine } from './android-policy.mjs';
 import { androidListRows } from './android-list.mjs';
 import { normalizeDiscovery } from './discovery-lists.mjs';
+import { createMetadataIndex, matchMetadata, metadataGenres, originalPlatforms } from './game-metadata.mjs';
 
 test('CPU architecture, iOS and OBB alone are not Android port evidence', () => {
   assert.equal(isAndroidPackage('game.obb'), false);
@@ -79,6 +80,24 @@ test('additional lists are discovery only, normalize factual URLs and filter des
   assert.equal(documentedEvidence({ url: flagged[0].url, repoEvidence: {} }), '');
   assert.equal(nonAndroidLink('https://github.com/Nyaldee/Ports-Launcher'), true);
   assert.equal(nonAndroidLink('https://github.com/katotekiru/bfme1-mobile'), true);
+});
+
+test('genre metadata needs an exact title and compatible platform/year', () => {
+  const index = createMetadataIndex([
+    ['Example', 'pc', 1995, 'Action - Platformer'],
+    ['Example', 'ps2', 2008, 'Racing'],
+    ['Only One', 'pc', 2001, 'Strategy - Real-Time'],
+  ]);
+  assert.deepEqual(matchMetadata({ title: 'Example', platform: 'pc', year: 1995 }, index)?.genres, ['action', 'platformer']);
+  assert.equal(matchMetadata({ title: 'Example', platform: 'pc', year: 2008 }, index), null);
+  assert.equal(matchMetadata({ title: 'Example', platform: 'unknown', year: 0 }, index), null);
+  assert.equal(matchMetadata({ title: 'Example sequel', platform: 'pc', year: 1995 }, index), null);
+  assert.deepEqual(matchMetadata({ title: 'Only One', platform: 'other', year: 2001 }, index)?.genres, ['strategy']);
+  assert.deepEqual(originalPlatforms({ title: 'Example', platform: 'other', year: 1995 }, index), ['pc']);
+  assert.deepEqual(originalPlatforms({ title: 'Example', platform: 'other', year: 0 }, index), []);
+  assert.deepEqual(originalPlatforms({ title: 'Example', platform: 'n64', year: 1995 }, index), []);
+  assert.deepEqual(metadataGenres('Racing - Simulation - Automobile'), ['racing']);
+  assert.deepEqual(metadataGenres('Action Adventure - Open-World'), ['action', 'adventure']);
 });
 
 test('shipped catalog records evidence per port and rejects known desktop/iOS regressions', () => {

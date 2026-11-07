@@ -17,6 +17,7 @@ import {
   gameStatus,
   games,
   githubRepo,
+  matches,
   linkMeta,
   newArrivals,
   normalize,
@@ -45,6 +46,13 @@ describe('catalog data integrity', () => {
   it('records Android evidence on every individual port', () => {
     const evidence = new Set(['napl-list', 'github-apk', 'github-readme', 'openports-android', 'source-android']);
     for (const g of games) for (const p of g.ports) expect(evidence.has(p.androidEvidence || ''), `${g.title}: ${p.url}`).toBe(true);
+  });
+
+  it('does not attach the 2012 Most Wanted Steam screenshots to the 2005 game', () => {
+    const original = games.find((g) => g.title === 'Need for Speed: Most Wanted' && g.year === 2005);
+    const remake = games.find((g) => g.title === 'Need for Speed: Most Wanted (2012)' && g.year === 2012);
+    expect(original?.steam?.id).not.toBe(1262560);
+    expect(remake?.steam?.id).toBe(1262560);
   });
 
   it('uses unique, url-safe ids', () => {
@@ -181,6 +189,20 @@ describe('search, filters and sorting', () => {
     expect(queryGames({ ...DEFAULT_FILTERS, source: 'does-not-exist' })).toHaveLength(0);
   });
 
+  it('requires all port-specific filters to match the same port', () => {
+    const g = { platform: 'pc', genres: ['action'], ports: [
+      port({ platform: 'pc', kind: 'github', source: 'OpenPortsGames', works: 'yes', files: 'files' }),
+      port({ platform: 'pc', kind: 'telegram', source: 'NAPL', files: 'none', works: 'no' }),
+    ] } as Game;
+    expect(matches(g, { ...DEFAULT_FILTERS, works: 'yes', files: 'none' })).toBe(false);
+    expect(matches(g, { ...DEFAULT_FILTERS, source: 'github', list: 'napl' })).toBe(false);
+    expect(matches(g, { ...DEFAULT_FILTERS, source: 'github', list: 'openports', works: 'yes' })).toBe(true);
+  });
+
+  it('collection counts agree with game-only results', () => {
+    for (const c of collections) expect(queryGames({ ...DEFAULT_FILTERS, genre: c.id }).length, c.id).toBe(c.count);
+  });
+
   it('sorts by title, update date, added date, year and popularity', () => {
     const titles = queryGames({ ...DEFAULT_FILTERS, sort: 'title' }).map((g) => g.title);
     expect([...titles].sort((a, b) => a.localeCompare(b))).toEqual(titles);
@@ -207,6 +229,13 @@ describe('URL filter state', () => {
     const f = { ...DEFAULT_FILTERS, q: 'halo', genre: 'shooter', platform: 'xbox', works: 'yes', sort: 'updated' as const };
     const params = new URLSearchParams(filtersToParams(f));
     expect(filtersFromParams(params)).toEqual(f);
+  });
+
+  it('combines a catalog list and a release source and preserves older links', () => {
+    const f = { ...DEFAULT_FILTERS, list: 'openports', source: 'github' };
+    expect(filtersFromParams(new URLSearchParams(filtersToParams(f)))).toEqual(f);
+    expect(filtersFromParams(new URLSearchParams('source=openports')).list).toBe('openports');
+    expect(filtersFromParams(new URLSearchParams('source=openports')).source).toBe('');
   });
 
   it('omits defaults and sanitises junk input', () => {

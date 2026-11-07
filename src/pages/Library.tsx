@@ -3,7 +3,7 @@ import { GameCard, GameRow } from '../components/GameCard';
 import { Icon } from '../components/Icons';
 import { EmptyState, Hero, Sheet } from '../components/ui';
 import { Link, navigate, pageMemory, useRoute } from '../lib/router';
-import { DEFAULT_FILTERS, LIST_OPTIONS, SORT_OPTIONS, SOURCE_OPTIONS, activeFilterCount, collectionById, collections, filtersFromParams, filtersToParams, platformById, platforms, queryGames } from '../lib/catalog';
+import { DEFAULT_FILTERS, LIST_OPTIONS, SORT_OPTIONS, SOURCE_OPTIONS, activeFilterCount, collectionById, collections, filtersFromParams, filtersToParams, platformById, platforms, queryGames, useCatalogVersion } from '../lib/catalog';
 import { useSettings } from '../lib/store';
 import { plural } from '../lib/format';
 import type { Filters, SortKey } from '../lib/types';
@@ -21,8 +21,11 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
 
 export default function Library() {
   const route = useRoute();
+  const catalogVersion = useCatalogVersion();
   const filters = useMemo(() => filtersFromParams(route.query), [route.raw]); // eslint-disable-line react-hooks/exhaustive-deps
-  const results = useMemo(() => queryGames(filters), [filters]);
+  const results = useMemo(() => queryGames(filters), [filters, catalogVersion]);
+  const listOptions = useMemo(() => LIST_OPTIONS.map((s) => ({ ...s, count: queryGames({ ...DEFAULT_FILTERS, list: s.id }).length })).filter((s) => s.count), [catalogVersion]);
+  const sourceOptions = useMemo(() => SOURCE_OPTIONS.map((s) => ({ ...s, count: queryGames({ ...DEFAULT_FILTERS, source: s.id }).length })).filter((s) => s.count), [catalogVersion]);
   const [settings, update] = useSettings();
   const [sheet, setSheet] = useState(false);
   const [text, setText] = useState(filters.q);
@@ -60,7 +63,8 @@ export default function Library() {
   const chips: { key: keyof Filters; label: string }[] = [];
   if (filters.genre) chips.push({ key: 'genre', label: collectionById.get(filters.genre)?.name ?? filters.genre });
   if (filters.platform) chips.push({ key: 'platform', label: platformById.get(filters.platform)?.name ?? filters.platform });
-  if (filters.source) chips.push({ key: 'source', label: LIST_OPTIONS.find((s) => s.id === filters.source)?.label ?? SOURCE_OPTIONS.find((s) => s.id === filters.source)?.label ?? filters.source });
+  if (filters.list) chips.push({ key: 'list', label: LIST_OPTIONS.find((s) => s.id === filters.list)?.label ?? filters.list });
+  if (filters.source) chips.push({ key: 'source', label: SOURCE_OPTIONS.find((s) => s.id === filters.source)?.label ?? filters.source });
   if (filters.works) chips.push({ key: 'works', label: 'Works' });
   if (filters.files) chips.push({ key: 'files', label: 'No game files needed' });
   if (filters.controller) chips.push({ key: 'controller', label: 'Controller support' });
@@ -193,7 +197,8 @@ export default function Library() {
             </button>
           ))}
         </Group>
-        <Group label="Ported from">
+        <p className="mb-4 text-xs leading-relaxed text-ink2">Counts show the full catalog. Compatibility, files, source and controller filters must match the same port; platforms describe the original game releases.</p>
+        <Group label="Original game platform">
           {platforms.map((p) => (
             <button key={p.id} type="button" className="chip" aria-pressed={filters.platform === p.id} onClick={() => apply({ platform: filters.platform === p.id ? '' : p.id })}>
               {p.name}
@@ -202,16 +207,16 @@ export default function Library() {
           ))}
         </Group>
         <Group label="Catalog list">
-          {LIST_OPTIONS.map((s) => (
-            <button key={s.id} type="button" className="chip" aria-pressed={filters.source === s.id} onClick={() => apply({ source: filters.source === s.id ? '' : s.id })}>
-              {s.label}
+          {listOptions.map((s) => (
+            <button key={s.id} type="button" className="chip" aria-pressed={filters.list === s.id} onClick={() => apply({ list: filters.list === s.id ? '' : s.id })}>
+              {s.label}<span className="text-xs opacity-75">{s.count}</span>
             </button>
           ))}
         </Group>
         <Group label="Released on">
-          {SOURCE_OPTIONS.map((s) => (
+          {sourceOptions.map((s) => (
             <button key={s.id} type="button" className="chip" aria-pressed={filters.source === s.id} onClick={() => apply({ source: filters.source === s.id ? '' : s.id })}>
-              {s.label}
+              {s.label}<span className="text-xs opacity-75">{s.count}</span>
             </button>
           ))}
         </Group>

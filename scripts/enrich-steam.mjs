@@ -26,7 +26,7 @@ const norm = (s) =>
     .toLowerCase()
     .replace(/[™®©]/g, '')
     .replace(/^the\s+/, '')
-    .replace(/\b(game of the year|goty|definitive|enhanced|remastered|edition|hd)\b/g, '')
+    // Edition and remake words are part of identity, not disposable noise.
     .replace(/[^a-z0-9]+/g, '');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -47,7 +47,8 @@ async function getJson(url, tries = 3) {
   return null;
 }
 
-const targets = catalog.games.filter((g) => ['pc', 'android64', 'ios'].includes(g.platform) && !map[g.id] && !miss[g.id]);
+// null is an explicit reviewed rejection, not a cache miss.
+const targets = catalog.games.filter((g) => ['pc', 'android64', 'ios'].includes(g.platform) && !Object.prototype.hasOwnProperty.call(map, g.id) && !miss[g.id]);
 console.log('to look up:', targets.length);
 let n = 0;
 for (const g of targets) {
@@ -66,7 +67,11 @@ for (const g of targets) {
     const det = await getJson(`https://store.steampowered.com/api/appdetails?appids=${appId}&l=english`);
     await sleep(1500);
     const d = det?.[appId]?.data;
-    if (d) {
+    // A matching name alone can identify an entirely different game (e.g. remakes).
+    // Steam re-releases may be newer than the original; skip uncertain dates rather than
+    // attaching incorrect cover art/screenshots. Reviewed exceptions can be added by hand.
+    const year = Number(/\b(?:19|20)\d{2}\b/.exec(d?.release_date?.date || '')?.[0]) || 0;
+    if (d && g.year && year && Math.abs(g.year - year) <= 2 && norm(d.name) === norm(g.title)) {
       map[g.id] = {
         id: appId,
         shots: (d.screenshots || []).slice(0, 5).map((s) => String(s.path_full).split('?')[0]),

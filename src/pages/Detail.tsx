@@ -180,6 +180,7 @@ function DetailView({ game }: { game: Game }) {
             <p className="mt-3 text-xs text-ink2">
               {game.descSource === 'wikipedia' ? 'Description from Wikipedia, licensed CC BY-SA 4.0.' : game.launchbox ? 'Game details from the LaunchBox Games Database.' : ''}
               {game.steam ? ' Artwork from the Steam store.' : ''}
+              {game.genreSource === 'OpenGameDB' ? ' Genres: OpenGameDB (MIT).' : game.genreSource ? ' Genres: curated from published game information.' : ''}
             </p>
           </div>
         </section>

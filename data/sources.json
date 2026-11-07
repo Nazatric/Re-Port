@@ -158,6 +158,16 @@
       "credit": "Individual project links are stored with each lead",
       "license": "links and factual identifiers only",
       "enabled": true
+    },
+    {
+      "id": "opengamedb",
+      "name": "OpenGameDB genre metadata",
+      "url": "https://github.com/karlforshaw/opengamedb",
+      "type": "game-metadata",
+      "target": "opengamedb-index.json",
+      "credit": "karlforshaw/opengamedb; exact-title and release-aware metadata",
+      "license": "MIT",
+      "enabled": true
     }
   ]
 }

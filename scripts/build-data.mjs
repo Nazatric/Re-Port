@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { githubRepo, documentedEvidence, nonAndroidLink } from './android-policy.mjs';
+import { createMetadataIndex, matchMetadata, originalPlatforms } from './game-metadata.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'data/source');
@@ -96,7 +97,8 @@ function parseDate(v) {
 /* ------------------------------------------------------ platform table */
 const PLATFORMS = {
   Unknown: { id: 'unknown', name: 'Original platform unknown', short: '?' },
-  Others: { id: 'pc', name: 'PC and more', short: 'PC' },
+  Others: { id: 'other', name: 'Other / unspecified', short: '?' },
+  PC: { id: 'pc', name: 'PC', short: 'PC' },
   'XBOX 360': { id: 'xbox360', name: 'Xbox 360', short: '360' },
   'Nintendo 64': { id: 'n64', name: 'Nintendo 64', short: 'N64' },
   XBOX: { id: 'xbox', name: 'Xbox', short: 'Xbox' },
@@ -433,6 +435,22 @@ function gameKey(title, year, platform) {
 // "HD". These corrections are tied to the documented project, not title alone.
 function identity(title, year, platform, url) {
   const repo = githubRepo(url);
+  // Project READMEs identify these specific ports' original games/platforms.
+  const original = {
+    'x-th-x/aitdroid': [1992, 'pc'],
+    'codepdbh/army-men-rts-android-evolved': [2002, 'pc'],
+    'mrshmallow99/claw-android': [1997, 'pc'],
+    'jdcrayme/dune': [1992, 'pc'],
+    'project-holon/eidos': [2010, 'nds'],
+    'clickingmaster/ssrecomp': [2009, 'nds'],
+    'gabrielbskk/mcla-recomp-android-g': [2008, 'xbox360'],
+    'dguillot-gh/racinglagoon-android': [1999, 'ps1'],
+    'player124413/sonic-generations-recomp-android-and-pc-edition': [2011, 'xbox360'],
+    'luisxl15/guitar-hero-3-recomp-': [2007, 'xbox360'],
+    'thekojac304/newdarkandroid': [1999, 'pc'],
+    'elkir0/sc2-android-recomp': [2010, 'pc'],
+  };
+  if (original[repo]) return { title, year: original[repo][0], platform: original[repo][1] };
   if (repo === 'andrebrumdev/gow2-recomp') return { title: 'God of War II', year: 2007, platform: 'ps2' };
   if (repo === 'commonloon102/restunts-bb11') return { title: 'Stunts', year: 1990, platform: 'pc' };
   if (repo === 'decomp-and-recomp/samurai-vs-zombies') return { title: 'Samurai vs. Zombies Defense', year: 0, platform: 'android64' };
@@ -761,10 +779,37 @@ for (const g of games.values()) {
     const ids = p.platforms?.length ? p.platforms : [p.platform || g.platform];
     for (const id of ids) weights.set(id, (weights.get(id) || 0) + popularity(p));
   }
-  const order = [...weights.keys()].sort((a, b) => (weights.get(b) || 0) - (weights.get(a) || 0) || a.localeCompare(b));
+  const keys = [...weights.keys()];
+  // Do not let a vague upstream category obscure a specific source platform.
+  const specific = keys.filter((id) => id !== 'unknown' && id !== 'other');
+  const order = (specific.length ? specific : keys).sort((a, b) => (weights.get(b) || 0) - (weights.get(a) || 0) || a.localeCompare(b));
   if (order.length) g.platform = order[0];
   if (order.length > 1) g.platforms = order;
   else delete g.platforms;
+}
+
+// Genre metadata is based on exact title + original-platform matches, not keywords in prose.
+const metadataFile = path.join(SRC, 'opengamedb-index.json');
+const metadata = createMetadataIndex(fs.existsSync(metadataFile) ? JSON.parse(fs.readFileSync(metadataFile, 'utf8')).rows : []);
+const overridesFile = path.join(SRC, 'genre-overrides.json');
+const genreOverrides = fs.existsSync(overridesFile) ? JSON.parse(fs.readFileSync(overridesFile, 'utf8')) : [];
+for (const g of games.values()) {
+  // These are original game releases, not claims about which version an individual port uses.
+  const releases = originalPlatforms(g, metadata);
+  if (releases.length) {
+    const known = [g.platform, ...(g.platforms || [])].filter((p) => p !== 'unknown' && p !== 'other');
+    const all = [...new Set([...known, ...releases])];
+    if (all.length) { g.platform = all[0]; if (all.length > 1) g.platforms = all; else delete g.platforms; }
+  }
+  const match = matchMetadata(g, metadata);
+  // Different databases use different, sometimes surprisingly broad genre taxonomies.
+  // Do not replace a conflicting existing tag with an unreviewed match.
+  if (match && (!g.genres.length || g.genres.every((x) => x === 'indie') || g.genres.some((x) => match.genres.includes(x)))) {
+    g.genres = [...new Set([...g.genres, ...match.genres])];
+    g.genreSource = match.source;
+  }
+  const override = genreOverrides.find((o) => o.title === g.title && g.ports.some((p) => githubRepo(p.url) === o.repo));
+  if (override) { g.genres = override.genres; g.genreSource = override.reference; }
 }
 
 /* assign ids, engine links */
@@ -808,7 +853,9 @@ function finalize(g) {
   const added = dates('added').pop() || updated;
   const collections = g.genres.length ? g.genres : [];
   const previous = previousCatalog?.games?.find((old) => old.platform !== 'engine' && normTitle(old.title) === normTitle(g.title) && Number(old.year || 0) === Number(g.year || 0));
-  const steam = steamMap[g.id] || previous?.steam || null;
+  // A null entry explicitly rejects a previously incorrect match; do not resurrect it from
+  // the previously built catalog. E.g. Most Wanted (2005) and the 2012 game share a name.
+  const steam = Object.prototype.hasOwnProperty.call(steamMap, g.id) ? steamMap[g.id] : previous?.steam || null;
   const verified = verifiedShots[g.id];
   const match = consoleArt[g.id];
   // Guard against stale IDs being reused after a catalog refresh.
@@ -822,13 +869,14 @@ function finalize(g) {
     platform: g.platform,
     platforms: g.platforms || undefined,
     genres: collections,
+    genreSource: g.genreSource || undefined,
     summary,
     description,
     cover: g.cover || console?.cover || undefined,
     coverFallback: g.cover && console?.cover && g.cover !== console.cover ? console.cover : undefined,
     launchbox: g.launchbox || undefined,
     descSource: g.descSource || undefined,
-    steam: steam || (m ? { id: Number(m[1]), shots: [] } : undefined),
+    steam: steam || (!Object.prototype.hasOwnProperty.call(steamMap, g.id) && m ? { id: Number(m[1]), shots: [] } : undefined),
     shots: shots.length ? shots : undefined,
     shotNote: verified?.note || undefined,
     updated: updated || undefined,

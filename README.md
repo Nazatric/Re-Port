@@ -63,6 +63,17 @@ OBB files, ARM64 alone, emulation and iOS/Windows links are not Android-port evi
 physical device test, and projects can change after a check; missing or ambiguous candidates
 are excluded until evidence is found.
 
+Original-game metadata is matched against a compact factual index from
+[OpenGameDB](https://github.com/karlforshaw/opengamedb) (MIT), pinned to the revision recorded in
+`data/source/opengamedb-index.json`. Matching requires an exact normalized title and a compatible
+platform or release year; conflicting matches are skipped. Project-specific corrections and their
+references are in `data/source/genre-overrides.json`. Descriptive prose is not used as a keyword
+classifier. Genre and platform databases can still be incomplete or disagree: ambiguous genres
+remain under **Genre unknown**, and unspecified source platforms remain **Other / unspecified**
+rather than being invented. Original-game platforms and the source version of an individual port
+are not necessarily the same. To refresh the index, obtain the pinned OpenGameDB CSV files and run
+`python3 scripts/index-game-metadata.py /path/to/opengamedb`, then rebuild the catalog.
+
 The scheduled workflow refreshes the sources before verification, spends a limited API budget
 on new/stale candidates, then imports, builds, tests and publishes `public/catalog.json`.
 Installed apps periodically check the published catalog without an APK release. GitHub schedules
