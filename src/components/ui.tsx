@@ -10,7 +10,7 @@ import { cn } from '../utils/cn';
 
 /* ------------------------------------------------------------ logo */
 export function Logo({ size = 40 }: { size?: number }) {
-  return <img src="./icon.svg" width={size} height={size} alt="" aria-hidden="true" className="rounded-full shadow-[0_3px_10px_rgba(0,20,40,.45)]" />;
+  return <img src="./header-logo.png" width={size} height={size} alt="" aria-hidden="true" className="rounded-full shadow-[0_3px_10px_rgba(0,20,40,.45)]" />;
 }
 
 /* ------------------------------------------------------------ hero */

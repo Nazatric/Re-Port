@@ -99,7 +99,7 @@ Push a version tag and GitHub Actions builds the APK and attaches it to the rele
 git tag v1.0.0 && git push origin v1.0.0
 ```
 
-The workflow is `.github/workflows/android-apk.yml`: install, test, build, `npx cap add android`, generate launcher icons and splash screens from `assets/`, `npx cap sync`, then `./gradlew assembleDebug`. To publish a signed release, add your keystore as repository secrets and switch the Gradle step to `assembleRelease`. You can also run it locally with `npx cap add android && npx cap sync && npx cap open android`.
+The workflow is `.github/workflows/android-apk.yml`. It builds the Android release, installs the prepared launcher and splash resources from `assets/android-res/`, and signs and verifies the APK. Configure the persistent signing key first using [the Android release instructions](docs/android-release.md). The `RePort-release-apk` artifact is available from a successful workflow run. You can also open the Android project locally with `npx cap add android && npx cap sync && npx cap open android`.
 
 The APK stays small because it only contains the app shell and the catalog text. Artwork is downloaded on first view and cached by the service worker (limit 600 images, clearable in More).
 
