@@ -4,10 +4,3 @@ android
 .shots
 *.log
 .DS_Store
-.gradle/
-local.properties
-**/build/
-
-# Python bytecode
-__pycache__/
-*.py[cod]
