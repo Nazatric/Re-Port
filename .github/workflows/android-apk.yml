@@ -3,6 +3,7 @@ name: Build Android APK
 # Runs on every version tag (v1.0.0, v1.1.0 ...) and can be started by hand from the Actions tab.
 on:
   push:
+    branches: ["arena/59c5f4cf-re-port"]
     tags: ["v*"]
   workflow_dispatch:
 
