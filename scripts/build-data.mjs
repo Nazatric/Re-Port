@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { githubRepo, documentedEvidence, nonAndroidLink } from './android-policy.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'data/source');
@@ -94,6 +95,7 @@ function parseDate(v) {
 
 /* ------------------------------------------------------ platform table */
 const PLATFORMS = {
+  Unknown: { id: 'unknown', name: 'Original platform unknown', short: '?' },
   Others: { id: 'pc', name: 'PC and more', short: 'PC' },
   'XBOX 360': { id: 'xbox360', name: 'Xbox 360', short: '360' },
   'Nintendo 64': { id: 'n64', name: 'Nintendo 64', short: 'N64' },
@@ -262,20 +264,6 @@ function classifyLink(url, linkLabel) {
   return 'web';
 }
 
-function githubLatest(url) {
-  try {
-    const u = new URL(url);
-    const parts = u.pathname
-      .split('/')
-      .filter(Boolean)
-      .map((x) => x.replace(/(%20|\s)+$/g, ''));
-    if (parts.length < 2) return url;
-    return `https://github.com/${parts[0]}/${parts[1]}/releases/latest`;
-  } catch {
-    return url;
-  }
-}
-
 function cleanUrl(url) {
   try {
     const u = new URL(url.trim());
@@ -365,6 +353,29 @@ const extras = fs.existsSync(path.join(SRC, 'extras.json')) ? JSON.parse(fs.read
 const previousCatalog = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : null;
 const repoEvidence = fs.existsSync(path.join(SRC, 'github-repos.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'github-repos.json'), 'utf8')).repos || {} : {};
 
+// Preserve specific Android downloads, otherwise link to the latest release known to contain
+// an APK. A README-only build may not publish releases at all, so link to its project page.
+function portDownload(url, requested = '') {
+  const repo = githubRepo(url);
+  if (!repo) return requested && !nonAndroidLink(requested) ? requested : url;
+  const ev = repoEvidence[repo] || {};
+  if (requested && githubRepo(requested) === repo && /\/releases\/(?:tag|download)\//i.test(requested) && !nonAndroidLink(requested)) return requested;
+  if (ev.apkEvidenceVersion === 1 && ev.apkRelease) return ev.apkRelease;
+  if (/\/releases\/(?:tag|download)\//i.test(url) && !nonAndroidLink(url)) return url;
+  return `https://github.com/${repo}`;
+}
+const EVIDENCE_TYPES = new Set(['napl-list', 'github-apk', 'github-readme', 'openports-android', 'source-android']);
+function extraEvidence(port, inheritedList = '') {
+  const url = cleanUrl(port.url);
+  if (!url || nonAndroidLink(url) || repoEvidence[githubRepo(url)]?.missing) return '';
+  const source = port.source || inheritedList;
+  // Markers are written only by the importer when it has checked the actual source records.
+  if (['OpenPortsGames', 'Awesome Decomp Games', 'Awesome Android Native Ports'].includes(source)
+      && EVIDENCE_TYPES.has(port.androidEvidence)) return port.androidEvidence;
+  // Research entries must have their own evidence; a parent's evidence never proves a sibling.
+  return documentedEvidence({ url, repoEvidence, text: [port.project, port.notes, port.description].filter(Boolean).join(' '), list: source });
+}
+
 /* Port ranking. Keep identical to comparePorts() in src/lib/catalog.ts (checked by the test suite). */
 const KIND_TIER = { github: 0, playstore: 1, fdroid: 1, itch: 1, gitlab: 1, site: 1, gamejolt: 1, gamebanana: 1, archive: 1, web: 1, discord: 2, '4pda': 3, telegram: 4, reddit: 4, mirror: 5 };
 const portTier = (p) => {
@@ -388,7 +399,7 @@ function enrichPort(p) {
   if (!ev) return p;
   p.stars = Math.max(p.stars || 0, ev.stars || 0);
   p.downloads = Math.max(p.downloads || 0, ev.apkDownloads || 0);
-  if (ev.hasApk) p.apk = true;
+  if (ev.apkEvidenceVersion === 1 && ev.hasApk) p.apk = true;
   if (ev.archived && !p.lifecycle) p.lifecycle = 'discontinued';
   return p;
 }
@@ -416,6 +427,26 @@ function gameKey(title, year, platform) {
   const key = `${titleKey}|${year || 'unknown'}${candidates.length ? `|${platform}` : ''}`;
   if (!candidates.includes(key)) titleIndex.set(titleKey, [...candidates, key]);
   return key;
+}
+
+// Source lists sometimes record a later port year as the original release year, or omit
+// "HD". These corrections are tied to the documented project, not title alone.
+function identity(title, year, platform, url) {
+  const repo = githubRepo(url);
+  if (repo === 'rages4calm/earthbound-companion') return { title: 'EarthBound', year: 1994, platform: 'snes' };
+  if (repo === 'vitomiguelf/crashott-pc') return { title: 'Crash of the Titans', year: 2007, platform: 'xbox360' };
+  const plain = title.replace(/[™®©:]/g, '').trim();
+  if (/^need for speed most wanted(?: (?:black edition|2012)| \(2005\))?$/i.test(plain)) {
+    if (year === 2012 || /2012/.test(plain)) return { title: platform === 'android64' ? 'Need for Speed: Most Wanted (2012 mobile)' : 'Need for Speed: Most Wanted (2012)', year: 2012, platform };
+    if (year === 2005 || /2005|black edition/i.test(plain)) return { title: 'Need for Speed: Most Wanted', year: 2005, platform };
+  }
+  if (/^carmageddon$/i.test(title)) return { title: 'Carmageddon', year: 1997, platform: 'pc' };
+  if (/^castlevania: symphony of the night$/i.test(title)) return { title, year: 1997, platform };
+  if (['mamcjr/lasrecompandroid', 'nycolazs/lasrecomp-android-plus'].includes(repo))
+    return { title: "The Legend of Zelda: Link's Awakening", year: 2019, platform: 'switch' };
+  if (['greennaugahyde/zeldawwhdrecompandroid', 'ssunnking/zeldawwhdrecompandroid---enhanced', 'zeldawwhdrecomp/zeldawwhdrecomp', 'nycolazs/windwakerhd-android-plus'].includes(repo))
+    return { title: 'The Legend of Zelda: The Wind Waker HD', year: 2013, platform: 'wiiu' };
+  return { title, year, platform };
 }
 
 function ensureGame(title, year, platform, base) {
@@ -454,7 +485,12 @@ function addPort(game, port) {
 
 function rowToPort(r, platform) {
   const url = cleanUrl(r.URL);
-  if (!url) return null;
+  if (!url || nonAndroidLink(url) || repoEvidence[githubRepo(url)]?.missing) return null;
+  const repo = githubRepo(url);
+  const directEvidence = repo ? documentedEvidence({ url, repoEvidence }) : 'napl-list';
+  // Even an Android-focused list can contain stale links to PC-only forks. Do not assume
+  // its GitHub links target Android when the project itself cannot substantiate that.
+  if (!directEvidence) return null;
   const kind = classifyLink(url, r.LINK);
   const files = parseFiles(r['NEEDS GAME FILES?']);
   const generic = /^(unofficial port|android port|port)$/i.test(clean(r.PROJECT));
@@ -464,7 +500,8 @@ function rowToPort(r, platform) {
     platform,
     kind,
     url,
-    download: kind === 'github' ? githubLatest(url) : url,
+    download: portDownload(url),
+    androidEvidence: directEvidence,
     version: clean(r.VERSION),
     updated: parseDate(r['LAST UPDATE']),
     added: parseDate(r['DATE ADDED']),
@@ -501,18 +538,20 @@ for (const r of rows) {
     continue;
   }
 
-  const title = clean(r.GAME).replace(/\s+/g, ' ');
+  const parsedYear = /^\d{4}$/.test(clean(r.YEAR)) ? Number(r.YEAR) : 0;
+  const normalized = identity(clean(r.GAME).replace(/\s+/g, ' '), parsedYear, plat.id, port.url);
+  const { title, year } = normalized;
+  port.platform = normalized.platform;
   const paragraphs = clean(r.DESCRIPTION).split('|||').map((p) => p.trim()).filter(Boolean);
-  const year = /^\d{4}$/.test(clean(r.YEAR)) ? Number(r.YEAR) : 0;
   if (/(?:VinTeRuS\/proto-re)/i.test(port.url)) {
     dropped.push({ game: title, reason: 'superseded by Nazatric/ProtoDroid' });
     continue;
   }
   const art = artMap[normTitle(title)] || null;
-  const g = ensureGame(title, year, plat.id, {
+  const g = ensureGame(title, year, normalized.platform, {
     title,
     year,
-    platform: plat.id,
+    platform: normalized.platform,
     genres: mapGenres(r.GENRE),
     paragraphs,
     cover: clean(r.COVER_URL) || (art && art.cover) || '',
@@ -526,34 +565,59 @@ for (const r of rows) {
 /* extras: curated entries researched outside the sheet */
 const sameUrl = (a, b) => a.replace(/\/+$/, '').toLowerCase() === b.replace(/\/+$/, '').toLowerCase();
 const extraEngines = [];
-const catalogSources = [];
+const catalogSources = ['NAPL - Native Android Port List'];
 for (const e of extras) {
-  const wanted = [e.platform, ...(e.originalPlatforms || [])].filter(Boolean);
+  const androidEvidence = extraEvidence(e, e.list);
+  if (!androidEvidence) continue;
+  const wanted = [e.platform, ...(e.originalPlatforms || []), 'unknown'].filter(Boolean);
   const plat = wanted.map((id) => Object.values(PLATFORMS).find((p) => p.id === id)).find(Boolean);
   if (!plat) continue;
   const url = cleanUrl(e.url);
   if (!url) continue;
   if (e.list && e.list !== 'manual' && !catalogSources.includes(e.list)) catalogSources.push(e.list);
   const kind = classifyLink(url, '');
-  const dl = kind === 'github' ? githubLatest(url) : url;
+  const dl = portDownload(url, e.download);
   if (plat.id === 'engine') {
     if (extraEngines.some((x) => x.title.toLowerCase() === e.title.toLowerCase())) continue;
-    extraEngines.push({ ...e, url, kind });
+    extraEngines.push({ ...e, url, kind, androidEvidence });
     continue;
   }
-  const title = clean(e.game || e.title);
-  const year = Number(e.year) || 0;
+  const normalized = identity(clean(e.game || e.title), Number(e.year) || 0, plat.id, url);
+  const { title, year } = normalized;
   const art = artMap[normTitle(title)] || null;
-  const g = ensureGame(title, year, plat.id, {
+  const g = ensureGame(title, year, normalized.platform, {
     title,
     year,
-    platform: plat.id,
+    platform: normalized.platform,
     genres: mapGenres((e.genres || []).join(',')),
     paragraphs: e.description ? [e.description] : [],
     cover: e.cover || '',
     launchbox: '',
     descSource: e.descSource || '',
   });
+  for (const sibling of e.siblingPorts || []) {
+    const siblingEvidence = extraEvidence(sibling, sibling.source);
+    if (!siblingEvidence) continue;
+    addPort(g, {
+      name: sibling.title || '',
+      developer: sibling.developer || '',
+      platform: identity(title, year, Object.values(PLATFORMS).some((p) => p.id === sibling.platform) ? sibling.platform : normalized.platform, sibling.url).platform,
+      kind: sibling.kind || classifyLink(sibling.url, ''),
+      url: cleanUrl(sibling.url) || sibling.url,
+      download: portDownload(sibling.url, sibling.download),
+      androidEvidence: siblingEvidence,
+      version: sibling.version || '',
+      updated: parseDate(sibling.updated || ''),
+      added: parseDate(e.added || ''),
+      files: sibling.files || 'files',
+      works: sibling.works || '',
+      notes: sibling.notes || '',
+      stars: Number(sibling.stars) || 0,
+      downloads: Number(sibling.downloads) || 0,
+      views: 0,
+      source: sibling.source || 'research',
+    });
+  }
   const duplicate = g.ports.some((p) => sameUrl(p.url, url) || sameUrl(p.download, dl));
   if (duplicate) {
     const existing = g.ports.find((p) => sameUrl(p.url, url) || sameUrl(p.download, dl));
@@ -584,18 +648,19 @@ for (const e of extras) {
   if (!g.cover && gArt?.cover) g.cover = gArt.cover;
   if (!g.genres.length && e.genres?.length) g.genres = mapGenres(e.genres.join(','));
   if (!g.year && e.year) g.year = e.year;
-  const systems = [...new Set([...(e.originalPlatforms || []), plat.id])].filter((id) => Object.values(PLATFORMS).some((p) => p.id === id));
+  const systems = [...new Set([...(normalized.platform === plat.id ? (e.originalPlatforms || []) : []), normalized.platform])].filter((id) => Object.values(PLATFORMS).some((p) => p.id === id));
   const eArt = artMap[normTitle(title)];
   const shots = [...new Set([...(e.shots || []), ...(eArt?.shots || [])])].slice(0, 6);
   if (shots.length) g.shots = shots;
   addPort(g, {
     name: e.project || '',
     developer: e.developer || '',
-    platform: plat.id,
+    platform: normalized.platform,
     platforms: systems.length > 1 || e.sharedProject ? systems : undefined,
     kind,
     url,
-    download: kind === 'github' ? githubLatest(url) : url,
+    download: dl,
+    androidEvidence,
     version: e.version || '',
     updated: parseDate(e.updated || ''),
     added: parseDate(e.added || ''),
@@ -613,27 +678,7 @@ for (const e of extras) {
     lifecycle: e.lifecycle || (/^(alpha|beta)$/i.test(e.status || '') ? 'experimental' : ''),
     source: e.list || 'research',
   });
-  for (const sibling of e.siblingPorts || []) {
-    if (!sibling.url) continue;
-    addPort(g, {
-      name: sibling.title || '',
-      developer: sibling.developer || '',
-      platform: Object.values(PLATFORMS).some((p) => p.id === sibling.platform) ? sibling.platform : plat.id,
-      kind: sibling.kind || classifyLink(sibling.url, ''),
-      url: cleanUrl(sibling.url) || sibling.url,
-      download: sibling.download || sibling.url,
-      version: sibling.version || '',
-      updated: parseDate(sibling.updated || ''),
-      added: parseDate(e.added || ''),
-      files: sibling.files || 'files',
-      works: sibling.works || '',
-      notes: sibling.notes || '',
-      stars: Number(sibling.stars) || 0,
-      downloads: Number(sibling.downloads) || 0,
-      views: 0,
-      source: sibling.source || 'research',
-    });
-  }
+
 }
 
 /* engines */
@@ -675,7 +720,8 @@ for (const e of extraEngines) {
         platform: 'engine',
         kind: e.kind,
         url: e.url,
-        download: e.kind === 'github' ? githubLatest(e.url) : e.url,
+        download: portDownload(e.url, e.download),
+        androidEvidence: e.androidEvidence,
         version: '',
         updated: '',
         added: parseDate(e.added || ''),
@@ -820,6 +866,7 @@ const platformsOut = Object.values(PLATFORMS)
 // clients without a new app release.
 const manifest = fs.existsSync(path.join(SRC, 'sync-manifest.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'sync-manifest.json'), 'utf8')) : {};
 const payload = {
+  androidPolicy: 1,
   generated: new Date().toISOString().slice(0, 10),
   revision: new Date().toISOString(),
   sources: catalogSources,
@@ -829,6 +876,19 @@ const payload = {
   collections: COLLECTIONS,
   games: finalGames,
 };
+// A source poll without a substantive catalog change should not create a new catalog revision.
+// This avoids making installed clients re-index identical data every day.
+const substantive = (c) => {
+  if (!c) return '';
+  const { generated, revision, upstreamSyncedAt, ...content } = c;
+  void generated; void revision; void upstreamSyncedAt;
+  return JSON.stringify(content);
+};
+if (previousCatalog?.androidPolicy === 1 && substantive(previousCatalog) === substantive(payload)) {
+  payload.generated = previousCatalog.generated;
+  payload.revision = previousCatalog.revision;
+  payload.upstreamSyncedAt = previousCatalog.upstreamSyncedAt || '';
+}
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 const json = JSON.stringify(payload);
 fs.writeFileSync(OUT, json);

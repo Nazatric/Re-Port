@@ -2,7 +2,7 @@
 
 A library of **unofficial native Android ports**: source ports, engine rebuilds, decompilation projects and static recompilations of PC and console games. Mobile portrait first, with a 2010s glossy "Aero" look inspired by the Xbox 360 dashboard, Windows Phone Metro tiles and PS3 cover flow.
 
-- The bundled catalog currently contains 2,484 games, 13 engines and 3,475 ports across PC and console platforms.
+- The bundled catalog contains Android-targeted ports of PC and console games. Source platforms describe the original games, not the target OS.
 - The **Download** button on a port opens the developer's release page: `/releases/latest` for GitHub projects, or the Telegram post, Discord server, Google Play listing, itch.io page and so on where the port is published
 - Artwork from LaunchBox, Steam, Libretro and port projects, plus developer avatars and a Poly Haven sky. Some titles do not have available images.
 - Artwork is **streamed and cached on demand**, nothing is bundled. The app shell, catalog, icons and fonts are local, so everything opens offline. Missing artwork falls back to generated covers
@@ -45,20 +45,23 @@ Browser tests simulate real touch input through Chromium's input protocol, check
 
 ### Adding a new game list
 
-Everything a source needs lives in **`data/sources.json`**. Add one object to `"lists"`:
+`data/sources.json` documents the sources; adding a manifest entry alone does not create a parser.
+Add a source-specific parser in the sync/import scripts and tests before enabling a new list.
+Mixed-platform lists are discovery leads, not proof of Android support. GitHub candidates require
+an Android APK/APKS/XAPK release or a project README documenting an Android build. NAPL's
+non-GitHub entries rely on its Android-specific list, with incompatible links rejected. The
+Awesome Android list is parsed and its GitHub projects are checked independently. OBB files,
+ARM64 alone, emulation and iOS/Windows links are not Android-port evidence. Evidence is not a
+physical device test, and projects can change after a check; missing or ambiguous candidates
+are excluded until evidence is found.
 
-```json
-{ "id": "my-list", "name": "My List", "url": "https://…", "type": "markdown-table",
-  "target": "my-list.md", "credit": "Curated by …", "license": "CC BY 4.0", "enabled": true }
-```
-
-Then run `npm run sync`. `scripts/fetch-sources.mjs` downloads every enabled list into
-`data/source/`, so a list that updates upstream is picked up automatically on the next sync and on
-the nightly scheduled run — no new app release needed. The app reads the published
-`public/catalog.json` at runtime, so installed copies grow with it.
-
-Supported `type` values: `csv`, `markdown-table`, `openportsgames`, `decomp-games`, `github-issue-table`,
-and `artwork` (a metadata source rather than a list).
+The scheduled workflow refreshes the sources before verification, spends a limited API budget
+on new/stale candidates, then imports, builds, tests and publishes `public/catalog.json`.
+Installed apps periodically check the published catalog without an APK release. GitHub schedules
+run only on the repository's default branch: these changes must be merged there before the nightly
+job runs, and APKs built here are configured to read the default branch after that merge. The new
+APK rejects older, unfiltered remote/cache catalogs via an Android-policy marker; older installed
+APKs need this one app update first.
 
 ### How entries become catalog cards
 
@@ -70,7 +73,7 @@ data/sources.json                      every list, one entry each
   ├─ awesome-*.md                      curated markdown lists
   └─ portcove.json                     candidate research
         │  scripts/import-catalog-lists.mjs   group by normalised title → one card per game,
-        │                                     every list's port attached, strongest ranked first
+        │                                     only Android-evidenced ports attached, strongest ranked first
         │  scripts/enrich-art.mjs             Libretro box art + in-game screenshots
         │  scripts/verify-android.mjs         GitHub release evidence: stars, APK downloads
         v
@@ -85,14 +88,14 @@ all of its ports (even when lists disagree on the release year); genuinely diffe
 a name stay separate when their years are far apart. Ports are ranked by real release downloads, then
 GitHub stars, then list views — so the Download button opens the strongest source first.
 
-To refresh: `npm run sync && npm run data` (and `node scripts/enrich-console-art.mjs` for artwork).
+To refresh: `npm run sync && npm run verify && node scripts/import-catalog-lists.mjs && npm run data` (and `node scripts/enrich-console-art.mjs` for artwork).
 `enrich-console-art.mjs` records URLs for exact title-and-platform matches in `data/source/console-art.json`. Curated project screenshots and their version notes live in `data/source/verified-screenshots.json`. Both are merged into each catalog build; unavailable or ambiguous images are skipped. Screenshots can depict the original console game or a particular PC/Android project rather than every port, and retro source images may be low resolution. Set `CACHE_ONLY=1` on the importer to rebuild without network access.
 
 Re:Port never stores or links to game files or ROM download sites. Mirror and 4pda links are labelled in the app.
 
 ## Building the Android APK
 
-GitHub Actions builds a fresh APK whenever the app changes on `main`/`master`, immediately after the scheduled catalog update, when started manually, and for version tags:
+GitHub Actions builds a fresh APK for app changes, when started manually, and for version tags:
 
 ```bash
 git tag v1.0.0 && git push origin v1.0.0

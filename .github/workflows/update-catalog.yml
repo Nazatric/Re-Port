@@ -35,20 +35,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Sync upstream port lists
+        run: node scripts/fetch-sources.mjs
+
       - name: Verify Android builds exist upstream
         if: ${{ inputs.verify != false }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/verify-android.mjs --max=900
 
-      - name: Sync upstream port lists
-        run: node scripts/fetch-sources.mjs
-
       - name: Import every catalog list
         run: node scripts/import-catalog-lists.mjs
 
       - name: Build the catalog
         run: node scripts/build-data.mjs
+
+      - name: Check catalog policy
+        run: npm test && npm run typecheck
 
       - name: Publish the refreshable copy to the raw branch path
         run: |

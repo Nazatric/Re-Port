@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "vitest run && node --test scripts/test-android-policy.mjs",
     "typecheck": "tsc --noEmit",
     "data": "node scripts/build-data.mjs",
     "audit": "node scripts/audit-links.mjs",

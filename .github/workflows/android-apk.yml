@@ -4,15 +4,11 @@ name: Build Android APK
 #
 # This workflow used to run only for version tags. That let the web app move ahead while the
 # downloadable Android build stayed on an old catalog and an old home screen. It now also runs
-# for app changes on the main branches and immediately after the scheduled catalog update.
+# for app changes on the main branches; catalog-only updates do not require a new APK.
 on:
   push:
     branches: ["main", "master", "arena/59c5f4cf-re-port"]
     tags: ["v*"]
-  workflow_run:
-    workflows: ["Update catalog"]
-    types: [completed]
-    branches: ["main", "master"]
   workflow_dispatch:
 
 permissions:
@@ -24,12 +20,11 @@ concurrency:
 
 jobs:
   apk:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
 
       - uses: actions/setup-node@v4
         with:
@@ -63,8 +58,8 @@ jobs:
         env:
           # Installed APKs read the catalog published from this repository, not only the
           # snapshot copied into the APK, so library updates arrive without a new APK.
-          VITE_REMOTE_CATALOG_URL: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.event_name == 'workflow_run' && github.event.repository.default_branch || github.ref_name }}/public/catalog.json
-          VITE_APP_BUILD_ID: ${{ github.event.workflow_run.head_sha || github.sha }}
+          VITE_REMOTE_CATALOG_URL: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.event.repository.default_branch }}/public/catalog.json
+          VITE_APP_BUILD_ID: ${{ github.sha }}
           VITE_APP_VERSION: ${{ github.ref_name }}-${{ github.run_number }}
         run: npm run build
 
@@ -110,7 +105,7 @@ jobs:
       - name: Verify Android assets contain the current library
         run: |
           test -f android/app/src/main/assets/public/catalog.json
-          node -e "const c=require('./android/app/src/main/assets/public/catalog.json'); if ((c.stats?.games||0) < 2000 || (c.stats?.ports||0) < 3000) { console.error(c.stats); process.exit(1); } console.log('Android catalog:', c.stats.games, 'games,', c.stats.ports, 'ports,', c.generated, c.revision);"
+          node -e "const c=require('./android/app/src/main/assets/public/catalog.json'); if (c.androidPolicy !== 1 || (c.stats?.games||0) < 200 || (c.stats?.ports||0) < 200 || c.games.some(g => !g.ports?.length || g.ports.some(p => !p.androidEvidence))) { console.error(c.stats); process.exit(1); } console.log('Android catalog:', c.stats.games, 'games,', c.stats.ports, 'ports,', c.generated, c.revision);"
 
       # The user requested the debug build variant; the downloadable filename is simply RePort.
       - name: Build APK

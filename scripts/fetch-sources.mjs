@@ -158,7 +158,7 @@ const slug = (s) =>
     .replace(/^-+|-+$/g, '');
 
 /** Android targeting phrases we accept as evidence that a project actually ships an Android build. */
-const ANDROID_HINT = /android|\bapk\b|arm64|aarch64|shield|retroid|anbernic|martin\$|android ports/i;
+
 
 /* ------------------------------------------------------- existing entries */
 const extras = readJson('extras.json', []);
@@ -291,10 +291,10 @@ for (const g of decompgames?.games || []) {
   // A project only qualifies when an Android build is documented in the release assets or the
   // project text itself. "A PC port of the Android version" is the reverse direction and is excluded.
   const reverseDirection = /port of the android (version|build)|android (armv7|version) of/i.test(haystack);
-  const textual = /android (port|build|version|release|apk)|apk\b|arm64|aarch64|for android|on android|android and (ios|mobile)/i.test(haystack);
-  const verifiedApk = Boolean(verified?.hasApk);
+  const textual = false; // Mixed-platform source notes are discovery leads, not proof.
+  const verifiedApk = Boolean(verified?.apkEvidenceVersion === 1 && verified?.hasApk);
   if (reverseDirection) continue;
-  if (!verifiedApk && !textual) continue;
+  if (!verifiedApk && !verified?.androidReadme && !textual) continue;
   if (verified?.missing || verified?.archived) continue;
   const platform = mapPlatform(g.platform) || 'pc';
   const cleaned = (g.title || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
@@ -352,7 +352,7 @@ if (portcove?.body) {
     const projectUrl = repo ? `https://github.com/${repo}` : link.replace(/\/releases\/tag\/.*$/, '');
     if (knownUrls.has(normUrl(projectUrl)) || knownUrls.has(normUrl(link))) continue;
     // Keep only candidates that are Android deliverables.
-    if (!/android|apk|arm64/i.test(`${linkCell} ${finding}`)) continue;
+    if (!/android|\bapk\b/i.test(`${linkCell} ${finding}`)) continue;
     addedPortcove += push({
       title: label,
       platform: '',
@@ -383,8 +383,8 @@ for (let i = extras.length - 1; i >= 0; i--) {
   const repo = evidence(e.url);
   const haystack = [e.description, e.project, e.title, e.notes].filter(Boolean).join(' ');
   const reverse = /port of the android (version|build)|android (armv7|version) of/i.test(haystack);
-  const textual = /android (port|build|version|release|apk)|apk\b|arm64|aarch64|for android|on android/i.test(haystack);
-  const keep = !repo?.missing && !repo?.archived && !reverse && (repo?.hasApk || textual || !repo);
+  const textual = false; // Rebuilt from original sources with per-port evidence below.
+  const keep = !repo?.missing && !repo?.archived && !reverse && (repo?.apkEvidenceVersion === 1 && repo?.hasApk || repo?.androidReadme || textual);
   if (!keep) {
     extras.splice(i, 1);
     pruned++;
@@ -395,7 +395,10 @@ for (let i = extras.length - 1; i >= 0; i--) {
 // Manual curation always wins over any automated source.
 const ordered = [...extras.filter((e) => e.list === 'manual'), ...extras.filter((e) => e.list !== 'manual')];
 writeJson('extras.json', ordered);
-manifest.lastRun = new Date().toISOString();
+if (!OFFLINE) {
+  const fetched = Object.values(manifest.sources).map((s) => s.fetchedAt).filter(Boolean).sort();
+  manifest.lastRun = fetched.at(-1) || manifest.lastRun || '';
+}
 manifest.counts = { openports: addedOpen, decompGames: addedDecomp, portcove: addedPortcove, pruned, total: ordered.length };
 manifest.protectedManual = ordered.filter((e) => e.list === 'manual').length;
 writeJson('sync-manifest.json', manifest);

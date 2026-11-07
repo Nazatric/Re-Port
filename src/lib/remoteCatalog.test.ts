@@ -17,11 +17,12 @@ const game = (id: string, over: Partial<Catalog['games'][number]> = {}): Catalog
   summary: `${id} summary`,
   description: `${id} description`,
   views: 1,
-  ports: [{ kind: 'github', url: `https://github.com/a/${id}`, download: `https://github.com/a/${id}/releases/latest` }],
+  ports: [{ androidEvidence: 'github-apk', kind: 'github', url: `https://github.com/a/${id}`, download: `https://github.com/a/${id}/releases/latest` }],
   ...over,
 });
 
 const catalog = (generated: string, ids: string[], extra: Partial<Catalog> = {}): Catalog => ({
+  androidPolicy: 1,
   generated,
   revision: generated,
   sources: ['test'],
@@ -48,6 +49,10 @@ describe('validateCatalog', () => {
   it('rejects payloads that could not serve as a catalog', () => {
     const ids = Array.from({ length: 60 }, (_, i) => `game-${i}`);
     expect(validateCatalog(null)).toBeNull();
+    expect(validateCatalog(catalog(nextDate(), ids, { androidPolicy: undefined }))).toBeNull();
+    const noEvidence = catalog(nextDate(), ids);
+    delete noEvidence.games[59].ports[0].androidEvidence;
+    expect(validateCatalog(noEvidence)).toBeNull();
     expect(validateCatalog({})).toBeNull();
     expect(validateCatalog(catalog(nextDate(), ids.slice(0, 10)))).toBeNull();
     expect(validateCatalog(catalog('not-a-date', ids))).toBeNull();

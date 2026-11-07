@@ -15,6 +15,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { githubRepo, openPortsEvidence, documentedEvidence, rankPorts } from './android-policy.mjs';
+import { androidListRows } from './android-list.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'data/source');
@@ -99,27 +101,24 @@ const PLATFORM = {
 const mapPlatform = (raw) => PLATFORM[String(raw || '').trim()] || 'pc';
 
 const repoEvidence = read('github-repos.json', { repos: {} }).repos || {};
-const repoOf = (url) => {
-  try {
-    const p = new URL(url).pathname.split('/').filter(Boolean);
-    return p.length >= 2 ? `${p[0]}/${p[1]}`.toLowerCase() : '';
-  } catch {
-    return '';
-  }
-};
-const evidence = (url) => repoEvidence[repoOf(url)] || {};
+const evidence = (url) => repoEvidence[githubRepo(url)] || {};
 
 const openports = read('openports.json', { ports: [] }).ports || [];
 const decomp = read('decompgames.json', { games: [] }).games || [];
 // Preserve hand-curated and other-list entries. Only the entries generated from the two
 // machine-readable catalogs below are regenerated, so adding a list never deletes another one.
-const curated = read('extras.json', []).filter((e) => !['OpenPortsGames', 'Awesome Decomp Games'].includes(e.list));
+const curated = read('extras.json', []).filter((e) => !['OpenPortsGames', 'Awesome Decomp Games', 'Awesome Android Native Ports'].includes(e.list));
 
 /** Share one game card across every port that belongs to the same title. */
 const cards = new Map();
 function card(title, year) {
-  const key = normTitle(title);
-  if (!cards.has(key)) cards.set(key, { title: title.trim(), year: Number(year) || 0, genres: [], description: '', cover: '', shots: [], ports: [], seenPort: new Set() });
+  const base = normTitle(title);
+  const y = Number(year) || 0;
+  const matching = [...cards.entries()].filter(([key]) => key === base || key.startsWith(`${base}|`));
+  const existing = matching.find(([, game]) => !y || !game.year || Math.abs(game.year - y) <= 5);
+  if (existing) return existing[1];
+  const key = matching.length ? `${base}|${y}` : base;
+  cards.set(key, { title: title.trim(), year: y, genres: [], description: '', cover: '', shots: [], ports: [], seenPort: new Set() });
   return cards.get(key);
 }
 
@@ -133,6 +132,8 @@ function addPort(game, port) {
 /* ------------------------------------------------- OpenPortsGames entries */
 for (const p of openports) {
   if (p.kind && p.kind !== 'game') continue;
+  const androidEvidence = openPortsEvidence(p, repoEvidence);
+  if (!androidEvidence) continue;
   const source = (p.sources || []).find((s) => /^https?:\/\//.test(s));
   if (!source) continue;
   const title = p.game || p.title;
@@ -150,7 +151,7 @@ for (const p of openports) {
     platform: mapPlatform((p.originalSystems || [])[0]),
     url: source,
     kind: /github\.com/.test(source) ? 'github' : 'web',
-    download: /github\.com/.test(source) ? source.replace(/\/+$/, '') + '/releases/latest' : source,
+    download: ev.apkRelease || (/github\.com/.test(source) ? source.replace(/\/+$/, '') + '/releases/latest' : source),
     version: p.release?.version || ev.apkVersion || '',
     updated: (p.release?.date || ev.apkDate || '').slice(0, 10),
     stars: ev.stars || 0,
@@ -159,6 +160,24 @@ for (const p of openports) {
     files: /ships the game|distributes the game/i.test(p.warning || '') ? 'none' : 'files',
     notes: [p.notes, p.warning].filter(Boolean).join(' '),
     source: 'OpenPortsGames',
+    androidEvidence,
+  });
+}
+
+/* --------------------- Independently check the Android-focused game list */
+for (const row of androidListRows(path.join(SRC, 'awesome-android-native-ports.md'))) {
+  const ev = evidence(row.url);
+  // The list is useful for discovery, but its descriptions can be stale. Require direct
+  // project evidence for GitHub links instead of treating a list's assertion as proof.
+  const androidEvidence = documentedEvidence({ url: row.url, repoEvidence });
+  if (!androidEvidence) continue;
+  const game = card(row.title, 0);
+  addPort(game, {
+    title: row.project, developer: githubRepo(row.url).split('/')[0] || '', platform: '',
+    url: row.url, kind: 'github', download: ev.apkRelease || row.url,
+    version: ev.apkVersion || '', updated: ev.apkDate || '', stars: ev.stars || 0,
+    downloads: ev.apkDownloads || 0, files: '', works: '', notes: row.description,
+    source: row.list, androidEvidence,
   });
 }
 
@@ -169,7 +188,10 @@ for (const g of decomp) {
   const projectName = parenthetical ? parenthetical[1] : '';
   const gameTitle = parenthetical ? g.title.slice(0, parenthetical.index).trim() : g.title.trim();
   if (!gameTitle) continue;
-  const url = g.release_url || g.url;
+  const url = g.url;
+  const ev = evidence(url);
+  const androidEvidence = ev.apkEvidenceVersion === 1 && ev.hasApk && ev.apkAssets > 0 ? 'github-apk' : ev.androidReadme ? 'github-readme' : '';
+  if (ev.missing || !androidEvidence) continue;
   const game = card(gameTitle, 0);
   if (!game.description && g.note) game.description = String(g.note).trim();
   if (!game.genres.length) game.genres = genreFromText(`${g.note || ''} ${g.title || ''}`);
@@ -181,15 +203,13 @@ for (const g of decomp) {
     const shot = `https://raw.githubusercontent.com/SubmitGame/awesome-decomp-games/main/${g.screenshot}`;
     if (!game.shots.includes(shot)) game.shots.push(shot);
   }
-  const ev = evidence(url);
-  if (ev.missing) continue;
   addPort(game, {
     title: projectName && normTitle(projectName) !== normTitle(gameTitle) ? projectName : '',
     developer: (g.repo || '').split('/')[0] || '',
     platform: mapPlatform(g.platform),
     url,
     kind: /github\.com/.test(url) ? 'github' : /gitlab\.com/.test(url) ? 'gitlab' : 'web',
-    download: /github\.com/.test(url) ? `https://github.com/${g.repo}/releases/latest` : g.release_url || url,
+    download: ev.apkRelease || (/github\.com/.test(url) ? `https://github.com/${g.repo}/releases/latest` : g.release_url || url),
     version: g.release || ev.apkVersion || '',
     updated: (g.release_date || ev.apkDate || '').slice(0, 10),
     stars: ev.stars || g.stars || 0,
@@ -198,17 +218,20 @@ for (const g of decomp) {
     files: g.needs_assets ? 'files' : '',
     notes: g.note ? String(g.note).trim() : '',
     source: 'Awesome Decomp Games',
+    androidEvidence,
   });
 }
 
 /* ------------------------------------------ keep the strongest port first */
-const rank = (p) => (p.downloads || 0) * 100 + (p.stars || 0) + (p.source === 'OpenPortsGames' ? 3 : 0);
 
 const extras = [
   ...curated,
   ...[...cards.values()]
     .filter((g) => g.ports.length)
-    .map((g) => ({
+    .map((g) => {
+      const ordered = rankPorts(g.ports);
+      const primary = ordered[0];
+      return {
       title: g.title,
       game: g.title,
       year: g.year || 0,
@@ -216,22 +239,23 @@ const extras = [
       description: g.description.slice(0, 1100),
       cover: g.cover,
       shots: g.shots.slice(0, 4),
-      list: g.ports.some((p) => p.source === 'OpenPortsGames') ? 'OpenPortsGames' : 'Awesome Decomp Games',
-      // one canonical entry per game; build-data turns these into ranked ports
-      project: g.ports.slice().sort((a, b) => rank(b) - rank(a))[0].title,
-      developer: g.ports[0].developer,
-      platform: g.ports[0].platform,
-      url: g.ports.slice().sort((a, b) => rank(b) - rank(a))[0].url,
-      version: g.ports[0].version || '',
-      updated: g.ports.map((p) => p.updated).filter(Boolean).sort().pop() || '',
-      stars: Math.max(...g.ports.map((p) => p.stars || 0)),
-      downloads: Math.max(...g.ports.map((p) => p.downloads || 0)),
-      files: g.ports[0].files || '',
-      works: g.ports[0].works || '',
-      notes: g.ports[0].notes || '',
-      // all sibling ports are attached by build-data through `siblingPorts`
-      siblingPorts: g.ports.slice(1).map((p) => ({ ...p })),
-    })),
+      list: primary.source,
+      project: primary.title,
+      developer: primary.developer,
+      platform: primary.platform,
+      url: primary.url,
+      download: primary.download,
+      androidEvidence: primary.androidEvidence,
+      version: primary.version || '',
+      updated: primary.updated || '',
+      stars: primary.stars || 0,
+      downloads: primary.downloads || 0,
+      files: primary.files || '',
+      works: primary.works || '',
+      notes: primary.notes || '',
+      siblingPorts: ordered.slice(1),
+      };
+    }),
 ];
 
 fs.writeFileSync(path.join(SRC, 'extras.json'), JSON.stringify(extras, null, 1));

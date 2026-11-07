@@ -115,11 +115,14 @@ export function catalogUrls(): string[] {
 export function validateCatalog(value: unknown): Catalog | null {
   if (!value || typeof value !== 'object') return null;
   const c = value as Partial<Catalog>;
+  // Old cached or remotely published mixed-platform catalogs must never replace the Android baseline.
+  if (c.androidPolicy !== 1) return null;
   if (!Array.isArray(c.games) || c.games.length < 50) return null;
   if (!Array.isArray(c.platforms) || !c.platforms.length) return null;
   if (!Array.isArray(c.collections) || !c.collections.length) return null;
   if (typeof c.generated !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(c.generated)) return null;
-  const sample = c.games.slice(0, 25).every((g) => g && typeof g.id === 'string' && typeof g.title === 'string' && Array.isArray(g.ports));
+  const evidence = new Set(['napl-list', 'github-apk', 'github-readme', 'openports-android', 'source-android']);
+  const sample = c.games.every((g) => g && typeof g.id === 'string' && typeof g.title === 'string' && Array.isArray(g.ports) && g.ports.length > 0 && g.ports.every((p) => p && evidence.has(p.androidEvidence || '') && typeof p.url === 'string' && typeof p.download === 'string'));
   if (!sample) return null;
   return c as Catalog;
 }

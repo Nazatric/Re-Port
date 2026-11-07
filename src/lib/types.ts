@@ -49,6 +49,8 @@ export interface Port {
   lifecycle?: 'active' | 'experimental' | 'paused' | 'discontinued';
   engine?: string;
   source?: string;
+  /** Why this specific port is included in the Android catalog. */
+  androidEvidence?: 'napl-list' | 'github-apk' | 'github-readme' | 'openports-android' | 'source-android';
 }
 
 export interface SteamInfo {
@@ -96,6 +98,7 @@ export interface Collection {
 }
 
 export interface Catalog {
+  androidPolicy?: number;
   generated: string;
   /** Monotonic build id, used to detect a genuinely newer published copy. */
   revision?: string;

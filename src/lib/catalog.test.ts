@@ -31,15 +31,20 @@ import {
   stats,
 } from './catalog';
 import type { Game, Port } from './types';
+import repoCache from '../../data/source/github-repos.json';
 
 const port = (over: Partial<Port> = {}): Port => ({ kind: 'github', url: 'https://github.com/a/b', download: 'https://github.com/a/b/releases/latest', ...over });
 
 describe('catalog data integrity', () => {
-  it('contains a large library', () => {
-    // Guard against the native app silently falling back to the old sub-1,000 title catalog.
-    expect(stats.games).toBeGreaterThan(2000);
-    expect(stats.ports).toBeGreaterThan(3000);
+  it('contains an Android-supported library', () => {
+    expect(stats.games).toBeGreaterThan(200);
+    expect(stats.ports).toBeGreaterThan(200);
     expect(stats.engines).toBeGreaterThanOrEqual(10);
+  });
+
+  it('records Android evidence on every individual port', () => {
+    const evidence = new Set(['napl-list', 'github-apk', 'github-readme', 'openports-android', 'source-android']);
+    for (const g of games) for (const p of g.ports) expect(evidence.has(p.androidEvidence || ''), `${g.title}: ${p.url}`).toBe(true);
   });
 
   it('uses unique, url-safe ids', () => {
@@ -255,14 +260,19 @@ describe('ports, status and links', () => {
     expect(githubRepo(port({ kind: 'telegram', url: 'https://t.me/x/1' }))).toBeNull();
   });
 
-  it('opens the latest release page for GitHub ports and the original page otherwise', () => {
+  it('keeps GitHub downloads on the same project and preserves specific release links', () => {
     const gh = games.flatMap((g) => g.ports).filter((p) => p.kind === 'github');
-    expect(gh.length).toBeGreaterThan(500);
-    const releasePages = gh.filter((p) => /\/releases\/latest$/.test(p.download));
-    expect(releasePages.length / gh.length).toBeGreaterThan(0.97);
-    const other = games.flatMap((g) => g.ports).filter((p) => p.kind !== 'github');
-    const tidy = (u: string) => u.replace(/\/+$/, '').toLowerCase();
-    for (const p of other.slice(0, 200)) expect(tidy(p.download)).toBe(tidy(p.url));
+    expect(gh.length).toBeGreaterThan(100);
+    for (const p of gh) {
+      const source = githubRepo(p);
+      const download = new URL(p.download);
+      expect(download.hostname).toBe('github.com');
+      const [owner, repo] = download.pathname.split('/').filter(Boolean);
+      const sameRepo = `${owner}/${repo}`.toLowerCase() === `${source?.owner}/${source?.repo}`.toLowerCase();
+      const ev = (repoCache.repos as Record<string, { apkRelease?: string }>)[`${source?.owner}/${source?.repo}`.toLowerCase()];
+      expect(sameRepo || ev?.apkRelease === p.download, p.url).toBe(true);
+      expect(p.download).not.toMatch(/\.(?:ipa|exe|dmg)$/i);
+    }
   });
 });
 

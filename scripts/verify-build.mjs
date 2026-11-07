@@ -22,8 +22,13 @@ const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
 const games = catalog.stats?.games ?? catalog.games?.filter((g) => g.platform !== 'engine').length ?? 0;
 const ports = catalog.stats?.ports ?? catalog.games?.reduce((sum, g) => sum + (g.ports?.length || 0), 0) ?? 0;
 
-if (games < 2000) throw new Error(`Catalog regression: only ${games} games in dist/catalog.json (expected at least 2000).`);
-if (ports < 3000) throw new Error(`Catalog regression: only ${ports} ports in dist/catalog.json (expected at least 3000).`);
+if (games < 200) throw new Error(`Catalog regression: only ${games} games.`);
+if (ports < 200) throw new Error(`Catalog regression: only ${ports} ports.`);
+if (catalog.androidPolicy !== 1) throw new Error('Missing Android-only policy marker');
+const evidence = new Set(['napl-list', 'github-apk', 'github-readme', 'openports-android', 'source-android']);
+for (const g of catalog.games) for (const p of g.ports) {
+  if (!evidence.has(p.androidEvidence)) throw new Error(`Missing Android evidence: ${g.title} ${p.url}`);
+}
 if (!catalog.generated) throw new Error('Catalog regression: dist/catalog.json has no generated date.');
 if (!catalog.revision) throw new Error('Catalog regression: dist/catalog.json has no revision.');
 

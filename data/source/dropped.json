@@ -1,5 +1,37 @@
 [
  {
+  "game": "Star Fox",
+  "reason": "bad url"
+ },
+ {
+  "game": "Battlezone: Rise of the Black Dogs",
+  "reason": "bad url"
+ },
+ {
+  "game": "Yoshi's Story",
+  "reason": "bad url"
+ },
+ {
+  "game": "Luigi's Mansion",
+  "reason": "bad url"
+ },
+ {
+  "game": "Mario Party 4",
+  "reason": "bad url"
+ },
+ {
+  "game": "Mario Tennis",
+  "reason": "bad url"
+ },
+ {
+  "game": "Def Jam: Fight for NY",
+  "reason": "bad url"
+ },
+ {
+  "game": "Far Cry: Instincts",
+  "reason": "bad url"
+ },
+ {
   "game": "Halo 2",
   "reason": "repository removed"
  },
@@ -8,15 +40,47 @@
   "reason": "repository removed"
  },
  {
+  "game": "Dragon Age: Origins",
+  "reason": "bad url"
+ },
+ {
+  "game": "Dune II: The Building of a Dynasty",
+  "reason": "bad url"
+ },
+ {
+  "game": "Warcraft II",
+  "reason": "bad url"
+ },
+ {
+  "game": "Far Cry",
+  "reason": "bad url"
+ },
+ {
+  "game": "Grand Theft Auto V",
+  "reason": "bad url"
+ },
+ {
+  "game": "Heroes Of Might And Magic II",
+  "reason": "bad url"
+ },
+ {
+  "game": "Jazz Jackrabbit",
+  "reason": "bad url"
+ },
+ {
   "game": "Prototype",
   "reason": "superseded by Nazatric/ProtoDroid"
  },
  {
-  "game": "Star Fox",
-  "reason": "1 dead link(s)"
+  "game": "Sonic 1  Forever",
+  "reason": "bad url"
  },
  {
-  "game": "Minecraft",
-  "reason": "1 dead link(s)"
+  "game": "Tomb Raider",
+  "reason": "bad url"
+ },
+ {
+  "game": "Wolfenstein: Enemy Territory",
+  "reason": "bad url"
  }
 ]
