@@ -20,6 +20,9 @@ const read = (f, fallback) => { try { return JSON.parse(fs.readFileSync(path.joi
 const candidates = new Map();
 const add = (url, priority) => { const key = githubRepo(url); if (key) candidates.set(key, Math.min(priority, candidates.get(key) ?? 99)); };
 // New, Android-focused discoveries first; mixed-platform decomp candidates last.
+for (const row of read('reddit-candidates.json', [])) add(row.url, 0);
+for (const row of read('manual-discovery.json', [])) add(row.url, 0);
+for (const rows of Object.values(read('discovery-lists.json', {}))) for (const row of rows) add(row.url, 0);
 for (const row of androidListRows(path.join(SRC, 'awesome-android-native-ports.md'))) add(row.url, 0);
 // NAPL may contain several game rows for one repository; check that project only once.
 const napl = fs.readFileSync(path.join(SRC, 'napl-sheet.csv'), 'utf8');

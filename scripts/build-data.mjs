@@ -433,6 +433,9 @@ function gameKey(title, year, platform) {
 // "HD". These corrections are tied to the documented project, not title alone.
 function identity(title, year, platform, url) {
   const repo = githubRepo(url);
+  if (repo === 'andrebrumdev/gow2-recomp') return { title: 'God of War II', year: 2007, platform: 'ps2' };
+  if (repo === 'commonloon102/restunts-bb11') return { title: 'Stunts', year: 1990, platform: 'pc' };
+  if (repo === 'decomp-and-recomp/samurai-vs-zombies') return { title: 'Samurai vs. Zombies Defense', year: 0, platform: 'android64' };
   if (repo === 'rages4calm/earthbound-companion') return { title: 'EarthBound', year: 1994, platform: 'snes' };
   if (repo === 'vitomiguelf/crashott-pc') return { title: 'Crash of the Titans', year: 2007, platform: 'xbox360' };
   const plain = title.replace(/[™®©:]/g, '').trim();

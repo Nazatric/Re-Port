@@ -1,5 +1,5 @@
 {
-  "comment": "Add a new game list here and `npm run sync` will fetch and normalise it. Each entry is read by scripts/fetch-sources.mjs.",
+  "comment": "Source registry for catalog research; scripts/fetch-sources.mjs refreshes its supported feeds. New discovery feeds require independent Android project evidence.",
   "lists": [
     {
       "id": "napl",
@@ -97,6 +97,66 @@
       "type": "artwork",
       "credit": "Steam library art and screenshots, exact title matches only",
       "license": "for identification",
+      "enabled": true
+    },
+    {
+      "id": "droid-recomp",
+      "name": "DroidRecomp",
+      "url": "https://raw.githubusercontent.com/MooPuu/droid-recomp/main/catalog.json",
+      "type": "discovery-json",
+      "target": "discovery-lists.json",
+      "credit": "https://github.com/MooPuu/droid-recomp",
+      "license": "MIT",
+      "enabled": true
+    },
+    {
+      "id": "android-ports-master",
+      "name": "Android Ports Master",
+      "url": "https://raw.githubusercontent.com/keika-sy/android-ports-master/main/data/ports.json",
+      "type": "discovery-json",
+      "target": "discovery-lists.json",
+      "credit": "https://github.com/keika-sy/android-ports-master",
+      "license": "not specified",
+      "enabled": true
+    },
+    {
+      "id": "porthub",
+      "name": "PortHub Catalog",
+      "url": "https://raw.githubusercontent.com/orev7s/porthub-catalog/main/games.json",
+      "type": "discovery-json",
+      "target": "discovery-lists.json",
+      "credit": "https://github.com/orev7s/porthub-catalog",
+      "license": "source-dependent; OpenPortsGames CC BY 4.0",
+      "enabled": true
+    },
+    {
+      "id": "porting-room",
+      "name": "Porting Room",
+      "url": "https://raw.githubusercontent.com/vimehub/porting-room/main/games.json",
+      "type": "discovery-json",
+      "target": "discovery-lists.json",
+      "credit": "https://github.com/vimehub/porting-room",
+      "license": "not specified",
+      "enabled": true
+    },
+    {
+      "id": "reddit-research",
+      "name": "Reddit community research",
+      "url": "https://www.reddit.com/r/AndroidNativePorts/",
+      "type": "curated-discovery",
+      "target": "reddit-candidates.json",
+      "credit": "Individual discussion links are stored with each research lead",
+      "license": "links and factual identifiers only",
+      "enabled": true
+    },
+    {
+      "id": "project-research",
+      "name": "Project research",
+      "url": "https://github.com/DogParty/iPodClickWheelRecomps",
+      "type": "curated-discovery",
+      "target": "manual-discovery.json",
+      "credit": "Individual project links are stored with each lead",
+      "license": "links and factual identifiers only",
       "enabled": true
     }
   ]

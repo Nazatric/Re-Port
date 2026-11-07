@@ -19,6 +19,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DISCOVERY_SOURCES, normalizeDiscovery } from './discovery-lists.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'data/source');
@@ -369,6 +370,23 @@ if (portcove?.body) {
       ? 1
     : 0;
   }
+}
+
+/* ------------------------------- Additional discovery-only factual indexes */
+// Do not trust their platform claims or import their generated descriptions/metrics.
+// A failed or malformed refresh retains that source's last good candidate index.
+const discovery = readJson('discovery-lists.json', {});
+if (!OFFLINE) {
+  await Promise.all(DISCOVERY_SOURCES.map(async (source) => {
+    const raw = await fetchText(source.url, { json: true });
+    try {
+      const rows = normalizeDiscovery(source.id, JSON.parse(raw));
+      if (rows.length < 10) return;
+      discovery[source.id] = rows;
+      manifest.sources[source.id] = { fetchedAt: new Date().toISOString(), entries: rows.length };
+    } catch { /* keep cached leads on network/format errors */ }
+  }));
+  writeJson('discovery-lists.json', discovery);
 }
 
 /* ----------------------------------------------------------------- prune */

@@ -50,8 +50,16 @@ Add a source-specific parser in the sync/import scripts and tests before enablin
 Mixed-platform lists are discovery leads, not proof of Android support. GitHub candidates require
 an Android APK/APKS/XAPK release or a project README documenting an Android build. NAPL's
 non-GitHub entries rely on its Android-specific list, with incompatible links rejected. The
-Awesome Android list is parsed and its GitHub projects are checked independently. OBB files,
-ARM64 alone, emulation and iOS/Windows links are not Android-port evidence. Evidence is not a
+Awesome Android list is parsed and its GitHub projects are checked independently. Additional
+leads come from [Android Ports Master](https://github.com/keika-sy/android-ports-master),
+[PortHub Catalog](https://github.com/orev7s/porthub-catalog),
+[DroidRecomp](https://github.com/MooPuu/droid-recomp),
+[Porting Room](https://github.com/vimehub/porting-room), and individually linked Reddit discussions.
+These indexes are not proof: some contain desktop-only projects, generic tools, or inaccurate
+Android flags. We retain compact factual identifiers and source attribution, verify GitHub
+projects separately, and reuse established game identities. README-only projects may require
+building from source; an APK or README claim does not guarantee playability on every device.
+OBB files, ARM64 alone, emulation and iOS/Windows links are not Android-port evidence. Evidence is not a
 physical device test, and projects can change after a check; missing or ambiguous candidates
 are excluded until evidence is found.
 

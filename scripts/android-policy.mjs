@@ -23,7 +23,12 @@ export function explicitAndroidTarget(text) {
 export function nonAndroidLink(url) {
   try {
     const u = new URL(url);
-    if (['hrydgard/ppsspp', 'flyinghead/flycast'].includes(githubRepo(url))) return true;
+    // These are emulators/launchers/frameworks rather than individual game ports, or
+    // projects explicitly described as not yet playable/public (review before removal).
+    if (['hrydgard/ppsspp', 'flyinghead/flycast', 'luanti-org/luanti', 'nyaldee/ports-launcher',
+      'mstan/gbarecomp', 'pelya/commandergenius', 'ikemen-engine/ikemen-go',
+      'katotekiru/bfme1-mobile', 'danielbuva/ror2-android-port',
+      'ln782586-lab/the-evil-recomp-within-'].includes(githubRepo(url))) return true;
     if (/(^|\.)(?:apps\.apple\.com|itunes\.apple\.com|dos\.zone)$/.test(u.hostname.toLowerCase())) return true;
     if (/\.(?:ipa|exe|msi|dmg|appimage)(?:$|[?#])/i.test(u.pathname + u.search)) return true;
     return /(?:^|[\/_-])(?:ios|iphone|ipad)(?:$|[\/_-])/i.test(u.pathname) && !/android/i.test(u.pathname);
@@ -68,7 +73,7 @@ export function readmeAndroidLine(content, key) {
   // Ports of an Android original *to* another device are the opposite direction.
   if (/(?:wrapper|port)\s*\/?.{0,20}\b(?:of|from)\b.{0,80}android.{0,80}\b(?:ps vita|playstation vita|nintendo switch)\b/i.test(text.slice(0, 1200))) return '';
   const beginning = text.slice(0, 4000).replace(/\s+/g, ' ');
-  if (/not enough.{0,60}usable state|(?:might )?not (?:yet )?be buildable|not (?:yet )?buildable|android.{0,100}(?:not yet public|not (?:yet )?available|not supported)|ports? (?:for )?.{0,100}android.{0,100}in development.{0,250}not included in the current public version/i.test(beginning)) return '';
+  if (/not enough.{0,60}usable state|(?:might )?not (?:yet )?be buildable|not (?:yet )?buildable|not playable yet|execution on android (?:has|have) not yet been demonstrated|android.{0,100}(?:not yet public|not (?:yet )?available|not supported)|ports? (?:for )?.{0,100}android.{0,100}in development.{0,250}not included in the current public version/i.test(beginning)) return '';
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].replace(/[*_`]/g, '').trim();
@@ -77,7 +82,8 @@ export function readmeAndroidLine(content, key) {
     if (/android.{0,160}(?:dosbox|emulat(?:or|ion)|msdos|chrome|browser)|(?:dosbox|emulat(?:or|ion)).{0,100}android|last android release|drop your .{0,80}apk|android version(?:'s)? (?:data|release)/i.test(context)) continue;
     const external = /https?:\/\/github\.com\/[^\s)<>]+/i.exec(line)?.[0];
     const nextExternal = /https?:\/\/github\.com\/[^\s)<>]+/i.exec(context)?.[0];
-    if (external && githubRepo(external) !== key && /\bfork\b/i.test(line)) continue;
+    // A link to somebody else's Android fork is not evidence that THIS repo supports it.
+    if (external && githubRepo(external) !== key) continue;
     if ((/^[-*]?\s*\[android port\]/i.test(line) || /^\|\s*android\b/i.test(line) || /^(?:there.?s|there is) an android port/i.test(line)) && (external || nextExternal) && githubRepo(external || nextExternal) !== key) continue;
     if (/\b(?:no|not|without)\b.{0,35}\bandroid\b|\bandroid\b.{0,30}\b(?:not supported|not available|planned|coming soon)\b/i.test(context)) continue;
     if (explicitAndroidTarget(line) || /^(?:#+\s*android(?:\s+(?:build|install|support|instructions|setup))?\s*$|\|\s*android\s*(?:\([^)]*\))?\s*\|)/i.test(line)) return line.slice(0, 240);

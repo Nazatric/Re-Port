@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { githubRepo, isAndroidPackage, nonAndroidLink, explicitAndroidTarget, documentedEvidence, openPortsEvidence, rankPorts, readmeAndroidLine } from './android-policy.mjs';
 import { androidListRows } from './android-list.mjs';
+import { normalizeDiscovery } from './discovery-lists.mjs';
 
 test('CPU architecture, iOS and OBB alone are not Android port evidence', () => {
   assert.equal(isAndroidPackage('game.obb'), false);
@@ -42,6 +43,10 @@ test('README evidence excludes desktop ports, emulation, external forks and unav
   assert.equal(check('The Android target is ARM64. Android and Linux builds not yet public'), '');
   assert.equal(check('Ports for Android, PS5 and Linux are in development.\nThese developments are not included in the current public version.'), '');
   assert.equal(check('- [ ] Port the runtime to Android'), '');
+  assert.equal(check('# Android port\nThis project is not playable yet.'), '');
+  assert.equal(check('# Android research\nSuccessful code generation and execution on Android have not yet been demonstrated.'), '');
+  assert.equal(check('<a href="https://github.com/other/port"><img alt="Also on Android: Build the APK from source."></a>'), '');
+  assert.equal(check('[other/port](https://github.com/other/port): Android version'), '');
 });
 
 test('ranked primary and sibling metadata refer to the same ports', () => {
@@ -62,6 +67,20 @@ test('Android list parser ignores tools, headings and generic multi-game engines
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('additional lists are discovery only, normalize factual URLs and filter desktop targets', () => {
+  const rows = normalizeDiscovery('porting-room', { games: [{ name: 'A game', ports: [
+    { name: 'PC', platform: 'Windows / Linux', url: 'https://github.com/test/desktop' },
+    { name: 'Mobile', platform: 'Windows / Android', url: 'https://github.com/test/mobile/releases' },
+  ] }] });
+  assert.deepEqual(rows.map((r) => r.url), ['https://github.com/test/mobile']);
+  assert.equal(documentedEvidence({ url: rows[0].url, repoEvidence: {} }), '');
+  const flagged = normalizeDiscovery('porthub', { games: [{ title: 'False Android flag', android: { supported: true }, links: { repo: 'https://github.com/test/desktop' } }] });
+  assert.equal(flagged.length, 1);
+  assert.equal(documentedEvidence({ url: flagged[0].url, repoEvidence: {} }), '');
+  assert.equal(nonAndroidLink('https://github.com/Nyaldee/Ports-Launcher'), true);
+  assert.equal(nonAndroidLink('https://github.com/katotekiru/bfme1-mobile'), true);
+});
+
 test('shipped catalog records evidence per port and rejects known desktop/iOS regressions', () => {
   const catalog = JSON.parse(fs.readFileSync(new URL('../src/data/catalog.json', import.meta.url), 'utf8'));
   assert.equal(catalog.androidPolicy, 1);
@@ -72,6 +91,9 @@ test('shipped catalog records evidence per port and rejects known desktop/iOS re
     assert.ok(!nonAndroidLink(p.url), `${game.title}: ${p.url}`);
     assert.ok(!blocked.includes(githubRepo(p.url)), `${game.title}: ${p.url}`);
   }
+  assert.ok(!catalog.games.some(g => g.title === 'Lost' && g.ports.some(p => githubRepo(p.url) === 'dogparty/ipodclickwheelrecomps')));
+  assert.ok(catalog.games.some(g => g.title === 'Mini Golf' && g.ports.some(p => githubRepo(p.url) === 'dogparty/ipodclickwheelrecomps')));
+  assert.equal(catalog.games.filter(g => g.title === 'God of War II').length, 1);
   assert.equal(catalog.games.filter(g => g.title === 'Carmageddon').length, 1);
   assert.equal(catalog.games.filter(g => g.title === 'Castlevania: Symphony of the Night').length, 1);
   const wanted = catalog.games.filter(g => /need for speed.*most wanted/i.test(g.title));

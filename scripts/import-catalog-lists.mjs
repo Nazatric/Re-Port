@@ -17,6 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { githubRepo, openPortsEvidence, documentedEvidence, rankPorts } from './android-policy.mjs';
 import { androidListRows } from './android-list.mjs';
+import { DISCOVERY_SOURCES } from './discovery-lists.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'data/source');
@@ -107,7 +108,8 @@ const openports = read('openports.json', { ports: [] }).ports || [];
 const decomp = read('decompgames.json', { games: [] }).games || [];
 // Preserve hand-curated and other-list entries. Only the entries generated from the two
 // machine-readable catalogs below are regenerated, so adding a list never deletes another one.
-const curated = read('extras.json', []).filter((e) => !['OpenPortsGames', 'Awesome Decomp Games', 'Awesome Android Native Ports'].includes(e.list));
+const generatedLists = ['OpenPortsGames', 'Awesome Decomp Games', 'Awesome Android Native Ports', 'Reddit research', 'Project research', ...DISCOVERY_SOURCES.map((s) => s.name)];
+const curated = read('extras.json', []).filter((e) => !generatedLists.includes(e.list));
 
 /** Share one game card across every port that belongs to the same title. */
 const cards = new Map();
@@ -184,6 +186,8 @@ for (const row of androidListRows(path.join(SRC, 'awesome-android-native-ports.m
 /* -------------------------------------------- Awesome Decomp Games entries */
 for (const g of decomp) {
   if (!g.url || g.inactive || !g.title) continue;
+  // This repo's README says only Mini Golf, not its other games, supports Android.
+  if (githubRepo(g.url) === 'dogparty/ipodclickwheelrecomps') continue;
   const parenthetical = /\(([^)]+)\)\s*$/.exec(g.title);
   const projectName = parenthetical ? parenthetical[1] : '';
   const gameTitle = parenthetical ? g.title.slice(0, parenthetical.index).trim() : g.title.trim();
@@ -220,6 +224,77 @@ for (const g of decomp) {
     source: 'Awesome Decomp Games',
     androidEvidence,
   });
+}
+
+/* ---------------------- New lists and Reddit: leads, not Android proof */
+// Re-use established identities when a source calls the same game/project something else.
+// Never attach a shared framework to a new game merely because the project has an APK.
+const previous = read('../../src/data/catalog.json', { games: [] }).games || [];
+const byTitle = new Map(previous.map((g) => [normTitle(g.title), g]));
+const byRepo = new Map();
+for (const g of previous) for (const p of g.ports || []) {
+  const repo = githubRepo(p.url);
+  if (!repo) continue;
+  const matches = byRepo.get(repo) || new Map();
+  matches.set(normTitle(g.title), g);
+  byRepo.set(repo, matches);
+}
+// Projects whose own README says there is no playable/public build, or where the repo
+// is only a README, a generic framework/launcher, or a mod of a different game.
+const excludedLeads = new Set([
+  'katotekiru/bfme1-mobile', 'danielbuva/ror2-android-port',
+  'ln782586-lab/the-evil-recomp-within-', 'codepdbh/re3-gta-advance-port',
+  'mstan/gbarecomp', 'pelya/commandergenius', 'ikemen-engine/ikemen-go',
+  'luanti-org/luanti', 'nyaldee/ports-launcher', 'ashjamb/earthworm-jim-collection',
+  'darhkfox/mickeyanddonaldcollection',
+]);
+const leadTitle = {
+  'jackgllghr/bigmission-recomp': 'Saru Get You: Saru Saru Daisakusen',
+  'x-th-x/aitdroid': 'Alone in the Dark',
+  'joseph1010805/heavenclient-android': 'MapleStory',
+};
+const originalPlatforms = {
+  'firetoad72/blinx-android': 'xbox', 'lunasvalle02-design/castlevaniacircleofthemoonrecomp_android': 'gba',
+  'deivid22srk/hells-gate-recomp-android': 'xbox360', 'wannamingo/doa3': 'xbox',
+  'de8msh/drmario64-recomp-plus-android': 'n64', 'sherkovpt/ptgdroid': 'unknown',
+  'dguillot-gh/racinglagoon-android': 'ps1', 'kardeiro/snowboardkids2-recomp-android': 'n64',
+  'deivid22srk/twistedmetal4recomp-android': 'ps1', 'jackgllghr/bigmission-recomp': 'psp',
+  'project-holon/eidos': 'nds',
+};
+const sources = read('discovery-lists.json', {});
+const discoveryRows = [
+  ...DISCOVERY_SOURCES.flatMap((source) => (sources[source.id] || []).map((row) => ({ ...row, list: source.name }))),
+  ...read('reddit-candidates.json', []).map((row) => ({ ...row, list: 'Reddit research' })),
+  ...read('manual-discovery.json', []).map((row) => ({ ...row, list: 'Project research' })),
+];
+for (const row of discoveryRows) {
+  const repo = githubRepo(row.url);
+  if (!repo || excludedLeads.has(repo) || (repo === 'dogparty/ipodclickwheelrecomps' && normTitle(row.title) !== 'minigolf')) continue;
+  const ev = evidence(row.url);
+  const androidEvidence = documentedEvidence({ url: row.url, repoEvidence });
+  if (!androidEvidence) continue;
+  let title = leadTitle[repo] || row.title;
+  const matchingGames = repo === 'dogparty/ipodclickwheelrecomps' ? null : byRepo.get(repo);
+  const matchingTitle = byTitle.get(normTitle(title));
+  // If a repo already belongs to an existing title, that identity is more reliable
+  // than another list's project name. Ambiguous shared repos require a title match.
+  const existing = matchingTitle || (matchingGames?.size === 1 ? [...matchingGames.values()][0] : null);
+  if (matchingGames?.size && !existing) continue;
+  if (matchingGames?.size && existing && !matchingGames.has(normTitle(existing.title))) continue;
+  if (existing) title = existing.title;
+  const year = existing?.year || 0; // discovery feeds often give project/release years
+  const game = card(title, year);
+  addPort(game, {
+    title: row.project && normTitle(row.project) !== normTitle(title) ? row.project : '',
+    developer: repo.split('/')[0], platform: originalPlatforms[repo] || existing?.platform || PLATFORM[row.platform] || '',
+    url: row.url, kind: 'github', download: ev.apkRelease || row.url,
+    version: ev.apkVersion || '', updated: ev.apkDate || '', stars: ev.stars || 0,
+    downloads: ev.apkDownloads || 0, files: '', works: '',
+    notes: repo === 'alex-letux/perfect_dark_vr' ? 'Requires a Meta Quest VR headset.' : androidEvidence === 'github-readme' ? 'Source-only Android project; see its repository for build and device requirements.' : '',
+    source: row.list, androidEvidence,
+  });
+  // Subsequent leads for the same project must reuse this title, not create aliases.
+  if (!matchingGames?.size) byRepo.set(repo, new Map([[normTitle(title), { title, year, platform: existing?.platform || '' }]]));
 }
 
 /* ------------------------------------------ keep the strongest port first */
