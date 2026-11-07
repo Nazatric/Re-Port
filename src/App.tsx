@@ -96,24 +96,31 @@ export default function App() {
   }, [settings.motion, settings.theme, settings.text, settings.contrast, settings.dataSaver, settings.haptics, settings.view]);
 
   // Capacitor's back event handles Android system gestures and hardware keys without guessing
-  // from window.history.length (which includes pages outside this app).
+  // from window.history.length (which includes pages outside this app). Resuming the app also
+  // re-checks the published catalog, so an installed APK does not sit on an old library.
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     let disposed = false;
-    let handle: { remove: () => Promise<void> } | undefined;
-    void NativeApp.addListener('backButton', () => {
-      if (document.querySelector('[aria-modal="true"]')) {
-        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-        return;
-      }
-      if (!goBack('/')) void NativeApp.exitApp();
-    }).then((listener) => {
-      if (disposed) void listener.remove();
-      else handle = listener;
-    });
+    const handles: { remove: () => Promise<void> }[] = [];
+    const track = (promise: Promise<{ remove: () => Promise<void> }>) => {
+      void promise.then((listener) => {
+        if (disposed) void listener.remove();
+        else handles.push(listener);
+      });
+    };
+    track(
+      NativeApp.addListener('backButton', () => {
+        if (document.querySelector('[aria-modal="true"]')) {
+          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+          return;
+        }
+        if (!goBack('/')) void NativeApp.exitApp();
+      }),
+    );
+    track(NativeApp.addListener('resume', () => void autoRefresh()));
     return () => {
       disposed = true;
-      if (handle) void handle.remove();
+      handles.forEach((handle) => void handle.remove());
     };
   }, []);
 

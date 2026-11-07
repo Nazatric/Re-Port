@@ -36,8 +36,9 @@ const port = (over: Partial<Port> = {}): Port => ({ kind: 'github', url: 'https:
 
 describe('catalog data integrity', () => {
   it('contains a large library', () => {
-    expect(stats.games).toBeGreaterThan(700);
-    expect(stats.ports).toBeGreaterThan(900);
+    // Guard against the native app silently falling back to the old sub-1,000 title catalog.
+    expect(stats.games).toBeGreaterThan(2000);
+    expect(stats.ports).toBeGreaterThan(3000);
     expect(stats.engines).toBeGreaterThanOrEqual(10);
   });
 

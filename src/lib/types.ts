@@ -46,8 +46,6 @@ export interface Port {
   stars?: number;
   /** Verified against GitHub releases: the project publishes an Android package. */
   apk?: boolean;
-  /** This release targets Android, rather than merely being an upstream project. */
-  android?: boolean;
   lifecycle?: 'active' | 'experimental' | 'paused' | 'discontinued';
   engine?: string;
   source?: string;
@@ -72,8 +70,6 @@ export interface Game {
   launchbox?: string;
   descSource?: string;
   steam?: SteamInfo;
-  /** Real gameplay screenshots from Libretro or the source lists. */
-  shots?: string[];
   updated?: string;
   added?: string;
   views: number;

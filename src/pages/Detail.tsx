@@ -35,13 +35,12 @@ function Backdrop({ game }: { game: Game }) {
   );
 }
 
-function Shot({ src, index, label, onOpen }: { src: string; index: number; label: string; onOpen: (i: number) => void }) {
-  const [stage, setStage] = useState(0);
-  if (stage > 1) return null;
-  const shown = stage === 0 ? proxied(src, 720, 82) : src;
+function Shot({ src, index, onOpen }: { src: string; index: number; onOpen: (i: number) => void }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
   return (
-    <button type="button" onClick={() => onOpen(index)} aria-label={`Open ${label} ${index + 1}`} className="relative block h-[132px] w-[235px] max-w-[78vw] shrink-0 overflow-hidden rounded-xl border-2 border-white/80 bg-[#1b2a12] shadow-[0_6px_14px_var(--shadow-c)] active:scale-[0.97]">
-      <img key={shown} src={shown} alt="" loading="lazy" decoding="async" crossOrigin={stage === 0 ? 'anonymous' : undefined} referrerPolicy="no-referrer" onError={() => setStage((n) => n + 1)} className="h-full w-full object-cover" />
+    <button type="button" onClick={() => onOpen(index)} aria-label={`Open screenshot ${index + 1}`} className="relative block h-[132px] w-[235px] shrink-0 overflow-hidden rounded-xl border-2 border-white/80 bg-[#1b2a12] shadow-[0_6px_14px_var(--shadow-c)] active:scale-[0.97]">
+      <img src={proxied(src, 480, 76)} alt="" loading="lazy" decoding="async" crossOrigin="anonymous" onError={() => setFailed(true)} className="h-full w-full object-cover" />
     </button>
   );
 }
@@ -60,9 +59,7 @@ function DetailView({ game }: { game: Game }) {
   const more = useMemo(() => related(game, 12), [game]);
   const supports = useMemo(() => (game.supports || []).map((id) => gameById.get(id)).filter((g): g is Game => Boolean(g)), [game]);
   const githubPort = game.ports.find((p) => githubRepo(p));
-  const screenshots = [...new Set([...(game.steam?.shots ?? []), ...(game.shots ?? [])])];
-  const gallery = screenshots.length ? screenshots : [...new Set([...heroCandidates(game).map((c) => c.src), game.cover].filter((x): x is string => Boolean(x)))];
-  const galleryLabel = screenshots.length ? 'Screenshots' : 'Artwork';
+  const shots = game.steam?.shots ?? [];
   const paragraphs = (game.description || game.summary || '').split('\n\n').filter(Boolean);
   const developers = [...new Set(game.ports.map((p) => p.developer).filter(Boolean))];
 
@@ -118,8 +115,8 @@ function DetailView({ game }: { game: Game }) {
         </div>
       </header>
 
-      <main id="main" tabIndex={-1} className="wrap safe-bottom min-w-0 -mt-9 space-y-7 outline-none">
-        <section className="panel relative z-10 scroll-mb-40 p-4" aria-label="Download">
+      <main id="main" tabIndex={-1} className="wrap safe-bottom -mt-9 space-y-7 outline-none">
+        <section className="panel relative z-10 p-4" aria-label="Download">
           <DownloadButton port={primary} gameTitle={game.title} />
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
             <StatusBadge status={status} />
@@ -138,7 +135,7 @@ function DetailView({ game }: { game: Game }) {
           ))}
         </section>
 
-        <section aria-label="Quick facts" className="panel grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 p-4 sm:grid-cols-2">
+        <section aria-label="Quick facts" className="panel grid gap-4 p-4 sm:grid-cols-2">
           <Fact icon="verified" label="Compatibility" value={STATUS_META[status].label} note={primary.notes || STATUS_META[status].hint} />
           <Fact icon="gamepad" label="Controls" value={controllerLabel(primary)} />
           <Fact icon="folder" label="Game files" value={filesLabel(primary)} note={primary.filesNote} />
@@ -186,14 +183,16 @@ function DetailView({ game }: { game: Game }) {
           </div>
         </section>
 
-        {gallery.length > 0 && (
-          <section aria-labelledby="h-shots" className="min-w-0">
-            <h2 id="h-shots" className="section-title mb-3">
-              {galleryLabel}
-            </h2>
-            <div className="rail !px-0">
-              {gallery.map((src, i) => (
-                <Shot key={src} src={src} index={i} label={galleryLabel.toLowerCase()} onOpen={setViewer} />
+        {shots.length > 0 && (
+          <section aria-labelledby="h-shots" className="-mx-4">
+            <div className="wrap">
+              <h2 id="h-shots" className="section-title">
+                Screenshots
+              </h2>
+            </div>
+            <div className="rail">
+              {shots.map((s, i) => (
+                <Shot key={s} src={s} index={i} onOpen={setViewer} />
               ))}
             </div>
           </section>
@@ -216,7 +215,7 @@ function DetailView({ game }: { game: Game }) {
           <h2 id="h-ports" className="section-title mb-3">
             Available Ports
           </h2>
-          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2">
             {game.ports.map((p, i) => (
               <PortCard key={`${p.url}-${i}`} port={p} gameTitle={game.title} engine={p.engine ? (gameById.get(p.engine) ? { id: p.engine, title: gameById.get(p.engine)!.title } : undefined) : undefined} />
             ))}
@@ -250,9 +249,9 @@ function DetailView({ game }: { game: Game }) {
         </section>
 
         {more.length > 0 && (
-          <section aria-labelledby="h-more" className="min-w-0">
+          <section aria-labelledby="h-more" className="-mx-4">
             <SectionHeader id="h-more" title="More Like This" />
-            <div className="rail !px-0">
+            <div className="rail">
               {more.map((g) => (
                 <RailCard key={g.id} game={g} />
               ))}
@@ -261,7 +260,7 @@ function DetailView({ game }: { game: Game }) {
         )}
       </main>
 
-      {viewer !== null && <ImageViewer images={gallery} index={viewer} title={game.title} onClose={() => setViewer(null)} />}
+      {viewer !== null && <ImageViewer images={shots} index={viewer} title={game.title} onClose={() => setViewer(null)} />}
     </>
   );
 }

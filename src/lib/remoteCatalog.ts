@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { Catalog, Collection, Game, Platform } from './types';
-import { setCatalog } from './catalog';
+import { currentGenerated, currentRevision, games as loadedGames, isCatalogNewer, setCatalog } from './catalog';
+import { APP_BUILD_ID, REMOTE_CATALOG_URL } from './buildInfo';
 
 /**
  * Live catalog updates.
@@ -9,9 +10,12 @@ import { setCatalog } from './catalog';
  * public/catalog.json from the upstream lists, and this module adopts that newer copy at runtime,
  * so new games and refreshed release data reach an installed app without shipping a new version.
  * The adopted copy is kept in Cache Storage, which also makes it available offline.
+ *
+ * Freshness is based on the catalog revision, not only its calendar date: two publications on
+ * the same day must not be mistaken for the same catalog.
  */
 
-const CACHE = 'portdeck-remote-v1';
+const CACHE = 'portdeck-remote-v2';
 const META_KEY = 'portdeck.catalog.remote.v1';
 const OVERRIDE_KEY = 'portdeck.catalog.url';
 const DEFAULT_TTL = 6 * 60 * 60 * 1000;
@@ -22,6 +26,7 @@ export interface CatalogMeta {
   fetchedAt?: string;
   url?: string;
   auto: boolean;
+  appBuild?: string;
   lastError?: string;
 }
 
@@ -101,7 +106,7 @@ export function catalogUrls(): string[] {
   } catch {
     /* ignore */
   }
-  const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_REMOTE_CATALOG_URL || '';
+  const env = REMOTE_CATALOG_URL || (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_REMOTE_CATALOG_URL || '';
   const list = [override, env, new URL('catalog.json', document.baseURI).href];
   return [...new Set(list.filter(Boolean))];
 }
@@ -119,19 +124,25 @@ export function validateCatalog(value: unknown): Catalog | null {
   return c as Catalog;
 }
 
+function portsOf(value: Catalog): number {
+  return value.games.reduce((sum, g) => sum + (g.ports?.length || 0), 0);
+}
+
 export async function readCachedCatalog(): Promise<Catalog | null> {
   try {
     const cache = await caches.open(CACHE);
+    let best: Catalog | null = null;
     for (const url of catalogUrls()) {
       const hit = await cache.match(url);
       if (!hit) continue;
       const parsed = validateCatalog(await hit.json());
-      if (parsed) return parsed;
+      if (parsed && (!best || isCatalogNewer(parsed, best, portsOf(best)))) best = parsed;
     }
+    return best;
   } catch {
     /* storage unavailable */
+    return null;
   }
-  return null;
 }
 
 async function cacheResponse(url: string, res: Response) {
@@ -144,16 +155,24 @@ async function cacheResponse(url: string, res: Response) {
 }
 
 function countNew(next: Catalog): number {
-  const currentIds = currentCatalogIds() || new Set<string>();
+  const currentIds = new Set(loadedGames.map((g) => g.id));
   return next.games.filter((g) => !currentIds.has(g.id)).length;
 }
 
 let bundledIds: Set<string> | null = null;
 export function rememberBundled(ids: string[]) {
   bundledIds = new Set(ids);
+  void bundledIds;
 }
-function currentCatalogIds(): Set<string> | null {
-  return bundledIds;
+
+let generatedGetter: () => string | undefined = () => undefined;
+export function registerGenerated(getter: () => string | undefined) {
+  generatedGetter = getter;
+  void generatedGetter;
+}
+
+function loadedCatalog(): { generated?: string; revision?: string; games: readonly Game[] } {
+  return { generated: currentGenerated(), revision: currentRevision(), games: loadedGames };
 }
 
 /** Adopts a validated catalog. Safe to call repeatedly; only genuinely newer data is applied. */
@@ -162,55 +181,70 @@ export function adopt(next: Catalog, url: string, from: 'network' | 'cache'): bo
   if (!payload) return false;
   const applied = setCatalog(payload);
   if (!applied) return false;
-  meta = { ...meta, generated: payload.generated, revision: payload.revision, url, fetchedAt: new Date().toISOString(), lastError: undefined };
+  meta = {
+    ...meta,
+    generated: payload.generated,
+    revision: payload.revision,
+    url,
+    fetchedAt: new Date().toISOString(),
+    appBuild: APP_BUILD_ID,
+    lastError: undefined,
+  };
   saveMeta();
   void from;
   return true;
 }
 
 /**
- * Fetches every candidate URL and adopts the first one that validates and is newer than what is
- * loaded. Returns what happened so the UI can show an honest status.
+ * Fetches every candidate URL and adopts the newest valid catalog. A stale local snapshot must
+ * never short-circuit the check before a fresher published copy has been considered.
  */
 export async function checkForCatalogUpdate(options: { silent?: boolean } = {}): Promise<UpdateResult> {
-  const loaded = currentGenerated();
+  let bestValid: Catalog | null = null;
+  let bestNewer: { catalog: Catalog; url: string } | null = null;
+
   for (const url of catalogUrls()) {
     try {
       const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, { cache: 'no-store', headers: { accept: 'application/json' } });
       if (!res.ok) continue;
+      const copy = res.clone();
       const parsed = validateCatalog(await res.json());
       if (!parsed) continue;
-      await cacheResponse(url, res);
-      if (loaded && parsed.generated <= loaded) {
-        meta = { ...meta, fetchedAt: new Date().toISOString(), lastError: undefined };
-        saveMeta();
-        return { status: 'current', generated: parsed.generated };
+      if (!bestValid || isCatalogNewer(parsed, bestValid, portsOf(bestValid))) bestValid = parsed;
+      if (isCatalogNewer(parsed, loadedCatalog())) {
+        await cacheResponse(url, copy);
+        if (!bestNewer || isCatalogNewer(parsed, bestNewer.catalog, portsOf(bestNewer.catalog))) {
+          bestNewer = { catalog: parsed, url };
+        }
       }
-      const added = countNew(parsed);
-      const total = parsed.games.length;
-      if (adopt(parsed, url, 'network')) return { status: 'updated', generated: parsed.generated, added, total };
     } catch (error) {
       if (!options.silent) meta = { ...meta, lastError: error instanceof Error ? error.message : 'network error' };
     }
   }
+
+  if (bestNewer) {
+    const added = countNew(bestNewer.catalog);
+    const total = bestNewer.catalog.games.length;
+    if (adopt(bestNewer.catalog, bestNewer.url, 'network')) {
+      return { status: 'updated', generated: bestNewer.catalog.generated, added, total };
+    }
+  }
+
+  if (bestValid) {
+    meta = { ...meta, generated: currentGenerated(), revision: currentRevision(), fetchedAt: new Date().toISOString(), appBuild: APP_BUILD_ID, lastError: undefined };
+    saveMeta();
+    return { status: 'current', generated: bestValid.generated };
+  }
+
   if (!options.silent) saveMeta();
   return { status: 'unavailable' };
-}
-
-let currentGeneratedFn: () => string | undefined = () => undefined;
-export function registerGenerated(getter: () => string | undefined) {
-  currentGeneratedFn = getter;
-}
-function currentGenerated(): string | undefined {
-  return currentGeneratedFn();
 }
 
 /** Restores the last downloaded catalog before the network is touched, so it also works offline. */
 export async function warmFromCache(): Promise<boolean> {
   const cached = await readCachedCatalog();
   if (!cached) return false;
-  const loaded = currentGenerated();
-  if (loaded && cached.generated <= loaded) return false;
+  if (!isCatalogNewer(cached, loadedCatalog())) return false;
   return adopt(cached, meta.url || catalogUrls()[0], 'cache');
 }
 
@@ -218,15 +252,14 @@ function lastAutoCheck(): number {
   return Date.parse(meta.fetchedAt || '') || 0;
 }
 
-/** Runs at most every six hours unless `force` is set. */
+/** Runs at most every six hours unless forced or the app build changed. */
 export async function autoRefresh(force = false): Promise<UpdateResult | null> {
   if (!meta.auto && !force) return null;
-  if (!force && Date.now() - lastAutoCheck() < DEFAULT_TTL) return null;
+  const buildChanged = meta.appBuild !== APP_BUILD_ID;
+  if (!force && !buildChanged && Date.now() - lastAutoCheck() < DEFAULT_TTL) return null;
   const result = await checkForCatalogUpdate({ silent: true });
-  if (result.status === 'unavailable') {
-    meta = { ...meta, lastError: undefined };
-    saveMeta();
-  }
+  meta = { ...meta, appBuild: APP_BUILD_ID };
+  saveMeta();
   return result;
 }
 

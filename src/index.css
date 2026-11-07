@@ -155,8 +155,7 @@ body {
   color: var(--ink);
   background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%) fixed;
   -webkit-tap-highlight-color: transparent;
-  overflow-x: clip;
-  max-width: 100%;
+  overflow-x: hidden;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
@@ -228,19 +227,13 @@ button {
 }
 
 .wrap {
-  box-sizing: border-box;
-  min-width: 0;
   width: 100%;
   max-width: 1040px;
   margin-inline: auto;
   padding-inline: 16px;
 }
 .safe-bottom {
-  padding-bottom: calc(144px + env(safe-area-inset-bottom));
-}
-#root, .page, .page-turn, main, section, article {
-  min-width: 0;
-  max-width: 100%;
+  padding-bottom: calc(112px + env(safe-area-inset-bottom));
 }
 
 /* -------------------------------------------------------------- hero */
@@ -336,9 +329,6 @@ button {
 
 /* ---------------------------------------------------------- buttons */
 .btn-a {
-  box-sizing: border-box;
-  min-width: 0;
-  max-width: 100%;
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -371,10 +361,8 @@ button {
   pointer-events: none;
 }
 .btn-a > * {
-  min-width: 0;
   position: relative;
 }
-.btn-a .orb { flex: 0 0 auto; }
 .btn-a:active {
   transform: scale(0.97);
   filter: brightness(0.94);
@@ -449,9 +437,6 @@ button {
 
 /* ------------------------------------------------------------ panels */
 .panel {
-  box-sizing: border-box;
-  min-width: 0;
-  max-width: 100%;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -1058,16 +1043,4 @@ html[data-motion="reduce"] *::after {
 main {
   position: relative;
   z-index: 1;
-}
-
-
-/* Final containment guard: long source notes, URLs and translated titles can never widen a page. */
-p, h1, h2, h3, h4, li, summary {
-  overflow-wrap: break-word;
-}
-.grid > *, .flex > * {
-  min-width: 0;
-}
-a.btn-a, a.btn-glass, button.btn-a, button.btn-glass {
-  scroll-margin-bottom: calc(9rem + env(safe-area-inset-bottom));
 }

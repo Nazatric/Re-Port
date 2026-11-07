@@ -111,7 +111,9 @@ const evidence = (url) => repoEvidence[repoOf(url)] || {};
 
 const openports = read('openports.json', { ports: [] }).ports || [];
 const decomp = read('decompgames.json', { games: [] }).games || [];
-const curated = read('extras.json', []).filter((e) => e.list === 'manual' || e.list === 'Community research (GitHub)');
+// Preserve hand-curated and other-list entries. Only the entries generated from the two
+// machine-readable catalogs below are regenerated, so adding a list never deletes another one.
+const curated = read('extras.json', []).filter((e) => !['OpenPortsGames', 'Awesome Decomp Games'].includes(e.list));
 
 /** Share one game card across every port that belongs to the same title. */
 const cards = new Map();
@@ -129,16 +131,10 @@ function addPort(game, port) {
 }
 
 /* ------------------------------------------------- OpenPortsGames entries */
-const androidRepos = new Set(openports.filter((p) => p.platforms?.includes('android')).flatMap((p) => p.sources || []).map(repoOf).filter(Boolean));
 for (const p of openports) {
   if (p.kind && p.kind !== 'game') continue;
   const source = (p.sources || []).find((s) => /^https?:\/\//.test(s));
   if (!source) continue;
-  // OpenPortsGames catalogues every target platform. Re:Port is Android-only, so a variant must
-  // explicitly target Android (or publish a verified APK) before it can enter this catalog.
-  const ev0 = evidence(source);
-  const androidTarget = p.platforms?.includes('android') || ev0.hasApk || /\bandroid\b|\bapk\b/i.test(`${p.title || ''} ${p.notes || ''}`);
-  if (!androidTarget) continue;
   const title = p.game || p.title;
   if (!title) continue;
   const game = card(title, p.originalYear);
@@ -163,8 +159,6 @@ for (const p of openports) {
     files: /ships the game|distributes the game/i.test(p.warning || '') ? 'none' : 'files',
     notes: [p.notes, p.warning].filter(Boolean).join(' '),
     source: 'OpenPortsGames',
-    android: true,
-    apk: Boolean(ev.apkDownloads || ev.hasApk),
   });
 }
 
@@ -188,11 +182,7 @@ for (const g of decomp) {
     if (!game.shots.includes(shot)) game.shots.push(shot);
   }
   const ev = evidence(url);
-  if (ev.missing || ev.archived) continue;
-  const haystack = `${g.title || ''} ${g.note || ''} ${g.description || ''} ${g.homepage || ''} ${g.play_url || ''}`;
-  const reverseDirection = /port of the android (version|build)|android (armv7|version) of/i.test(haystack);
-  const textualAndroid = /\bandroid\b|\bapk\b|arm64|aarch64/i.test(haystack);
-  if (reverseDirection || !(ev.hasApk || textualAndroid || androidRepos.has(repoOf(url)))) continue;
+  if (ev.missing) continue;
   addPort(game, {
     title: projectName && normTitle(projectName) !== normTitle(gameTitle) ? projectName : '',
     developer: (g.repo || '').split('/')[0] || '',
@@ -208,14 +198,11 @@ for (const g of decomp) {
     files: g.needs_assets ? 'files' : '',
     notes: g.note ? String(g.note).trim() : '',
     source: 'Awesome Decomp Games',
-    android: true,
-    apk: Boolean(ev.hasApk),
   });
 }
 
 /* ------------------------------------------ keep the strongest port first */
-const rank = (p) => (p.apk ? 1_000_000_000 : 0) + (p.downloads || 0) * 100 + (p.stars || 0) + (p.source === 'OpenPortsGames' ? 3 : 0);
-for (const game of cards.values()) game.ports.sort((a, b) => rank(b) - rank(a));
+const rank = (p) => (p.downloads || 0) * 100 + (p.stars || 0) + (p.source === 'OpenPortsGames' ? 3 : 0);
 
 const extras = [
   ...curated,

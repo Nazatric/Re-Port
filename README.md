@@ -93,15 +93,17 @@ Re:Port never stores or links to game files or ROM download sites. Mirror and 4p
 
 ## Building the Android APK
 
-Push a version tag and GitHub Actions builds the APK and attaches it to the release:
+GitHub Actions builds a fresh APK whenever the app changes on `main`/`master`, immediately after the scheduled catalog update, when started manually, and for version tags. Tags also attach the APK to the release:
 
 ```bash
 git tag v1.0.0 && git push origin v1.0.0
 ```
 
-The workflow is `.github/workflows/android-apk.yml`. It builds the Android release, installs the prepared launcher and splash resources from `assets/android-res/`, and signs and verifies the APK. Configure the persistent signing key first using [the Android release instructions](docs/android-release.md). The `RePort-release-apk` artifact is available from a successful workflow run. You can also open the Android project locally with `npx cap add android && npx cap sync && npx cap open android`.
+The workflow is `.github/workflows/android-apk.yml`: install, test, check types, regenerate and verify the catalog, build with the repository's published catalog URL and exact Git build ID, verify the bundle and Android catalog asset, and create a signed release APK using the prepared Android icons and splash screens. Configure the persistent release key first using [the Android release instructions](docs/android-release.md). You can also run it locally with `npx cap add android && npx cap sync && npx cap open android`.
 
-The APK stays small because it only contains the app shell and the catalog text. Artwork is downloaded on first view and cached by the service worker (limit 600 images, clearable in More).
+Settings shows the app build and catalog revision. If those do not match the newest workflow run, the installed APK is stale. The native app unregisters old web service workers on startup so an earlier APK cannot keep serving an old home screen after an update; library data itself continues to refresh from the published catalog.
+
+The APK stays small because it only contains the app shell and the catalog text. Artwork is downloaded on first view and cached on demand (limit 600 images, clearable in Settings).
 
 ## Port submissions
 

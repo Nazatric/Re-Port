@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Browser } from '@capacitor/browser';
-import { Capacitor } from '@capacitor/core';
 import { Avatar } from './Cover';
 import { Icon, kindIcon } from './Icons';
 import { Pill, StatusBadge } from './ui';
@@ -11,16 +9,6 @@ import { formatBytes, formatDate, timeAgo } from '../lib/format';
 import { haptic } from '../lib/ui';
 import type { Port } from '../lib/types';
 import { cn } from '../utils/cn';
-
-export async function openExternal(url: string): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) return false;
-  try {
-    await Browser.open({ url });
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export function AvatarFor({ port, name, size = 40 }: { port: Port; name: string; size?: number }) {
   return <Avatar owner={portAvatarOwner(port)} name={port.developer || name} size={size} />;
@@ -35,7 +23,7 @@ export function DownloadButton({ port, size = 'large', gameTitle }: { port: Port
       href={port.download}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={async (e) => { haptic(12); if (await openExternal(port.download)) e.preventDefault(); }}
+      onClick={() => haptic(12)}
       className={cn('btn-a', size === 'large' ? 'w-full' : 'small w-full')}
       aria-label={`Download ${gameTitle} port${port.name ? ` ${port.name}` : ''}. ${meta.sub}. Opens in a new tab.`}
     >
@@ -57,10 +45,10 @@ export function Fact({ icon, label, value, note }: { icon: Parameters<typeof Ico
       <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--surface-2)] text-[var(--link)]">
         <Icon name={icon} size={18} />
       </span>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
         <p className="eyebrow !text-[0.64rem]">{label}</p>
-        <p className="text-sm font-semibold leading-snug [overflow-wrap:anywhere]">{value}</p>
-        {note && <p className="mt-0.5 text-xs leading-snug text-ink2 [overflow-wrap:anywhere]">{note}</p>}
+        <p className="text-sm font-semibold leading-snug">{value}</p>
+        {note && <p className="mt-0.5 text-xs leading-snug text-ink2">{note}</p>}
       </div>
     </div>
   );
@@ -73,11 +61,11 @@ export function PortCard({ port, gameTitle, engine }: { port: Port; gameTitle: s
     .map((id) => platformById.get(id)?.name)
     .filter((x): x is string => Boolean(x));
   return (
-    <article className="panel min-w-0 max-w-full scroll-mb-40 overflow-hidden p-4" aria-label={`${portName(port)} by ${port.developer || 'unknown developer'}`}>
+    <article className="panel p-4" aria-label={`${portName(port)} by ${port.developer || 'unknown developer'}`}>
       <div className="flex items-start gap-3">
         <AvatarFor port={port} name={portName(port)} size={44} />
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-bold leading-tight [overflow-wrap:anywhere]">{portName(port)}</h3>
+          <h3 className="truncate text-base font-bold leading-tight">{portName(port)}</h3>
           <p className="truncate text-sm text-ink2">{port.developer ? `by ${port.developer}` : 'Developer not listed'}</p>
         </div>
         <StatusBadge status={portStatus(port)} />
@@ -103,13 +91,13 @@ export function PortCard({ port, gameTitle, engine }: { port: Port; gameTitle: s
       {port.notes && (
         <p className="mt-3 flex gap-2 rounded-xl bg-[var(--surface-2)] p-3 text-sm leading-snug">
           <Icon name="info" size={18} className="mt-0.5 shrink-0 text-[var(--link)]" />
-          <span className="min-w-0 flex-1 leading-snug [overflow-wrap:anywhere]">{port.notes}</span>
+          <span>{port.notes}</span>
         </p>
       )}
       {port.instructions && (
         <details className="mt-3 rounded-xl bg-[var(--surface-2)] p-3 text-sm">
           <summary className="cursor-pointer font-semibold">Install notes</summary>
-          <p className="mt-2 leading-snug text-ink2 [overflow-wrap:anywhere]">{port.instructions}</p>
+          <p className="mt-2 leading-snug text-ink2">{port.instructions}</p>
         </details>
       )}
       {meta.warnings.map((w) => (
@@ -122,7 +110,7 @@ export function PortCard({ port, gameTitle, engine }: { port: Port; gameTitle: s
       <div className="mt-4 grid gap-2">
         <DownloadButton port={port} size="small" gameTitle={gameTitle} />
         {repo && (
-          <a href={port.url} target="_blank" rel="noopener noreferrer" onClick={async (e) => { if (await openExternal(port.url)) e.preventDefault(); }} className="btn-glass !min-h-[44px] max-w-full">
+          <a href={port.url} target="_blank" rel="noopener noreferrer" className="btn-glass !min-h-[44px]">
             <Icon name="github" size={18} />
             Source code
             <span className="sr-only">(opens in a new tab)</span>

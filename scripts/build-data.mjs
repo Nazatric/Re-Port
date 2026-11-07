@@ -279,7 +279,6 @@ function githubLatest(url) {
 function cleanUrl(url) {
   try {
     const u = new URL(url.trim());
-    if (u.protocol === 'http:') u.protocol = 'https:';
     if (u.host === 'github.com') {
       // Normalise every GitHub link to its project root, so the same repo never appears twice.
       const parts = u.pathname.split('/').filter(Boolean).map((x) => decodeURIComponent(x).replace(/\s+$/g, '').replace(/\.git$/, ''));
@@ -358,16 +357,6 @@ const csv = fs.readFileSync(path.join(SRC, 'napl-sheet.csv'), 'utf8');
 const rows = parseCSV(csv).filter((r) => r.GAME && r.URL);
 const steamMap = fs.existsSync(path.join(SRC, 'steam-map.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'steam-map.json'), 'utf8')) : {};
 const artMap = fs.existsSync(path.join(SRC, 'art-map.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'art-map.json'), 'utf8')) : {};
-const listShots = new Map();
-try {
-  const decomp = JSON.parse(fs.readFileSync(path.join(SRC, 'decompgames.json'), 'utf8'));
-  for (const item of decomp.games || []) {
-    if (!item.screenshot || !item.title) continue;
-    const gameTitle = item.title.replace(/\s*\([^)]*\)\s*$/, '').trim();
-    const key = normTitle(gameTitle);
-    if (!listShots.has(key)) listShots.set(key, `https://raw.githubusercontent.com/SubmitGame/awesome-decomp-games/main/${item.screenshot}`);
-  }
-} catch { /* screenshots are optional metadata */ }
 const audit = fs.existsSync(path.join(SRC, 'link-audit.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'link-audit.json'), 'utf8')) : {};
 const isDead = (port) => audit[port.download] === 404 || audit[port.download] === 410;
 const extras = fs.existsSync(path.join(SRC, 'extras.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'extras.json'), 'utf8')) : [];
@@ -383,7 +372,6 @@ const portTier = (p) => {
   return Math.min(t, 6);
 };
 const comparePorts = (a, b) =>
-  Number(b.android || b.apk || false) - Number(a.android || a.apk || false) ||
   portTier(a) - portTier(b) ||
   (b.stars || 0) - (a.stars || 0) ||
   (b.downloads || 0) - (a.downloads || 0) ||
@@ -487,7 +475,6 @@ function rowToPort(r, platform) {
     paid: /paid/i.test(r.LINK),
     mirror: /mirror/i.test(r.LINK) || kind === 'mirror',
     views: Number(r.VISITAS) || 0,
-    android: true,
     downloads: Number(r['DOWNLOADS'] || r['DOWNLOAD COUNT']) || 0,
   };
 }
@@ -531,8 +518,6 @@ for (const r of rows) {
     descSource: '',
   });
   if (art && art.shots && art.shots.length && !g.shots) g.shots = art.shots;
-  const listShot = listShots.get(normTitle(title));
-  if (listShot && !(g.shots || []).includes(listShot)) g.shots = [listShot, ...(g.shots || [])];
   addPort(g, port);
 }
 
@@ -599,8 +584,7 @@ for (const e of extras) {
   if (!g.year && e.year) g.year = e.year;
   const systems = [...new Set([...(e.originalPlatforms || []), plat.id])].filter((id) => Object.values(PLATFORMS).some((p) => p.id === id));
   const eArt = artMap[normTitle(title)];
-  const listShot = listShots.get(normTitle(title));
-  const shots = [...new Set([...(e.shots || []), ...(listShot ? [listShot] : []), ...(eArt?.shots || [])])].slice(0, 6);
+  const shots = [...new Set([...(e.shots || []), ...(eArt?.shots || [])])].slice(0, 6);
   if (shots.length) g.shots = shots;
   addPort(g, {
     name: e.project || '',
@@ -624,8 +608,6 @@ for (const e of extras) {
     views: 0,
     downloads: Number(e.downloads) || 0,
     stars: Number(e.stars) || 0,
-    android: e.android !== false,
-    apk: Boolean(e.apk),
     lifecycle: e.lifecycle || (/^(alpha|beta)$/i.test(e.status || '') ? 'experimental' : ''),
     source: e.list || 'research',
   });
@@ -646,9 +628,6 @@ for (const e of extras) {
       notes: sibling.notes || '',
       stars: Number(sibling.stars) || 0,
       downloads: Number(sibling.downloads) || 0,
-      android: sibling.android !== false,
-      apk: Boolean(sibling.apk),
-      lifecycle: sibling.lifecycle || '',
       views: 0,
       source: sibling.source || 'research',
     });
@@ -802,7 +781,6 @@ function finalize(g) {
         const o = enrichPort({ ...p });
         // A port note is usually a repeat of the card description; keep it only when it adds detail.
         if (o.notes && (description.includes(o.notes) || summary.includes(o.notes))) delete o.notes;
-        if (o.notes && o.notes.length > 360) o.notes = truncateAtSentence(o.notes, 360);
         Object.keys(o).forEach((k) => (o[k] === '' || o[k] === false || o[k] === undefined) && delete o[k]);
         return o;
       })
@@ -834,7 +812,7 @@ const platformsOut = Object.values(PLATFORMS)
 const manifest = fs.existsSync(path.join(SRC, 'sync-manifest.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'sync-manifest.json'), 'utf8')) : {};
 const payload = {
   generated: new Date().toISOString().slice(0, 10),
-  revision: `${Date.now().toString(36)}`,
+  revision: new Date().toISOString(),
   sources: catalogSources,
   upstreamSyncedAt: manifest.lastRun || '',
   stats,

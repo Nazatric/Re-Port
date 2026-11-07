@@ -7,7 +7,7 @@ import type { Catalog, Collection, Filters, Game, LinkKind, Platform, Port, Sort
  * reload. Every collection below is mutated in place so the named exports stay valid for the
  * modules that captured them at import time.
  */
-export const catalog = { generated: '', sources: [] as string[] } as unknown as Catalog;
+export const catalog = { generated: '', revision: '', sources: [] as string[] } as unknown as Catalog;
 export const games: Game[] = [];
 export const gameById = new Map<string, Game>();
 export const platformById = new Map<string, Platform>();
@@ -31,16 +31,60 @@ export const engines: Game[] = [];
 let lastKey = '';
 let lastResult: Game[] = games;
 
+export function currentRevision(): string {
+  return catalog.revision || '';
+}
+
+function revisionTime(revision?: string): number {
+  if (!revision) return Number.NaN;
+  const parsed = Date.parse(revision);
+  return Number.isNaN(parsed) ? Number.NaN : parsed;
+}
+
+function portCount(value: Catalog): number {
+  return value.games.reduce((sum, g) => sum + (g.ports?.length || 0), 0);
+}
+
+/**
+ * Freshness is decided by build date, then by the monotonic revision, then by catalogue size.
+ * The revision matters: two catalogues can be published on the same day, and the later one must
+ * still win on an installed native app.
+ */
+export function isCatalogNewer(
+  next: Catalog,
+  current?: { generated?: string; revision?: string; games?: readonly unknown[] },
+  currentPorts = stats.ports,
+): boolean {
+  if (!next?.games?.length) return false;
+  const currentGenerated = current?.generated ?? catalog.generated;
+  const currentGames = current?.games ?? games;
+  if (!currentGenerated) return true;
+  if (next.generated !== currentGenerated) return next.generated > currentGenerated;
+
+  const nextRevision = next.revision || '';
+  const currentRev = current?.revision ?? catalog.revision ?? '';
+  if (nextRevision && nextRevision !== currentRev) {
+    const nextTime = revisionTime(nextRevision);
+    const currentTime = revisionTime(currentRev);
+    if (!Number.isNaN(nextTime) && !Number.isNaN(currentTime)) return nextTime > currentTime;
+    // A timestamped revision is newer than a legacy opaque one.
+    if (!Number.isNaN(nextTime)) return true;
+    if (!Number.isNaN(currentTime)) return false;
+    return nextRevision > currentRev;
+  }
+
+  return next.games.length > currentGames.length || portCount(next) > currentPorts;
+}
+
 /**
  * Loads (or replaces) the working catalog. Returns true when the data was newer than what is
  * loaded, so callers can tell a real refresh from a redundant one.
  */
 export function setCatalog(next: Catalog): boolean {
-  if (!next?.games?.length) return false;
-  if (catalog.generated && next.generated && next.generated < catalog.generated) return false;
-  if (catalog.generated && next.generated === catalog.generated && games.length >= next.games.length) return false;
+  if (!isCatalogNewer(next)) return false;
 
   catalog.generated = next.generated;
+  catalog.revision = next.revision || '';
   catalog.sources = next.sources || [];
   catalog.stats = next.stats || {};
   catalog.collections = next.collections;
@@ -189,7 +233,6 @@ export function portTier(p: Port): number {
 
 export function comparePorts(a: Port, b: Port): number {
   return (
-    Number(b.android || b.apk || false) - Number(a.android || a.apk || false) ||
     portTier(a) - portTier(b) ||
     (b.stars || 0) - (a.stars || 0) ||
     (b.downloads || 0) - (a.downloads || 0) ||

@@ -1,17 +1,30 @@
 name: Build Android APK
 
-# The session branch and version tags build a signed release APK.
+# Build a fresh APK whenever the app or its library changes.
+#
+# This workflow used to run only for version tags. That let the web app move ahead while the
+# downloadable Android build stayed on an old catalog and an old home screen. It now also runs
+# for app changes on the main branches and immediately after the scheduled catalog update.
 on:
   push:
-    branches: ["arena/59c5f4cf-re-port"]
+    branches: ["main", "master", "arena/59c5f4cf-re-port"]
     tags: ["v*"]
+  workflow_run:
+    workflows: ["Update catalog"]
+    types: [completed]
+    branches: ["main", "master"]
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   apk:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check release signing configuration
@@ -27,6 +40,8 @@ jobs:
           fi
 
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - uses: actions/setup-node@v4
         with:
@@ -49,9 +64,24 @@ jobs:
       - name: Check types
         run: npm run typecheck
 
-      # Capacitor packages this interface inside the Android app; no website is deployed.
-      - name: Build Android interface
+      # Regenerate the bundled library from the committed source data, so the APK can never
+      # silently ship an older generated catalog than the repository contains.
+      - name: Rebuild catalog from source data
+        run: |
+          node scripts/import-catalog-lists.mjs
+          node scripts/build-data.mjs
+
+      - name: Build the web app
+        env:
+          # Installed APKs read the catalog published from this repository, not only the
+          # snapshot copied into the APK, so library updates arrive without a new APK.
+          VITE_REMOTE_CATALOG_URL: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.event_name == 'workflow_run' && github.event.repository.default_branch || github.ref_name }}/public/catalog.json
+          VITE_APP_BUILD_ID: ${{ github.event.workflow_run.head_sha || github.sha }}
+          VITE_APP_VERSION: ${{ github.ref_name }}-${{ github.run_number }}
         run: npm run build
+
+      - name: Verify the build is not stale
+        run: node scripts/verify-build.mjs
 
       - name: Create the Android project
         run: npx cap add android
@@ -62,8 +92,13 @@ jobs:
       - name: Configure Android system DayNight theme
         run: node scripts/configure-android-theme.mjs
 
-      - name: Sync interface into Android
+      - name: Sync web build into Android
         run: npx cap sync android
+
+      - name: Verify Android assets contain the current library
+        run: |
+          test -f android/app/src/main/assets/public/catalog.json
+          node -e "const c=require('./android/app/src/main/assets/public/catalog.json'); if ((c.stats?.games||0) < 2000 || (c.stats?.ports||0) < 3000) { console.error(c.stats); process.exit(1); } console.log('Android catalog:', c.stats.games, 'games,', c.stats.ports, 'ports,', c.generated, c.revision);"
 
       - name: Build release APK
         working-directory: android
@@ -82,7 +117,7 @@ jobs:
           chmod 600 "$RUNNER_TEMP/re-port-release.jks"
           BUILD_TOOLS="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)"
           "$BUILD_TOOLS/zipalign" -f -p 4 android/app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/re-port-aligned.apk"
-          APK="RePort-${REF_NAME//\//-}.apk"
+          APK="RePort-${REF_NAME//\//-}-${{ github.run_number }}.apk"
           "$BUILD_TOOLS/apksigner" sign --ks "$RUNNER_TEMP/re-port-release.jks" --ks-key-alias "$KEY_ALIAS" --ks-pass env:KEYSTORE_PASSWORD --key-pass env:KEY_PASSWORD --out "$APK" "$RUNNER_TEMP/re-port-aligned.apk"
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
 
@@ -92,9 +127,10 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: RePort-release-apk
+          name: RePort-release-apk-${{ github.run_number }}
           path: RePort-*.apk
           if-no-files-found: error
+          retention-days: 90
 
       - name: Attach the APK to the GitHub release
         if: startsWith(github.ref, 'refs/tags/')

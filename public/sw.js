@@ -1,8 +1,9 @@
-/* PortDeck service worker
+/* Re:Port service worker
  * - App shell: network first with a cached fallback, so the app opens offline after the first visit.
+ * - Catalog: network first, but never stored in the shell cache (the app keeps it separately).
  * - Artwork: cache first, stored in a size-limited cache and filled on demand (nothing is bundled in the APK).
  */
-const SHELL = 'portdeck-shell-v1';
+const SHELL = 'portdeck-shell-v2';
 const IMG = 'portdeck-img-v1';
 const IMG_LIMIT = 600;
 const SHELL_FILES = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
@@ -21,7 +22,11 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
-      await Promise.all(keys.filter((k) => k.startsWith('portdeck-shell-') && k !== SHELL).map((k) => caches.delete(k)));
+      await Promise.all(
+        keys
+          .filter((k) => (k.startsWith('portdeck-shell-') && k !== SHELL) || k === 'portdeck-remote-v1')
+          .map((k) => caches.delete(k)),
+      );
       await self.clients.claim();
     })(),
   );
@@ -29,17 +34,27 @@ self.addEventListener('activate', (event) => {
 
 async function networkFirst(request) {
   const cache = await caches.open(SHELL);
+  const isDocument = request.mode === 'navigate' || request.destination === 'document';
   try {
     const res = await Promise.race([fetch(request), new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))]);
-    if (res && res.ok) cache.put('./index.html', res.clone());
+    if (res && res.ok && isDocument) cache.put('./index.html', res.clone());
     return res;
   } catch {
+    if (!isDocument) return Response.error();
     return (await cache.match('./index.html', { ignoreSearch: true })) || (await cache.match('./', { ignoreSearch: true })) || Response.error();
   }
 }
 
+async function catalogNetworkFirst(request) {
+  try {
+    return await Promise.race([fetch(request), new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000))]);
+  } catch {
+    return Response.error();
+  }
+}
+
 async function staleWhileRevalidate(request) {
-  if (new URL(request.url).pathname.endsWith('/catalog.json')) return networkFirst(request);
+  if (new URL(request.url).pathname.endsWith('/catalog.json')) return catalogNetworkFirst(request);
   const cache = await caches.open(SHELL);
   const cached = await cache.match(request, { ignoreSearch: true });
   const network = fetch(request)

@@ -103,8 +103,7 @@ let foundShots = 0;
 async function enrich(game) {
   const system = SYSTEMS[game.platform];
   const names = candidates(game.title);
-  const key = normTitle(game.title);
-  const entry = { system, title: game.title, names: names.slice(0, 3), cover: map[key]?.cover || '', shots: map[key]?.shots || [] };
+  const entry = { system, names: names.slice(0, 3), cover: map[game.id]?.cover || '', shots: map[game.id]?.shots || [] };
   if (!entry.cover || !entry.shots.length) {
     for (const name of names) {
       if (!entry.cover && (await exists(urlFor(system, 'Named_Boxarts', name)))) {

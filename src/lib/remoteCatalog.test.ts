@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { validateCatalog } from './remoteCatalog';
-import { setCatalog, games, gameById, collections, platforms, stats, engines, queryGames, DEFAULT_FILTERS, currentGenerated } from './catalog';
+import { setCatalog, games, gameById, collections, platforms, stats, engines, queryGames, DEFAULT_FILTERS, currentGenerated, currentRevision, isCatalogNewer } from './catalog';
 import type { Catalog } from './types';
 
 // Fixtures must be newer than whatever catalog is bundled today, so the freshness guard accepts them.
@@ -119,5 +119,21 @@ describe('live catalog replacement', () => {
     const before = games.length;
     expect(setCatalog({ ...catalog(nextDate(), []), games: [] } as Catalog)).toBe(false);
     expect(games).toHaveLength(before);
+  });
+
+  it('accepts a same-day publication with a newer revision', () => {
+    const loaded = currentGenerated();
+    const first = catalog(loaded, ['doom', 'quake'], { revision: `${loaded}T01:00:00.000Z` });
+    setCatalog(first);
+    expect(currentRevision()).toBe(`${loaded}T01:00:00.000Z`);
+
+    const second = catalog(loaded, ['doom', 'quake'], { revision: `${loaded}T02:00:00.000Z` });
+    expect(isCatalogNewer(second)).toBe(true);
+    expect(setCatalog(second)).toBe(true);
+    expect(currentRevision()).toBe(`${loaded}T02:00:00.000Z`);
+
+    const older = catalog(loaded, ['doom', 'quake'], { revision: `${loaded}T00:30:00.000Z` });
+    expect(isCatalogNewer(older)).toBe(false);
+    expect(setCatalog(older)).toBe(false);
   });
 });

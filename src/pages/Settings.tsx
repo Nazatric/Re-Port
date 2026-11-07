@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Icon } from '../components/Icons';
 import { Hero, Switch } from '../components/ui';
 import { Link } from '../lib/router';
-import { catalog, stats } from '../lib/catalog';
-import { autoRefresh, setAutoUpdate, setCatalogStatus, setRemoteUrl, useCatalogMeta, useCatalogStatus } from '../lib/remoteCatalog';
+import { catalog, currentRevision, stats } from '../lib/catalog';
+import { APP_BUILD_LABEL, APP_VERSION } from '../lib/buildInfo';
+import { autoRefresh, catalogUrls, setAutoUpdate, setCatalogStatus, setRemoteUrl, useCatalogMeta, useCatalogStatus } from '../lib/remoteCatalog';
 import { favoritesStore, recentsStore, useSettings } from '../lib/store';
 import { showToast } from '../lib/ui';
 import { formatBytes, formatDate } from '../lib/format';
@@ -65,7 +66,7 @@ function CatalogUpdates() {
           type="url"
           inputMode="url"
           placeholder="https://example.com/catalog.json"
-          defaultValue={meta.url || ''}
+          defaultValue={meta.url || catalogUrls()[0] || ''}
           onBlur={(e) => setRemoteUrl(e.target.value.trim())}
         />
       </details>
@@ -193,7 +194,11 @@ export default function Settings() {
             </li>
           </ul>
           <p className="mt-4 text-xs text-ink2">
-            Catalog build {catalog.generated}. {stats.games.toLocaleString('en-US')} titles and {stats.ports.toLocaleString('en-US')} ports listed.
+            Catalog build {catalog.generated}
+            {currentRevision() ? ` · ${currentRevision().slice(0, 19).replace('T', ' ')}` : ''}. {stats.games.toLocaleString('en-US')} titles and {stats.ports.toLocaleString('en-US')} ports listed.
+            <br />
+            App build {APP_BUILD_LABEL}
+            {APP_VERSION ? ` · ${APP_VERSION}` : ''}. If the title and port counts look old, install the newest Android build, then use “Check now” above.
           </p>
         </section>
       </main>

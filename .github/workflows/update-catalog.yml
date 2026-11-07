@@ -44,6 +44,9 @@ jobs:
       - name: Sync upstream port lists
         run: node scripts/fetch-sources.mjs
 
+      - name: Import every catalog list
+        run: node scripts/import-catalog-lists.mjs
+
       - name: Build the catalog
         run: node scripts/build-data.mjs
 
