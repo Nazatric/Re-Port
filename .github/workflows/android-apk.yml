@@ -42,7 +42,15 @@ jobs:
         run: npx cap add android
 
       - name: Render local PWA and adaptive launcher assets
-        run: npm run assets
+        run: |
+          if npm run assets > /tmp/re-port-assets.log 2>&1; then
+            cat /tmp/re-port-assets.log
+          else
+            cat /tmp/re-port-assets.log
+            message=$(tail -c 8000 /tmp/re-port-assets.log | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error::$message"
+            exit 1
+          fi
 
       - name: Generate launcher icons and splash screens
         run: npx --yes @capacitor/assets generate --android --assetPath assets
@@ -61,7 +69,9 @@ jobs:
       # as repository secrets and replace the step above with `./gradlew assembleRelease` plus an apksigner step.
 
       - name: Rename the APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk RePort-${{ github.ref_name }}.apk
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk "RePort-${REF_NAME//\//-}.apk"
 
       - uses: actions/upload-artifact@v4
         with:
