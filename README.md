@@ -93,13 +93,13 @@ Re:Port never stores or links to game files or ROM download sites. Mirror and 4p
 
 ## Building the Android APK
 
-GitHub Actions builds a fresh APK whenever the app changes on `main`/`master`, immediately after the scheduled catalog update, when started manually, and for version tags. Tags also attach the APK to the release:
+GitHub Actions builds a fresh APK whenever the app changes on `main`/`master`, immediately after the scheduled catalog update, when started manually, and for version tags:
 
 ```bash
 git tag v1.0.0 && git push origin v1.0.0
 ```
 
-The workflow is `.github/workflows/android-apk.yml`: install, test, check types, regenerate and verify the catalog, build with the repository's published catalog URL and exact Git build ID, verify the bundle and Android catalog asset, and create a signed release APK using the prepared Android icons and splash screens. Configure the persistent release key first using [the Android release instructions](docs/android-release.md). You can also run it locally with `npx cap add android && npx cap sync && npx cap open android`.
+The workflow is `.github/workflows/android-apk.yml`: install, test, check types, regenerate and verify the catalog, check startup and page transitions, and build the Android APK using the prepared icons and splash screens. The downloadable APK uses Android's debug build variant, even though its filename is simply RePort. It is intended for testing; replacing a differently signed installation requires uninstalling it first. You can also run it locally with `npx cap add android && npx cap sync && npx cap open android`.
 
 Settings shows the app build and catalog revision. If those do not match the newest workflow run, the installed APK is stale. The native app unregisters old web service workers on startup so an earlier APK cannot keep serving an old home screen after an update; library data itself continues to refresh from the published catalog.
 

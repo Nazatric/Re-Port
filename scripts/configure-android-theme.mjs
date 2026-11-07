@@ -47,6 +47,12 @@ const dayNightParent = 'Theme.AppCompat.DayNight.NoActionBar';
 
 let styles = fs.readFileSync(stylesPath, 'utf8');
 styles = updateStyle(styles, 'AppTheme.NoActionBar', dayNightParent, baseItems);
+// Android 12+ uses these values for the system splash instead of the legacy splash drawable.
+styles = updateStyle(styles, 'AppTheme.NoActionBarLaunch', 'Theme.SplashScreen', {
+  windowSplashScreenBackground: '#101a1e',
+  windowSplashScreenAnimatedIcon: '@mipmap/ic_launcher',
+  postSplashScreenTheme: '@style/AppTheme.NoActionBar',
+});
 fs.writeFileSync(stylesPath, styles);
 
 fs.mkdirSync(nightDir, { recursive: true });

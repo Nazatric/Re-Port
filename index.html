@@ -25,14 +25,18 @@
       }
     </script>
     <style>
-      html,
-      body {
-        background: #0b4fb3;
+      html, body { margin: 0; min-height: 100%; background: #101a1e; }
+      .boot-screen {
+        min-height: 100dvh; display: grid; place-content: center; justify-items: center;
+        gap: 16px; color: #d4edf0; font: 600 13px system-ui, sans-serif;
+        letter-spacing: .18em; text-transform: uppercase;
+        background: radial-gradient(ellipse at 50% 25%, #234a50, #101a1e 70%);
       }
+      .boot-screen img { width: 88px; height: 88px; object-fit: contain; filter: drop-shadow(0 10px 25px #0008); }
     </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="boot-screen" role="status" aria-label="Opening Re:Port"><img src="./header-logo.png" alt="" /><span>Re:Port</span></div></div>
     <noscript>Re:Port needs JavaScript to run.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>

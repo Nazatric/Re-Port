@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: android-apk-${{ github.ref }}
@@ -27,25 +27,6 @@ jobs:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check release signing configuration
-        id: signing
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          ONE_TIME_ALLOWED: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[one-time-apk]') }}
-        run: |
-          if [[ -n "$KEYSTORE_BASE64" && -n "$KEYSTORE_PASSWORD" && -n "$KEY_ALIAS" && -n "$KEY_PASSWORD" ]]; then
-            echo 'temporary=false' >> "$GITHUB_OUTPUT"
-          elif [[ "$ONE_TIME_ALLOWED" == 'true' ]]; then
-            echo 'temporary=true' >> "$GITHUB_OUTPUT"
-            echo '::warning::This one-time release uses a temporary signing key that will not be retained. Future APKs cannot update it in place.'
-          else
-            echo '::error::Release signing is not configured. Add the four signing secrets described in docs/android-release.md.'
-            exit 1
-          fi
-
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
@@ -59,39 +40,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-
-      - name: Prepare release signing key
-        env:
-          TEMPORARY_SIGNING: ${{ steps.signing.outputs.temporary }}
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-          KEY_PATH="$RUNNER_TEMP/re-port-release.jks"
-          if [[ "$TEMPORARY_SIGNING" == 'true' ]]; then
-            TEMP_PASSWORD="$(openssl rand -hex 32)"
-            echo "::add-mask::$TEMP_PASSWORD"
-            export TEMP_PASSWORD
-            keytool -genkeypair -keystore "$KEY_PATH" -storetype PKCS12 -alias report-one-time -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=RePort One-Time Release' -storepass:env TEMP_PASSWORD -keypass:env TEMP_PASSWORD -noprompt
-            SIGN_ALIAS=report-one-time
-            SIGN_STORE_PASSWORD="$TEMP_PASSWORD"
-            SIGN_KEY_PASSWORD="$TEMP_PASSWORD"
-            echo 'This APK uses a temporary signing key. Uninstall it before installing a future release signed with a different key; uninstalling may remove app data.' >> "$GITHUB_STEP_SUMMARY"
-          else
-            printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KEY_PATH"
-            SIGN_ALIAS="$KEY_ALIAS"
-            SIGN_STORE_PASSWORD="$KEYSTORE_PASSWORD"
-            SIGN_KEY_PASSWORD="$KEY_PASSWORD"
-          fi
-          chmod 600 "$KEY_PATH"
-          {
-            printf 'SIGN_KEY_PATH=%s\n' "$KEY_PATH"
-            printf 'SIGN_ALIAS=%s\n' "$SIGN_ALIAS"
-            printf 'SIGN_STORE_PASSWORD=%s\n' "$SIGN_STORE_PASSWORD"
-            printf 'SIGN_KEY_PASSWORD=%s\n' "$SIGN_KEY_PASSWORD"
-          } >> "$GITHUB_ENV"
 
       - uses: gradle/actions/setup-gradle@v4
 
@@ -123,6 +71,11 @@ jobs:
       - name: Verify the build is not stale
         run: node scripts/verify-build.mjs
 
+      - name: Check launch screen and page transitions
+        env:
+          CHROMIUM_PATH: /usr/bin/google-chrome
+        run: node scripts/test-app-transitions.mjs
+
       - name: Create the Android project
         run: npx cap add android
 
@@ -140,34 +93,19 @@ jobs:
           test -f android/app/src/main/assets/public/catalog.json
           node -e "const c=require('./android/app/src/main/assets/public/catalog.json'); if ((c.stats?.games||0) < 2000 || (c.stats?.ports||0) < 3000) { console.error(c.stats); process.exit(1); } console.log('Android catalog:', c.stats.games, 'games,', c.stats.ports, 'ports,', c.generated, c.revision);"
 
-      - name: Build release APK
+      # The user requested the debug build variant; the downloadable filename is simply RePort.
+      - name: Build APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleDebug --no-daemon
 
-      - name: Sign and verify release APK
+      - name: Prepare APK download
         env:
           REF_NAME: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          BUILD_TOOLS="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)"
-          "$BUILD_TOOLS/zipalign" -f -p 4 android/app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/re-port-aligned.apk"
-          APK="RePort-${REF_NAME//\//-}-${{ github.run_number }}.apk"
-          "$BUILD_TOOLS/apksigner" sign --ks "$SIGN_KEY_PATH" --ks-key-alias "$SIGN_ALIAS" --ks-pass env:SIGN_STORE_PASSWORD --key-pass env:SIGN_KEY_PASSWORD --out "$APK" "$RUNNER_TEMP/re-port-aligned.apk"
-          "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-
-      - name: Remove temporary signing key
-        if: always()
-        run: rm -f "$RUNNER_TEMP/re-port-release.jks"
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk "RePort-${REF_NAME//\//-}-${{ github.run_number }}.apk"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: RePort-release-apk-${{ github.run_number }}
+          name: RePort-apk-${{ github.run_number }}
           path: RePort-*.apk
           if-no-files-found: error
           retention-days: 90
-
-      - name: Attach the APK to the GitHub release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: RePort-*.apk

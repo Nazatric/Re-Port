@@ -1,6 +1,6 @@
 # Signed Android release
 
-The Android workflow normally builds a release APK signed with a persistent key stored in GitHub Actions secrets. For an explicitly requested one-time build only, a push commit containing `[one-time-apk]` may use a temporary signing key if the secrets are absent. The temporary key is deleted after the build and is not retained, so future APKs signed with a different key cannot update it in place. The workflow does not publish a debug APK. The app is a Capacitor Android application: the React interface is bundled inside the APK, not deployed as a separate website.
+The current Android workflow builds the debug variant for testing, as requested, and names the download RePort. The app is a Capacitor Android application: the React interface is bundled inside the APK, not deployed as a separate website. A future production release would require changing the workflow to build and sign a release variant using a persistent key; the notes below describe how to prepare that key.
 
 ## One-time signing setup
 
@@ -33,6 +33,6 @@ unset RE_PORT_PASSWORD
 
 Run those commands from this repository, and adjust the alias, path, and key password if using an existing keystore. Do not send any of the values to the assistant.
 
-Once the secrets are configured, push to the session branch to start the workflow, or run it manually if the workflow is present on the repository's default branch. Download the `RePort-release-apk` artifact from the successful Actions run. A version-tag build also attaches the APK to the corresponding GitHub release.
+These secrets alone do not change the current debug workflow. Before distributing a production release, update the workflow to build `assembleRelease`, sign it using the secrets, and verify the signature. Keep the signing key outside the repository.
 
 An APK signed by a different key (including the earlier debug APK) cannot be updated in place; uninstall it first, which may remove its local app data.

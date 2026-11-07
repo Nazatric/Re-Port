@@ -18,6 +18,15 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
   },
   plugins: {
+    // Keep the branded native launch screen up until the interface is mounted. The timeout is
+    // a safety net in case the WebView cannot start; successful launches hide it immediately.
+    SplashScreen: {
+      launchShowDuration: 8000,
+      launchAutoHide: true,
+      launchFadeOutDuration: 180,
+      backgroundColor: "#101a1e",
+      showSpinner: false,
+    },
     // Re:Port owns back navigation: it pops its own history and closes only at the first screen,
     // so the plugin must not apply its default back-button handling on top of ours.
     App: {
