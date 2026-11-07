@@ -1,0 +1,46 @@
+{
+  "name": "react-vite-tailwind",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "data": "node scripts/build-data.mjs",
+    "audit": "node scripts/audit-links.mjs",
+    "test:e2e": "node scripts/e2e-smoke.mjs",
+    "assets": "node scripts/render-icons.mjs",
+    "sync": "node scripts/fetch-sources.mjs",
+    "verify": "node scripts/verify-android.mjs"
+  },
+  "dependencies": {
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/browser": "^8.0.5",
+    "@capacitor/core": "^8.6.0",
+    "@fontsource-variable/open-sans": "^5.3.0",
+    "clsx": "2.1.1",
+    "lucide-react": "^1.70.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "tailwind-merge": "3.4.0"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "@tailwindcss/vite": "4.1.17",
+    "@types/node": "22.19.17",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.1.1",
+    "playwright": "^1.65.0",
+    "tailwindcss": "4.1.17",
+    "typescript": "5.9.3",
+    "vite": "7.3.2",
+    "vite-plugin-singlefile": "2.3.0",
+    "vitest": "^4.1.12"
+  }
+}

@@ -1,0 +1,63 @@
+name: Update catalog
+
+# Keeps the library current without shipping a new app release.
+# Every night (and on demand) the upstream lists are re-read, new Android ports are verified
+# against GitHub releases, and the refreshed catalog is committed. Installed apps pick it up at
+# runtime from the published file, so a port added upstream appears in the app automatically.
+on:
+  schedule:
+    - cron: "0 2 * * *" # daily at 02:00 UTC
+  workflow_dispatch:
+    inputs:
+      verify:
+        description: "Verify Android builds against the GitHub API"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: catalog
+  cancel-in-progress: false
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify Android builds exist upstream
+        if: ${{ inputs.verify != false }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/verify-android.mjs --max=900
+
+      - name: Sync upstream port lists
+        run: node scripts/fetch-sources.mjs
+
+      - name: Build the catalog
+        run: node scripts/build-data.mjs
+
+      - name: Publish the refreshable copy to the raw branch path
+        run: |
+          git config user.name "portdeck-catalog-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add public/catalog.json src/data/catalog.json data/source
+          if git diff --cached --quiet; then
+            echo "No catalog changes."
+          else
+            git commit -m "chore(catalog): refresh ports from upstream lists"
+            git push
+          fi
+
+      - name: Summary
+        run: node -e "const c=require('./src/data/catalog.json');const s=c.stats;console.log('Catalog build',c.generated,'-',s.games,'titles,',s.ports,'ports,',s.engines,'engines');console.log('Sources:',(c.sources||[]).join(', '))" >> "$GITHUB_STEP_SUMMARY"

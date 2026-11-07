@@ -1,0 +1,74 @@
+name: Build Android APK
+
+# Runs on every version tag (v1.0.0, v1.1.0 ...) and can be started by hand from the Actions tab.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check types
+        run: npm run typecheck
+
+      - name: Build the web app
+        run: npm run build
+
+      - name: Create the Android project
+        run: npx cap add android
+
+      - name: Render local PWA and adaptive launcher assets
+        run: npm run assets
+
+      - name: Generate launcher icons and splash screens
+        run: npx --yes @capacitor/assets generate --android --assetPath assets
+
+      - name: Configure Android system DayNight theme
+        run: node scripts/configure-android-theme.mjs
+
+      - name: Sync web build into Android
+        run: npx cap sync android
+
+      - name: Build a debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      # To publish a signed release instead, add KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD
+      # as repository secrets and replace the step above with `./gradlew assembleRelease` plus an apksigner step.
+
+      - name: Rename the APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk RePort-${{ github.ref_name }}.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RePort-apk
+          path: RePort-*.apk
+
+      - name: Attach the APK to the GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: RePort-*.apk
