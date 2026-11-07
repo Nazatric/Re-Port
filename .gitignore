@@ -4,3 +4,6 @@ android
 .shots
 *.log
 .DS_Store
+.gradle/
+local.properties
+**/build/
