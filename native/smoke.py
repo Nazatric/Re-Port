@@ -59,7 +59,7 @@ try:
     assert adb('shell', 'pidof', 'app.report.port').strip(), 'App process exited unexpectedly'
     print('Android emulator smoke test passed.')
 except Exception as exc:
-    print('Android emulator smoke test failed:', exc, flush=True)
+    print('::error::Android emulator smoke test failed: ' + str(exc).replace('%', '%25').replace('\n', '%0A'), flush=True)
     try:
         print(adb('logcat', '-d', '-s', 'AndroidRuntime:E', timeout=30)[-12000:])
     except Exception:
