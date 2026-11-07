@@ -47,10 +47,15 @@ const dayNightParent = 'Theme.AppCompat.DayNight.NoActionBar';
 
 let styles = fs.readFileSync(stylesPath, 'utf8');
 styles = updateStyle(styles, 'AppTheme.NoActionBar', dayNightParent, baseItems);
-// Android 12+ uses these values for the system splash instead of the legacy splash drawable.
+// Android 12+ always shows a system launch window. Keep it neutral and icon-free instead
+// of showing a large, prolonged branded splash while the WebView starts.
+const drawableDir = path.join(root, 'android/app/src/main/res/drawable');
+fs.mkdirSync(drawableDir, { recursive: true });
+fs.writeFileSync(path.join(drawableDir, 'launch_empty.xml'), '<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="1dp" android:height="1dp" android:viewportWidth="1" android:viewportHeight="1"><path android:fillColor="#00000000" android:pathData="M0,0h1v1h-1z"/></vector>\n');
 styles = updateStyle(styles, 'AppTheme.NoActionBarLaunch', 'Theme.SplashScreen', {
-  windowSplashScreenBackground: '#101a1e',
-  windowSplashScreenAnimatedIcon: '@mipmap/ic_launcher',
+  'android:background': '#14171b',
+  windowSplashScreenBackground: '#14171b',
+  windowSplashScreenAnimatedIcon: '@drawable/launch_empty',
   postSplashScreenTheme: '@style/AppTheme.NoActionBar',
 });
 fs.writeFileSync(stylesPath, styles);
@@ -68,6 +73,10 @@ night = updateStyle(night, 'AppTheme.NoActionBar', dayNightParent, {
 fs.writeFileSync(nightPath, night);
 
 let manifest = fs.readFileSync(manifestPath, 'utf8');
+// Opt in to Android's modern system-back dispatch for gesture navigation.
+if (!manifest.includes('android:enableOnBackInvokedCallback=')) {
+  manifest = manifest.replace('<application', '<application android:enableOnBackInvokedCallback="true"');
+}
 // Let Android recreate BridgeActivity on a system light/dark switch so WebView gets the new isLightTheme.
 manifest = manifest.replace(/android:configChanges="([^"]+)"/g, (match, value) => {
   const next = value.split('|').filter((part) => part !== 'uiMode').join('|');

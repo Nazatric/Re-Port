@@ -1,7 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { App as NativeApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { SplashScreen } from '@capacitor/splash-screen';
 import { BottomNav } from './components/BottomNav';
 import { DataSaverContext } from './components/Cover';
 import { Icon } from './components/Icons';
@@ -76,12 +75,6 @@ export default function App() {
   const initialPath = useRef(route.path);
   const hasNavigated = useRef(false);
   if (route.path !== initialPath.current) hasNavigated.current = true;
-
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-    // React has committed the full page and dock; reveal them together without a blank frame.
-    void SplashScreen.hide().catch(() => {});
-  }, []);
 
   // Offline first: restore the last published catalog from cache, then quietly check for a newer one.
   useEffect(() => {

@@ -113,16 +113,9 @@ export function setCatalog(next: Catalog): boolean {
   engines.length = 0;
   engines.push(...games.filter((g) => g.platform === 'engine').sort((a, b) => (b.supports?.length || 0) - (a.supports?.length || 0)));
 
+  // The home screen doesn't need the search index. Build it on first library/search use
+  // instead of delaying the first screen on every cold start.
   index.length = 0;
-  for (const g of games) {
-    index.push({
-      g,
-      title: normalize(g.title),
-      hay: normalize(
-        [g.title, platformIdsOf(g).map(platformName).join(' '), g.genres.map((x) => collectionById.get(x)?.name ?? x).join(' '), g.ports.map((p) => `${p.name || ''} ${p.developer || ''}`).join(' '), g.year || ''].join(' '),
-      ),
-    });
-  }
 
   stats.games = games.filter((g) => g.platform !== 'engine').length;
   stats.engines = engines.length;
@@ -399,8 +392,23 @@ export function queryGames(f: Filters): Game[] {
   if (key === lastKey) return lastResult;
   const q = normalize(f.q);
   const tokens = q ? q.split(' ') : [];
+  // Only text searches need the normalized index. Browsing and filtering can work
+  // directly on the catalog, so opening the Library also remains responsive.
+  if (tokens.length && index.length !== games.length) {
+    index.length = 0;
+    for (const g of games) {
+      index.push({
+        g,
+        title: normalize(g.title),
+        hay: normalize(
+          [g.title, platformIdsOf(g).map(platformName).join(' '), g.genres.map((x) => collectionById.get(x)?.name ?? x).join(' '), g.ports.map((p) => `${p.name || ''} ${p.developer || ''}`).join(' '), g.year || ''].join(' '),
+        ),
+      });
+    }
+  }
+  const entries: Iterable<Entry> = tokens.length ? index : games.map((g) => ({ g, title: '', hay: '' }));
   let list: { g: Game; score: number }[] = [];
-  for (const e of index) {
+  for (const e of entries) {
     if (!matches(e.g, f)) continue;
     if (tokens.length && !tokens.every((t) => e.hay.includes(t))) continue;
     let score = 0;

@@ -99,7 +99,9 @@ export function goBack(fallback = '/'): boolean {
     return true;
   }
   const target = buildHref(fallback);
-  if (target !== window.location.hash) {
+  // An empty hash is already the home route; don't require a second back gesture on launch.
+  const alreadyAtHome = target === '#/' && (!window.location.hash || window.location.hash === '#');
+  if (target !== window.location.hash && !alreadyAtHome) {
     navigate(fallback, undefined, { replace: true });
     return true;
   }

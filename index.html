@@ -25,18 +25,24 @@
       }
     </script>
     <style>
-      html, body { margin: 0; min-height: 100%; background: #101a1e; }
-      .boot-screen {
-        min-height: 100dvh; display: grid; place-content: center; justify-items: center;
-        gap: 16px; color: #d4edf0; font: 600 13px system-ui, sans-serif;
-        letter-spacing: .18em; text-transform: uppercase;
-        background: radial-gradient(ellipse at 50% 25%, #234a50, #101a1e 70%);
-      }
-      .boot-screen img { width: 88px; height: 88px; object-fit: contain; filter: drop-shadow(0 10px 25px #0008); }
+      html, body { margin: 0; min-height: 100%; background: #111418; }
+      .boot-shell { min-height: 100dvh; background: #14171b; color: white; font: 15px system-ui, sans-serif; }
+      html[data-theme="azure"] .boot-shell, html[data-theme="lime"] .boot-shell { background: #edf2f3; }
+      .boot-hero { padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 35px; background: linear-gradient(180deg, #090a0c, #333b45); }
+      html[data-theme="azure"] .boot-hero { background: linear-gradient(180deg, #0a3f94, #3c98e5); }
+      html[data-theme="lime"] .boot-hero { background: linear-gradient(180deg, #1f6209, #70b921); }
+      .boot-brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; height: 46px; }
+      .boot-brand img { width: 38px; height: 38px; object-fit: contain; border-radius: 22%; }
+      .boot-kicker { margin: 18px 0 7px; font-size: 12px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; }
+      .boot-title { margin: 0 0 18px; font-size: clamp(2.7rem, 13vw, 4.2rem); line-height: .98; font-weight: 300; }
+      .boot-search { height: 54px; box-sizing: border-box; display: flex; align-items: center; padding: 0 22px; border-radius: 99px; background: #ffffffd9; color: #59636b; }
+      .boot-content { display: flex; justify-content: center; gap: 12px; padding: 24px 16px; }
+      .boot-cover { width: min(26vw, 140px); height: min(36vw, 195px); border-radius: 12px; background: linear-gradient(145deg, #3b434a, #22272b); }
+      .boot-cover:nth-child(2) { transform: translateY(-8px); }
     </style>
   </head>
   <body>
-    <div id="root"><div class="boot-screen" role="status" aria-label="Opening Re:Port"><img src="./header-logo.png" alt="" /><span>Re:Port</span></div></div>
+    <div id="root"><div class="boot-shell" role="status" aria-label="Loading Re:Port"><div class="boot-hero"><div class="boot-brand"><img src="./header-logo.png" alt="" /><span>Re:Port</span></div><p class="boot-kicker">Re:Port</p><p class="boot-title">Spotlight</p><div class="boot-search">Find a game or port</div></div><div class="boot-content" aria-hidden="true"><div class="boot-cover"></div><div class="boot-cover"></div><div class="boot-cover"></div></div></div></div>
     <noscript>Re:Port needs JavaScript to run.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>

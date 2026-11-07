@@ -79,6 +79,14 @@ describe('live catalog replacement', () => {
     expect(queryGames({ ...DEFAULT_FILTERS, q: 'heretic' })).toHaveLength(1);
   });
 
+  it('refreshes the lazy search index when a new catalog has the same size', () => {
+    expect(queryGames({ ...DEFAULT_FILTERS, q: 'doom' }).map((g) => g.id)).toEqual(['doom']);
+    expect(setCatalog(catalog(nextDate(), ['heretic', 'quake']))).toBe(true);
+    expect(queryGames({ ...DEFAULT_FILTERS, q: 'doom' })).toHaveLength(0);
+    expect(queryGames({ ...DEFAULT_FILTERS, q: 'heretic' }).map((g) => g.id)).toEqual(['heretic']);
+    expect(queryGames({ ...DEFAULT_FILTERS }).map((g) => g.id).sort()).toEqual(['heretic', 'quake']);
+  });
+
   it('refuses to move backwards to an older build', () => {
     const before = games.length;
     expect(setCatalog(catalog('2001-01-01', ['old']))).toBe(false);

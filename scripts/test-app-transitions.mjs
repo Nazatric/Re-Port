@@ -34,7 +34,8 @@ try {
     await page.waitForSelector('.page-enter #page-title');
     assert.equal(await page.locator('#page-title').innerText(), heading);
     assert.equal(await page.locator('.page').evaluate((el) => getComputedStyle(el).animationName), 'page-arrive');
-    await page.waitForTimeout(320);
+    assert.ok(parseFloat(await page.locator('.page').evaluate((el) => getComputedStyle(el).animationDuration)) >= 0.45, 'Page transitions should be unhurried');
+    await page.waitForTimeout(520);
   }
   assert.deepEqual(errors, [], 'Navigation should not cause browser errors');
   await context.close();
@@ -42,7 +43,9 @@ try {
   const fallback = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
   const fallbackPage = await fallback.newPage();
   await fallbackPage.goto(url);
-  assert.ok(await fallbackPage.locator('.boot-screen').isVisible(), 'The initial HTML should show the branded launch screen');
+  assert.ok(await fallbackPage.locator('.boot-shell').isVisible(), 'The initial HTML should show the app-shaped loading shell');
+  assert.equal(await fallbackPage.locator('.boot-title').innerText(), 'Spotlight');
+  assert.equal(await fallbackPage.locator('.boot-screen').count(), 0, 'There should be no full-screen logo splash');
   await fallback.close();
 
   const reduced = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
@@ -54,7 +57,54 @@ try {
   const duration = await reducedPage.locator('.page').evaluate((el) => getComputedStyle(el).animationDuration);
   assert.ok(parseFloat(duration) < 0.01, `Reduced motion should disable page animation, got ${duration}`);
   await reduced.close();
-  console.log('Launch screen, app icon, navigation animations and reduced motion verified.');
+
+  // Exercise the Android bridge callback: modal dismissal, in-app history, then app exit.
+  // This mocks the bridge; real edge-swipe recognition still needs an Android device.
+  const native = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+  await native.addInitScript(() => {
+    const callbacks = new Map();
+    let nextId = 0;
+    window.androidBridge = {};
+    window.__nativeExits = 0;
+    window.__fireBack = () => {
+      for (const item of callbacks.values()) if (item.event === 'backButton') item.callback({ canGoBack: true });
+    };
+    window.__hasBackListener = () => [...callbacks.values()].some((item) => item.event === 'backButton');
+    window.Capacitor = {
+      PluginHeaders: [{ name: 'App', methods: [
+        { name: 'addListener', rtype: 'callback' },
+        { name: 'removeListener', rtype: 'promise' },
+        { name: 'exitApp', rtype: 'promise' },
+      ] }],
+      nativeCallback: (_plugin, _method, options, callback) => {
+        const id = String(++nextId);
+        callbacks.set(id, { event: options.eventName, callback });
+        return Promise.resolve(id);
+      },
+      nativePromise: (_plugin, method, options) => {
+        if (method === 'removeListener') callbacks.delete(options.callbackId);
+        if (method === 'exitApp') window.__nativeExits++;
+        return Promise.resolve();
+      },
+    };
+  });
+  const nativePage = await native.newPage();
+  await nativePage.goto(url);
+  await nativePage.waitForSelector('#page-title');
+  await nativePage.waitForFunction(() => window.__hasBackListener());
+  await nativePage.locator('.dock a').filter({ hasText: 'Library' }).click();
+  await nativePage.waitForSelector('.page-enter #page-title');
+  await nativePage.locator('button[aria-haspopup="dialog"]').click();
+  await nativePage.waitForSelector('[aria-modal="true"]');
+  await nativePage.evaluate(() => window.__fireBack());
+  await nativePage.waitForSelector('[aria-modal="true"]', { state: 'detached' });
+  assert.equal(await nativePage.locator('#page-title').innerText(), 'Library', 'Back closes the dialog first');
+  await nativePage.evaluate(() => window.__fireBack());
+  await nativePage.waitForFunction(() => document.querySelector('#page-title')?.textContent === 'Spotlight');
+  await nativePage.evaluate(() => window.__fireBack());
+  await nativePage.waitForFunction(() => window.__nativeExits === 1);
+  await native.close();
+  console.log('App loading shell, icon, transitions, reduced motion and native back callback verified.');
 } finally {
   await browser?.close();
   await new Promise((resolve) => server.httpServer.close(resolve));
