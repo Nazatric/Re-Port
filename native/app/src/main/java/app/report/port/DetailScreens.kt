@@ -106,7 +106,7 @@ fun DetailScreen(game: Game, catalog: Catalog, saved: Boolean, onBack: () -> Uni
             item { Box(Modifier.padding(horizontal = 16.dp)) { SectionTitle("Screenshots") } }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    items(game.screenshots, key = { it }) { shot ->
+                    items(game.screenshots) { shot ->
                         Artwork(shot, "Open screenshot", Modifier.width(230.dp).height(130.dp).clip(RoundedCornerShape(12.dp)).clickable { screenshot = shot })
                     }
                 }
@@ -114,7 +114,7 @@ fun DetailScreen(game: Game, catalog: Catalog, saved: Boolean, onBack: () -> Uni
         }
         if (supported.isNotEmpty()) { item { Box(Modifier.padding(16.dp)) { SectionTitle("Supported games") } }; item { GameRail(supported, onGame) } }
         item { Box(Modifier.padding(16.dp)) { SectionTitle("Available Ports") } }
-        items(game.ports, key = { "${it.url}-${it.name}" }) { port ->
+        items(game.ports) { port ->
             Panel(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp)) {
                 Text(port.name.ifBlank { port.developer.ifBlank { "Port" } }, color = p.text, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 Text(listOf(port.developer, port.kind.uppercase(), port.version, port.lifecycle).filter(String::isNotBlank).distinct().joinToString(" · "), color = p.muted, fontSize = 12.sp)

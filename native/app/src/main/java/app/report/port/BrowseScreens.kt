@@ -157,8 +157,8 @@ fun LibraryScreen(catalog: Catalog, filters: Filters, onFilter: (Filters) -> Uni
             Choice("Sort", filters.sort, listOf("popular" to "Most popular", "updated" to "Recently updated", "added" to "Newly added", "title" to "Title A to Z", "year" to "Release year")) { onFilter(filters.copy(sort = it)) }
             Choice("Genre", filters.genre, listOf("" to "All genres") + catalog.collections.map { it.id to it.name } + ("other" to "More games")) { onFilter(filters.copy(genre = it)) }
             Choice("Platform", filters.platform, listOf("" to "All platforms") + catalog.platforms.map { it.id to it.name }) { onFilter(filters.copy(platform = it)) }
-            val sourceTypes = remember(catalog) { catalog.games.flatMap { it.ports.map(Port::kind) }.filter(String::isNotBlank).distinct().sorted() }
-            Choice("Release source", filters.source, listOf("" to "All sources") + sourceTypes.map { it to it.replaceFirstChar(Char::uppercase) }) { onFilter(filters.copy(source = it)) }
+            val sourceTypes = remember(catalog) { catalog.games.flatMap { g -> g.ports.flatMap { listOf(it.kind, it.source) } }.filter(String::isNotBlank).distinct().sorted() }
+            Choice("Release source or catalog list", filters.source, listOf("" to "All sources") + sourceTypes.map { it to it.replaceFirstChar(Char::uppercase) }) { onFilter(filters.copy(source = it)) }
             ToggleRow("Reported working", filters.works, { onFilter(filters.copy(works = it)) })
             ToggleRow("No game files needed", filters.noFiles, { onFilter(filters.copy(noFiles = it)) })
             ToggleRow("Controller supported", filters.controller, { onFilter(filters.copy(controller = it)) })
@@ -196,7 +196,7 @@ fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, hint
 @Composable
 fun BrowseScreen(catalog: Catalog, onBrowse: (Filters) -> Unit) {
     val p = LocalReportColors.current
-    val sources = remember(catalog) { catalog.games.flatMap { it.ports.map(Port::kind) }.filter(String::isNotBlank).distinct().sorted() }
+    val sources = remember(catalog) { catalog.games.flatMap { g -> g.ports.flatMap { listOf(it.kind, it.source) } }.filter(String::isNotBlank).distinct().sorted() }
     LazyColumn(Modifier.fillMaxSize().background(p.background), contentPadding = PaddingValues(bottom = 24.dp)) {
         item { Hero("Browse") }
         item { Box(Modifier.padding(16.dp)) { SectionTitle("Collections") } }
