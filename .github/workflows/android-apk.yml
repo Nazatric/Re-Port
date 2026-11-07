@@ -112,10 +112,28 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
 
+      - name: Verify the APK is universal
+        run: |
+          apk=android/app/build/outputs/apk/debug/app-debug.apk
+          # An APK with no native libraries is architecture-independent. If native libraries
+          # are added later, require all four common Android ABIs rather than a split APK.
+          abis=$(unzip -Z1 "$apk" | sed -n 's|^lib/\([^/]*\)/.*\.so$|\1|p' | sort -u)
+          if [ -n "$abis" ]; then
+            for abi in armeabi-v7a arm64-v8a x86 x86_64; do
+              echo "$abis" | grep -Fxq "$abi" || { echo "Missing ABI: $abi"; exit 1; }
+            done
+          fi
+          echo "Native ABIs: ${abis:-none (architecture-independent)}"
+
       - name: Prepare APK download
         env:
           REF_NAME: ${{ github.ref_name }}
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk "RePort-${REF_NAME//\//-}-${{ github.run_number }}.apk"
+        run: |
+          if [ "$REF_NAME" = v1.0 ]; then
+            cp android/app/build/outputs/apk/debug/app-debug.apk RePort-V1.0-Universal.apk
+          else
+            cp android/app/build/outputs/apk/debug/app-debug.apk "RePort-${REF_NAME//\//-}-${{ github.run_number }}.apk"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
@@ -123,3 +141,23 @@ jobs:
           path: RePort-*.apk
           if-no-files-found: error
           retention-days: 90
+
+  publish-v1:
+    if: github.ref == 'refs/tags/v1.0'
+    needs: apk
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: RePort-apk-${{ github.run_number }}
+          path: release
+      - name: Publish Re:Port V1.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test -f release/RePort-V1.0-Universal.apk
+          gh release create v1.0 release/RePort-V1.0-Universal.apk \
+            --verify-tag --title 'Re:Port V1.0' --notes-file docs/release-v1.0.md

@@ -119,7 +119,7 @@ GitHub Actions builds a fresh APK for app changes, when started manually, and fo
 git tag v1.0.0 && git push origin v1.0.0
 ```
 
-The workflow is `.github/workflows/android-apk.yml`: install, test, check types, regenerate and verify the catalog, check startup and page transitions, and build the Android APK using the prepared icons. The downloadable APK uses Android's debug build variant, even though its filename is simply RePort. It is intended for testing; replacing a differently signed installation requires uninstalling it first. You can also run it locally with `npx cap add android && npx cap sync && npx cap open android`.
+The workflow is `.github/workflows/android-apk.yml`: install, test, check types, regenerate and verify the catalog, check startup and page transitions, verify universal ABI coverage, and build the Android APK using the prepared icons. The `v1.0` tag also publishes the APK to the GitHub release after all checks pass. The downloadable APK uses Android's debug build variant, even though its filename is simply RePort. It is intended for testing; replacing a differently signed installation requires uninstalling it first. You can also run it locally with `npx cap add android && npx cap sync && npx cap open android`.
 
 Settings shows the app build and catalog revision. If those do not match the newest workflow run, the installed APK is stale. The native app unregisters old web service workers on startup so an earlier APK cannot keep serving an old home screen after an update; library data itself continues to refresh from the published catalog.
 
