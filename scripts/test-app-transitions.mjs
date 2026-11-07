@@ -40,6 +40,40 @@ try {
   assert.deepEqual(errors, [], 'Navigation should not cause browser errors');
   await context.close();
 
+  // Narrow phones and enlarged text must not let long port/release content widen the page.
+  for (const width of [320, 360, 390]) {
+    for (const text of [0, 2]) {
+      const mobile = await browser.newContext({ viewport: { width, height: 780 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+      await mobile.addInitScript((text) => localStorage.setItem('portdeck.settings.v1', JSON.stringify({ text, theme: 'azure' })), text);
+      await mobile.route('https://api.github.com/repos/**', (route) => route.fulfill({
+        status: 200, contentType: 'application/json', body: JSON.stringify({
+          tag_name: 'v1', name: 'An exceptionally long release name that must fit within the screen',
+          assets: [{ name: 'VeryLongAndroidPackageNameThatMustBeTruncatedWithoutWideningThePage'.repeat(3) + '.apk', size: 123456, browser_download_url: 'https://github.com/test/release' }],
+        }),
+      }));
+      const phone = await mobile.newPage();
+      for (const game of ['the-legend-of-zelda-link-s-awakening', 'the-legend-of-zelda-tears-of-the-kingdom']) {
+        await phone.goto(`${url}#/game/${game}`);
+        await phone.waitForSelector('#ports article');
+        await phone.waitForSelector('[aria-label="Android packages in this release"]');
+        await phone.evaluate(() => window.scrollTo(1000, 0));
+        assert.equal(await phone.evaluate(() => window.scrollX), 0, `The document must not scroll sideways at ${width}px, text ${text}`);
+        for (const selector of ['#ports article', '#ports article .btn-a', '[aria-label="Latest release on GitHub"]', '.dock-inner']) {
+          const nodes = phone.locator(selector);
+          for (let i = 0; i < await nodes.count(); i++) {
+            const el = nodes.nth(i);
+            const rect = await el.evaluate((node) => { const r = node.getBoundingClientRect(); return { left: r.left, right: r.right }; });
+            assert.ok(rect.left >= -0.5 && rect.right <= width + 0.5, `${selector} must fit within ${width}px at text ${text}: ${JSON.stringify(rect)}`);
+          }
+        }
+        const download = phone.locator('#ports article .btn-a').first();
+        await download.scrollIntoViewIfNeeded();
+        assert.ok(await download.evaluate((el) => { const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return hit === el || el.contains(hit); }), 'Port download should not be obstructed');
+      }
+      await mobile.close();
+    }
+  }
+
   const fallback = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
   const fallbackPage = await fallback.newPage();
   await fallbackPage.goto(url);

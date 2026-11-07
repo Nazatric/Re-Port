@@ -61,8 +61,8 @@ export function PortCard({ port, gameTitle, engine }: { port: Port; gameTitle: s
     .map((id) => platformById.get(id)?.name)
     .filter((x): x is string => Boolean(x));
   return (
-    <article className="panel p-4" aria-label={`${portName(port)} by ${port.developer || 'unknown developer'}`}>
-      <div className="flex items-start gap-3">
+    <article className="panel min-w-0 p-4" aria-label={`${portName(port)} by ${port.developer || 'unknown developer'}`}>
+      <div className="flex flex-wrap items-start gap-3">
         <AvatarFor port={port} name={portName(port)} size={44} />
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-base font-bold leading-tight">{portName(port)}</h3>
@@ -80,7 +80,7 @@ export function PortCard({ port, gameTitle, engine }: { port: Port; gameTitle: s
         {port.lifecycle === 'experimental' && <Pill icon="bolt">Experimental</Pill>}
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {sourcePlatforms.length > 0 && <Fact icon="gamepad" label="Ported From" value={sourcePlatforms.join(', ')} />}
         <Fact icon="gamepad" label="Controls" value={controllerLabel(port)} />
         <Fact icon="folder" label="Game files" value={filesLabel(port)} note={port.filesNote} />
@@ -91,7 +91,7 @@ export function PortCard({ port, gameTitle, engine }: { port: Port; gameTitle: s
       {port.notes && (
         <p className="mt-3 flex gap-2 rounded-xl bg-[var(--surface-2)] p-3 text-sm leading-snug">
           <Icon name="info" size={18} className="mt-0.5 shrink-0 text-[var(--link)]" />
-          <span>{port.notes}</span>
+          <span className="min-w-0 [overflow-wrap:anywhere]">{port.notes}</span>
         </p>
       )}
       {port.instructions && (
@@ -107,7 +107,7 @@ export function PortCard({ port, gameTitle, engine }: { port: Port; gameTitle: s
         </p>
       ))}
 
-      <div className="mt-4 grid gap-2">
+      <div className="mt-4 grid grid-cols-1 gap-2">
         <DownloadButton port={port} size="small" gameTitle={gameTitle} />
         {repo && (
           <a href={port.url} target="_blank" rel="noopener noreferrer" className="btn-glass !min-h-[44px]">
@@ -151,7 +151,7 @@ export function ReleaseCard({ port }: { port: Port }) {
       {result === 'loading' && <div className="mt-3 h-12 animate-pulse rounded-xl bg-[var(--surface-2)]" aria-label="Loading release information" />}
       {result !== 'loading' && result.state === 'ok' && (
         <div className="mt-3">
-          <p className="text-lg font-semibold leading-tight">{result.info.name || result.info.tag}</p>
+          <p className="text-lg font-semibold leading-tight [overflow-wrap:anywhere]">{result.info.name || result.info.tag}</p>
           <p className="mt-0.5 text-sm text-ink2">
             {result.info.date ? `Published ${formatDate(result.info.date)} (${timeAgo(result.info.date)})` : 'Publish date unavailable'}
             {result.info.prerelease ? ' \u00b7 Pre-release' : ''}
@@ -162,7 +162,7 @@ export function ReleaseCard({ port }: { port: Port }) {
                 .slice(0, 6)
                 .map((a) => (
                   <li key={a.name} className="badge badge-plain max-w-full">
-                    <span className="truncate">{a.name}</span>
+                    <span className="min-w-0 truncate">{a.name}</span>
                     {a.size > 0 && <span className="shrink-0 opacity-80">{formatBytes(a.size)}</span>}
                   </li>
                 ))}

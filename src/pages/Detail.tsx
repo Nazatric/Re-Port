@@ -215,7 +215,7 @@ function DetailView({ game }: { game: Game }) {
           <h2 id="h-ports" className="section-title mb-3">
             Available Ports
           </h2>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {game.ports.map((p, i) => (
               <PortCard key={`${p.url}-${i}`} port={p} gameTitle={game.title} engine={p.engine ? (gameById.get(p.engine) ? { id: p.engine, title: gameById.get(p.engine)!.title } : undefined) : undefined} />
             ))}

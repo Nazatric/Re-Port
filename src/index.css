@@ -141,6 +141,10 @@
 
 /* -------------------------------------------------------------- base */
 html {
+  /* Clip page overflow without disabling the independent horizontal carousels. */
+  overflow-x: hidden;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   color-scheme: light;
@@ -156,6 +160,7 @@ body {
   background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%) fixed;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
+  overflow-x: clip;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
@@ -710,7 +715,7 @@ button {
   max-width: 540px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 4px;
   border-radius: 26px;
   background: linear-gradient(180deg, var(--dock-1) 0%, var(--dock-2) 48%, var(--dock-3) 52%, var(--dock-4) 100%);
