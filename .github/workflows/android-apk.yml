@@ -41,16 +41,11 @@ jobs:
       - name: Create the Android project
         run: npx cap add android
 
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
       - name: Render local PWA and adaptive launcher assets
-        run: |
-          if npm run assets > /tmp/re-port-assets.log 2>&1; then
-            cat /tmp/re-port-assets.log
-          else
-            cat /tmp/re-port-assets.log
-            message=$(tail -c 8000 /tmp/re-port-assets.log | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
-            echo "::error::$message"
-            exit 1
-          fi
+        run: npm run assets
 
       - name: Generate launcher icons and splash screens
         run: npx --yes @capacitor/assets generate --android --assetPath assets
