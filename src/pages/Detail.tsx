@@ -3,11 +3,12 @@ import { CoverImage, DataSaverContext } from '../components/Cover';
 import { GameCard, RailCard } from '../components/GameCard';
 import { Icon } from '../components/Icons';
 import { DownloadButton, Fact, PortCard, ReleaseCard } from '../components/PortParts';
+import { ScreenshotImage } from '../components/ScreenshotImage';
 import { BackButton, Pill, SectionHeader, StatusBadge, ImageViewer } from '../components/ui';
 import NotFound from './NotFound';
 import { Link } from '../lib/router';
 import { bestPort, collectionById, controllerLabel, engineOf, filesLabel, gameById, gameStatus, githubRepo, linkMeta, platformById, platformIdsOf, portName, related, STATUS_META } from '../lib/catalog';
-import { heroCandidates, proxied } from '../lib/images';
+import { gameScreenshots, heroCandidates } from '../lib/images';
 import { formatDate, timeAgo } from '../lib/format';
 import { addRecent, toggleFavorite, useFavorites } from '../lib/store';
 import { haptic, shareLink, showToast } from '../lib/ui';
@@ -40,7 +41,7 @@ function Shot({ src, index, onOpen }: { src: string; index: number; onOpen: (i: 
   if (failed) return null;
   return (
     <button type="button" onClick={() => onOpen(index)} aria-label={`Open screenshot ${index + 1}`} className="relative block h-[132px] w-[235px] shrink-0 overflow-hidden rounded-xl border-2 border-white/80 bg-[#1b2a12] shadow-[0_6px_14px_var(--shadow-c)] active:scale-[0.97]">
-      <img src={proxied(src, 480, 76)} alt="" loading="lazy" decoding="async" crossOrigin="anonymous" onError={() => setFailed(true)} className="h-full w-full object-cover" />
+      <ScreenshotImage src={src} alt="" onFailure={() => setFailed(true)} className="h-full w-full object-cover" />
     </button>
   );
 }
@@ -59,7 +60,7 @@ function DetailView({ game }: { game: Game }) {
   const more = useMemo(() => related(game, 12), [game]);
   const supports = useMemo(() => (game.supports || []).map((id) => gameById.get(id)).filter((g): g is Game => Boolean(g)), [game]);
   const githubPort = game.ports.find((p) => githubRepo(p));
-  const shots = game.steam?.shots ?? [];
+  const shots = useMemo(() => gameScreenshots(game), [game]);
   const paragraphs = (game.description || game.summary || '').split('\n\n').filter(Boolean);
   const developers = [...new Set(game.ports.map((p) => p.developer).filter(Boolean))];
 
@@ -189,6 +190,7 @@ function DetailView({ game }: { game: Game }) {
               <h2 id="h-shots" className="section-title">
                 Screenshots
               </h2>
+              <p className="mt-2 text-xs text-ink2">{game.shotNote || 'Images from the original game or a community port; appearance may vary by version.'} Other available images can come from Steam, Libretro or community projects.</p>
             </div>
             <div className="rail">
               {shots.map((s, i) => (

@@ -70,6 +70,9 @@ export interface Game {
   launchbox?: string;
   descSource?: string;
   steam?: SteamInfo;
+  /** Screenshots supplied by projects or other catalog artwork sources. */
+  shots?: string[];
+  shotNote?: string;
   updated?: string;
   added?: string;
   views: number;

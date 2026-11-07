@@ -1,8 +1,9 @@
 import { useContext, useEffect, useId, useRef, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icons';
+import { ScreenshotImage } from './ScreenshotImage';
 import { DataSaverContext } from './Cover';
 import { Link, goBack } from '../lib/router';
-import { skySrc, proxied } from '../lib/images';
+import { skySrc } from '../lib/images';
 import { STATUS_META } from '../lib/catalog';
 import { useToast } from '../lib/ui';
 import type { Status } from '../lib/types';
@@ -260,7 +261,7 @@ export function ImageViewer({ images, index, title, onClose }: { images: string[
       <div ref={scroller} className="no-scrollbar flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
         {images.map((src, i) => (
           <div key={src} className="grid w-full flex-none snap-center place-items-center px-2">
-            <img src={proxied(src, 1280, 80)} alt={`${title} screenshot ${i + 1} of ${images.length}`} crossOrigin="anonymous" decoding="async" className="max-h-[78dvh] max-w-full rounded-lg object-contain" />
+            <ScreenshotImage src={src} full alt={`${title} screenshot ${i + 1} of ${images.length}`} className="max-h-[78dvh] max-w-full rounded-lg object-contain" />
           </div>
         ))}
       </div>

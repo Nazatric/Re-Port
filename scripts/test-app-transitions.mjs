@@ -74,6 +74,27 @@ try {
     }
   }
 
+  // Exercise real catalog screenshot sources and the CDN-to-original fallback without live network.
+  const images = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+  const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/vXQAAAAASUVORK5CYII=', 'base64');
+  await images.route('https://wsrv.nl/**', (route) => route.fulfill({ status: 503 }));
+  await images.route('https://raw.githubusercontent.com/mamcjr/LASRecompAndroid/**', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: pixel }));
+  await images.route('https://thumbnails.libretro.com/**', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: pixel }));
+  const imagePage = await images.newPage();
+  await imagePage.goto(`${url}#/game/the-legend-of-zelda-link-s-awakening`);
+  await imagePage.waitForSelector('[aria-label="Open screenshot 1"]');
+  assert.equal(await imagePage.locator('[aria-label^="Open screenshot "]').count(), 6, 'Developer screenshots should be displayed');
+  await imagePage.locator('[aria-label="Open screenshot 1"]').scrollIntoViewIfNeeded();
+  await imagePage.waitForFunction(() => document.querySelector('[aria-label="Open screenshot 1"] img')?.getAttribute('src')?.startsWith('https://raw.githubusercontent.com/mamcjr/'));
+  await imagePage.locator('[aria-label="Open screenshot 1"]').click();
+  const full = imagePage.locator('[role="dialog"] img').first();
+  assert.ok((await full.getAttribute('src')).includes('/1080p_fullscreen.jpg'), 'Viewer should use the full original screenshot');
+  await imagePage.getByLabel('Close viewer').click();
+  await imagePage.goto(`${url}#/game/ace-combat-3-electrosphere`);
+  await imagePage.waitForSelector('[aria-label="Open screenshot 1"]');
+  assert.ok(await imagePage.locator('[aria-label^="Open screenshot "]').count() >= 1, 'Non-Steam catalog screenshots should be displayed');
+  await images.close();
+
   const fallback = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
   const fallbackPage = await fallback.newPage();
   await fallbackPage.goto(url);

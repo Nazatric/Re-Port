@@ -1,0 +1,20 @@
+{
+  "the-legend-of-zelda-link-s-awakening": {
+    "note": "Android port screenshots from the LAS Recomp for Android project.",
+    "shots": [
+      "https://raw.githubusercontent.com/mamcjr/LASRecompAndroid/main/docs/android/1080p_fullscreen.jpg",
+      "https://raw.githubusercontent.com/mamcjr/LASRecompAndroid/main/docs/android/1080p_16x9.jpg",
+      "https://raw.githubusercontent.com/mamcjr/LASRecompAndroid/main/docs/android/overworld.jpg",
+      "https://raw.githubusercontent.com/mamcjr/LASRecompAndroid/main/docs/android/beach.jpg",
+      "https://raw.githubusercontent.com/mamcjr/LASRecompAndroid/main/docs/android/sword.jpg",
+      "https://raw.githubusercontent.com/mamcjr/LASRecompAndroid/main/docs/android/shore.jpg"
+    ]
+  },
+  "the-legend-of-zelda-tears-of-the-kingdom": {
+    "note": "Screenshots from the Weeping of the Empire project for Windows; the Android ports may look different.",
+    "shots": [
+      "https://github.com/daniel-madrid-07/weeping-of-the-empire/releases/download/v0.1.1/screenshot-gliding.jpg",
+      "https://github.com/daniel-madrid-07/weeping-of-the-empire/releases/download/v0.1.1/screenshot-fight.jpg"
+    ]
+  }
+}

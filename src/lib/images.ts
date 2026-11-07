@@ -36,11 +36,13 @@ export const COVER_WIDTHS = [240, 420, 600, 900, 1200];
  */
 export function coverCandidates(g: Game, maxWidth = 360): ImageCandidate[] {
   const list: ImageCandidate[] = [];
-  const large = maxWidth >= 560;
+  const large = maxWidth >= 360;
   const widths = COVER_WIDTHS.filter((w) => w <= Math.max(maxWidth, 240) * 2.5);
   const launch = g.cover || '';
-  if (large && launch) list.push({ src: launch, cors: false });
-  if (launch) list.push({ src: proxied(launch, maxWidth, 90), srcSet: srcSetFor(launch, widths, 90), cors: true });
+  // Generated title cards are a fallback, not a replacement for real Steam artwork.
+  const generated = /\/covers\/generated\/[^/]+\.svg(?:\?|$)/i.test(launch);
+  if (large && launch && !generated) list.push({ src: launch, cors: false });
+  if (launch && !generated) list.push({ src: proxied(launch, maxWidth, 90), srcSet: srcSetFor(launch, widths, 90), cors: true });
   if (g.steam) {
     const hi = steamCapsule2x(g.steam.id);
     const lo = steamCapsule(g.steam.id);
@@ -48,7 +50,7 @@ export function coverCandidates(g: Game, maxWidth = 360): ImageCandidate[] {
     list.push({ src: proxied(lo, maxWidth, 90), cors: true });
     list.push({ src: lo, cors: false });
   }
-  if (!large && launch) list.push({ src: launch, cors: false });
+  if (launch && (!large || generated)) list.push({ src: launch, cors: false });
   return list;
 }
 
@@ -84,3 +86,9 @@ export function portAvatarOwner(p: Port): string {
 /** Poly Haven (CC0) sky used as hero backdrop. Falls back to pure CSS gradients when offline. */
 export const SKY_URL = 'https://cdn.polyhaven.com/asset_img/thumbs/kloofendal_48d_partly_cloudy_puresky.png?width=1024';
 export const skySrc = (w = 900) => proxied(SKY_URL, w, 68);
+
+/** Collect only real catalog images, preserving the curated source order and removing duplicates. */
+export function gameScreenshots(game: Game): string[] {
+  const urls = [...(Array.isArray(game.shots) ? game.shots : []), ...(Array.isArray(game.steam?.shots) ? game.steam.shots : [])];
+  return [...new Set(urls.filter((url): url is string => typeof url === 'string' && /^https:\/\//i.test(url)))];
+}

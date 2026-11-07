@@ -357,6 +357,7 @@ const csv = fs.readFileSync(path.join(SRC, 'napl-sheet.csv'), 'utf8');
 const rows = parseCSV(csv).filter((r) => r.GAME && r.URL);
 const steamMap = fs.existsSync(path.join(SRC, 'steam-map.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'steam-map.json'), 'utf8')) : {};
 const artMap = fs.existsSync(path.join(SRC, 'art-map.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'art-map.json'), 'utf8')) : {};
+const verifiedShots = fs.existsSync(path.join(SRC, 'verified-screenshots.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'verified-screenshots.json'), 'utf8')) : {};
 const audit = fs.existsSync(path.join(SRC, 'link-audit.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'link-audit.json'), 'utf8')) : {};
 const isDead = (port) => audit[port.download] === 404 || audit[port.download] === 410;
 const extras = fs.existsSync(path.join(SRC, 'extras.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'extras.json'), 'utf8')) : [];
@@ -758,6 +759,8 @@ function finalize(g) {
   const collections = g.genres.length ? g.genres : [];
   const previous = previousCatalog?.games?.find((old) => old.platform !== 'engine' && normTitle(old.title) === normTitle(g.title) && Number(old.year || 0) === Number(g.year || 0));
   const steam = steamMap[g.id] || previous?.steam || null;
+  const verified = verifiedShots[g.id];
+  const shots = [...new Set([...(verified?.shots || []), ...(g.shots || [])])];
   const m = /\/apps\/(\d+)\//.exec(g.cover || '');
   const rec = {
     id: g.id,
@@ -772,7 +775,8 @@ function finalize(g) {
     launchbox: g.launchbox || undefined,
     descSource: g.descSource || undefined,
     steam: steam || (m ? { id: Number(m[1]), shots: [] } : undefined),
-    shots: g.shots && g.shots.length ? g.shots : undefined,
+    shots: shots.length ? shots : undefined,
+    shotNote: verified?.note || undefined,
     updated: updated || undefined,
     added: added || undefined,
     views: g.ports.reduce((s, p) => s + (p.views || 0), 0),
@@ -798,7 +802,7 @@ const stats = {
   ports: finalGames.reduce((s, g) => s + g.ports.length, 0),
   withCover: finalGames.filter((g) => g.cover).length,
   withSteam: finalGames.filter((g) => g.steam).length,
-  withShots: finalGames.filter((g) => g.steam?.shots?.length).length,
+  withShots: finalGames.filter((g) => g.shots?.length || g.steam?.shots?.length).length,
   dropped: dropped.length,
 };
 
