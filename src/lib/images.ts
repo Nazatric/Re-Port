@@ -50,7 +50,12 @@ export function coverCandidates(g: Game, maxWidth = 360): ImageCandidate[] {
     list.push({ src: proxied(lo, maxWidth, 90), cors: true });
     list.push({ src: lo, cors: false });
   }
-  if (launch && (!large || generated)) list.push({ src: launch, cors: false });
+  if (launch && !large && !generated) list.push({ src: launch, cors: false });
+  if (g.coverFallback && g.coverFallback !== launch) {
+    list.push({ src: proxied(g.coverFallback, maxWidth, 90), srcSet: srcSetFor(g.coverFallback, widths, 90), cors: true });
+    list.push({ src: g.coverFallback, cors: false });
+  }
+  if (launch && generated) list.push({ src: launch, cors: false });
   return list;
 }
 

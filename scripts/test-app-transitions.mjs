@@ -21,6 +21,8 @@ try {
   await page.waitForSelector('#page-title');
   assert.equal(await page.locator('#page-title').innerText(), 'Spotlight');
   assert.equal(await page.locator('.page-enter, .page-turn').count(), 0, 'The initial page must not fade in from blank');
+  assert.equal(await page.locator('.page-intro').count(), 1, 'The initial home should settle in without a splash');
+  assert.equal(await page.locator('.page-intro .hero .wrap').evaluate((el) => getComputedStyle(el).animationName), 'intro-settle');
   assert.equal(await page.locator('.dock a[aria-current="page"]').innerText(), 'Home');
   await page.waitForFunction(() => {
     const img = document.querySelector('.hero img[src*="header-logo"]');
@@ -107,11 +109,22 @@ try {
   const reducedPage = await reduced.newPage();
   await reducedPage.goto(url);
   await reducedPage.waitForSelector('#page-title');
+  await reducedPage.waitForFunction(() => document.documentElement.dataset.motion === 'reduce');
+  const introDuration = await reducedPage.locator('.page-intro .hero .wrap').evaluate((el) => getComputedStyle(el).animationDuration);
+  assert.ok(parseFloat(introDuration) < 0.01, `Reduced motion should disable intro animation, got ${introDuration}`);
   await reducedPage.locator('.dock a').filter({ hasText: 'Library' }).click();
   await reducedPage.waitForSelector('.page-enter #page-title');
   const duration = await reducedPage.locator('.page').evaluate((el) => getComputedStyle(el).animationDuration);
   assert.ok(parseFloat(duration) < 0.01, `Reduced motion should disable page animation, got ${duration}`);
   await reduced.close();
+
+  const animationContext = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  await animationContext.route('https://**/*', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: pixel }));
+  const animationPage = await animationContext.newPage();
+  await animationPage.goto(url);
+  await animationPage.waitForSelector('.cover-image-ready');
+  assert.equal(await animationPage.locator('.cover-image-ready').first().evaluate((el) => getComputedStyle(el).animationName), 'artwork-settle', 'Loaded artwork should settle into place');
+  await animationContext.close();
 
   // Exercise the Android bridge callback: modal dismissal, in-app history, then app exit.
   // This mocks the bridge; real edge-swipe recognition still needs an Android device.

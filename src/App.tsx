@@ -159,7 +159,7 @@ export default function App() {
           Offline. Saved artwork and the full catalog still work.
         </div>
       )}
-      <div key={route.path} className={`page${hasNavigated.current ? (first === 'game' ? ' page-turn' : ' page-enter') : ''}`}>
+      <div key={route.path} className={`page${hasNavigated.current ? (first === 'game' ? ' page-turn' : ' page-enter') : first === '' ? ' page-intro' : ''}`}>
         {pageFor(route)}
       </div>
       <BottomNav route={route} />

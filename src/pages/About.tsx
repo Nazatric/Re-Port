@@ -11,6 +11,8 @@ const CREDITS: [string, string, string][] = [
   ['LibertyRecompAndroid', 'Android release and status notes for the Xbox 360 recompilation of Grand Theft Auto IV.', 'https://github.com/vaduur/LibertyRecompAndroid'],
   ['Open Nectar', 'Native Pikmin and Pikmin 2 Android releases, validated against the project README.', 'https://github.com/SSunnKing/Open-Nectar---Pikmin-Native-PC-Mobile-Port'],
   ['LaunchBox Games Database', 'Box art, release years and descriptions for most entries.', 'https://gamesdb.launchbox-app.com/'],
+  ['Libretro thumbnails', 'Community box art and original-console screenshots, matched by platform and title.', 'https://thumbnails.libretro.com/'],
+  ['Port project developers', 'Project screenshots linked from their repositories; some show a PC version rather than the Android port.', 'https://github.com/'],
   ['Steam', 'Library artwork and screenshots for PC games that match by exact title.', 'https://store.steampowered.com/'],
   ['Wikipedia and Wikidata', 'Cover art, summaries (CC BY-SA 4.0) and genres for list imports.', 'https://www.wikipedia.org/'],
   ['Poly Haven', 'CC0 sky photography used behind the page headers.', 'https://polyhaven.com/'],

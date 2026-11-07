@@ -67,6 +67,8 @@ export interface Game {
   summary: string;
   description: string;
   cover?: string;
+  /** Additional platform-matched artwork, used when the preferred cover fails. */
+  coverFallback?: string;
   launchbox?: string;
   descSource?: string;
   steam?: SteamInfo;

@@ -2,9 +2,9 @@
 
 A library of **unofficial native Android ports**: source ports, engine rebuilds, decompilation projects and static recompilations of PC and console games. Mobile portrait first, with a 2010s glossy "Aero" look inspired by the Xbox 360 dashboard, Windows Phone Metro tiles and PS3 cover flow.
 
-- 821 games, 14 engines and launchers, about 1,040 ports, 24 source platforms, 15 collections
+- The bundled catalog currently contains 2,484 games, 13 engines and 3,475 ports across PC and console platforms.
 - The **Download** button on a port opens the developer's release page: `/releases/latest` for GitHub projects, or the Telegram post, Discord server, Google Play listing, itch.io page and so on where the port is published
-- Real artwork on every screen: box art, Steam library art and screenshots, developer avatars, and a Poly Haven sky behind the headers
+- Artwork from LaunchBox, Steam, Libretro and port projects, plus developer avatars and a Poly Haven sky. Some titles do not have available images.
 - Artwork is **streamed and cached on demand**, nothing is bundled. The app shell, catalog, icons and fonts are local, so everything opens offline. Missing artwork falls back to generated covers
 - Accessibility first: semantic landmarks, skip link, focus management on every page change, visible focus rings, 44px touch targets, text size, high contrast, reduced motion, screen-reader labels, status never conveyed by colour alone
 - The custom cover flow uses native horizontal scrolling for touch inertia and snapping. Only the inner artwork is transformed, in a single requestAnimationFrame pass while scrolling. Long lists render in chunks with `content-visibility`; physical-device refresh-rate performance still needs device testing.
@@ -28,7 +28,7 @@ The catalog is plain JSON (`src/data/catalog.json`), so a Kotlin Multiplatform c
 | `npm run typecheck` | TypeScript check |
 | `npm run data` | Rebuild `src/data/catalog.json` from `data/source/` |
 | `npm run sync` | Fetch every list in `data/sources.json` and import its games |
-| `node scripts/enrich-art.mjs` | Add Libretro box art and gameplay screenshots (cached, resumable) |
+| `node scripts/enrich-console-art.mjs` | Rebuild the exact title-and-platform Libretro image index using GitHub CLI |
 | `npm run audit` | Check that GitHub, Play Store and itch.io release links still exist (dead ones are dropped on the next data build) |
 | `node scripts/e2e-smoke.mjs` | 70+ browser checks in real Chromium (needs `npm i -D playwright` and a running `vite preview`) |
 | `node scripts/test-cover-flow.mjs` | Cover-flow gesture and layout regressions against `npm run dev` on port 5173 |
@@ -85,9 +85,8 @@ all of its ports (even when lists disagree on the release year); genuinely diffe
 a name stay separate when their years are far apart. Ports are ranked by real release downloads, then
 GitHub stars, then list views — so the Download button opens the strongest source first.
 
-To refresh: `npm run sync && npm run data` (and `node scripts/enrich-art.mjs` for artwork).
-`enrich-art.mjs` is resumable and cached in `data/source/art-map.json`, so run it repeatedly to cover
-more console games. Set `CACHE_ONLY=1` on the importer to rebuild without network access.
+To refresh: `npm run sync && npm run data` (and `node scripts/enrich-console-art.mjs` for artwork).
+`enrich-console-art.mjs` records URLs for exact title-and-platform matches in `data/source/console-art.json`. Curated project screenshots and their version notes live in `data/source/verified-screenshots.json`. Both are merged into each catalog build; unavailable or ambiguous images are skipped. Screenshots can depict the original console game or a particular PC/Android project rather than every port, and retro source images may be low resolution. Set `CACHE_ONLY=1` on the importer to rebuild without network access.
 
 Re:Port never stores or links to game files or ROM download sites. Mirror and 4pda links are labelled in the app.
 
@@ -117,4 +116,4 @@ Report requests from game pages use the same endpoint with `project: "REPORT"` a
 
 ## Credits
 
-NAPL community sheet, Awesome Android Native Ports (abduznik), LaunchBox Games Database, Steam, Wikipedia (CC BY-SA 4.0), Wikidata, Poly Haven (CC0), GitHub, wsrv.nl image CDN, Open Sans (SIL OFL). Game names, logos and cover art belong to their owners and are shown for identification only.
+NAPL community sheet, Awesome Android Native Ports (abduznik), LaunchBox Games Database, Steam, Wikipedia (CC BY-SA 4.0), Wikidata, Libretro community thumbnails and port project developers, Poly Haven (CC0), GitHub, wsrv.nl image CDN, Open Sans (SIL OFL). Game names, logos and cover art belong to their owners and are shown for identification only.

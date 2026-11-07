@@ -322,7 +322,7 @@ button {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.12) 50%, rgba(0, 0, 0, 0.1) 52%, rgba(255, 255, 255, 0.1));
   border: 1px solid rgba(255, 255, 255, 0.55);
   box-shadow: 0 3px 10px rgba(0, 30, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  transition: transform 0.12s ease;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .icon-btn:active {
   transform: scale(0.92);
@@ -350,7 +350,7 @@ button {
   border: 1px solid var(--accent-edge);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 -2px 6px rgba(0, 0, 0, 0.2), 0 8px 18px var(--accent-glow);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
-  transition: transform 0.12s ease, filter 0.12s ease;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
   overflow: hidden;
 }
 [data-theme="graphite"] .btn-a {
@@ -402,7 +402,7 @@ button {
   background: linear-gradient(180deg, var(--surface-solid), var(--surface-2));
   border: 1px solid var(--line);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 3px 8px var(--shadow-c);
-  transition: transform 0.12s ease;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 [data-theme="graphite"] .btn-glass {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 3px 8px var(--shadow-c);
@@ -579,7 +579,7 @@ button {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 4px 12px var(--shadow-c);
   content-visibility: auto;
   contain-intrinsic-size: auto 92px;
-  transition: transform 0.15s ease;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .row-card:active {
   transform: scale(0.985);
@@ -613,7 +613,7 @@ button {
   isolation: isolate;
   background: radial-gradient(120% 90% at 30% 0%, var(--blade-hi), transparent 62%), linear-gradient(180deg, var(--blade-1), var(--blade-2));
   box-shadow: 0 8px 18px rgba(0, 20, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  transition: transform 0.16s ease;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .blade:active {
   transform: scale(0.96);
@@ -830,8 +830,27 @@ button {
 }
 
 /* ------------------------------------------------------------- pages */
-/* The first page is visible immediately; only actual navigation animates. Keep the
-   incoming page mostly visible so the dock never appears over an empty screen. */
+/* The screen is usable immediately: only its contents settle into place, not the page
+   container (which must never trap fixed overlays). Keep opacity high and delays short. */
+.page-intro .hero .wrap {
+  animation: intro-settle 0.48s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.page-intro .coverflow {
+  animation: intro-settle 0.55s cubic-bezier(0.22, 1, 0.36, 1) 50ms backwards;
+}
+@keyframes intro-settle {
+  from { opacity: 0.8; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+/* Each image softly settles as it becomes available, including cached images. */
+.cover-image-ready {
+  animation: artwork-settle 0.42s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+@keyframes artwork-settle {
+  from { opacity: 0.4; transform: translate3d(0, 5px, 0) scale(1.02); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+/* Actual navigation remains distinct but starts mostly visible. */
 .page-enter {
   animation: page-arrive 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -879,6 +898,10 @@ button {
 }
 .stagger > *:nth-child(5) {
   animation-delay: 160ms;
+}
+/* Avoid animating dozens of off-screen cards at once on long lists. */
+.stagger > *:nth-child(n + 6) {
+  animation: none;
 }
 
 .line-clamp-2 {

@@ -358,6 +358,7 @@ const rows = parseCSV(csv).filter((r) => r.GAME && r.URL);
 const steamMap = fs.existsSync(path.join(SRC, 'steam-map.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'steam-map.json'), 'utf8')) : {};
 const artMap = fs.existsSync(path.join(SRC, 'art-map.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'art-map.json'), 'utf8')) : {};
 const verifiedShots = fs.existsSync(path.join(SRC, 'verified-screenshots.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'verified-screenshots.json'), 'utf8')) : {};
+const consoleArt = fs.existsSync(path.join(SRC, 'console-art.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'console-art.json'), 'utf8')) : {};
 const audit = fs.existsSync(path.join(SRC, 'link-audit.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'link-audit.json'), 'utf8')) : {};
 const isDead = (port) => audit[port.download] === 404 || audit[port.download] === 410;
 const extras = fs.existsSync(path.join(SRC, 'extras.json')) ? JSON.parse(fs.readFileSync(path.join(SRC, 'extras.json'), 'utf8')) : [];
@@ -760,7 +761,10 @@ function finalize(g) {
   const previous = previousCatalog?.games?.find((old) => old.platform !== 'engine' && normTitle(old.title) === normTitle(g.title) && Number(old.year || 0) === Number(g.year || 0));
   const steam = steamMap[g.id] || previous?.steam || null;
   const verified = verifiedShots[g.id];
-  const shots = [...new Set([...(verified?.shots || []), ...(g.shots || [])])];
+  const match = consoleArt[g.id];
+  // Guard against stale IDs being reused after a catalog refresh.
+  const console = match?.title === g.title && match?.platform === g.platform ? match : null;
+  const shots = [...new Set([...(verified?.shots || []), ...(g.shots || []), ...(console?.shots || [])])];
   const m = /\/apps\/(\d+)\//.exec(g.cover || '');
   const rec = {
     id: g.id,
@@ -771,7 +775,8 @@ function finalize(g) {
     genres: collections,
     summary,
     description,
-    cover: g.cover || undefined,
+    cover: g.cover || console?.cover || undefined,
+    coverFallback: g.cover && console?.cover && g.cover !== console.cover ? console.cover : undefined,
     launchbox: g.launchbox || undefined,
     descSource: g.descSource || undefined,
     steam: steam || (m ? { id: Number(m[1]), shots: [] } : undefined),

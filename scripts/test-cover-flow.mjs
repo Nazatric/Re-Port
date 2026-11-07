@@ -3,10 +3,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { chromium, webkit } from 'playwright';
+import { createServer } from 'vite';
 
-const BASE = process.env.BASE || 'http://127.0.0.1:5173';
+const server = process.env.BASE ? null : await createServer({ server: { host: '127.0.0.1', port: 4275, strictPort: true } });
+if (server) await server.listen();
+const BASE = process.env.BASE || 'http://127.0.0.1:4275';
 const isWebKit = process.env.BROWSER === 'webkit';
-const browser = await (isWebKit ? webkit : chromium).launch();
+const browser = await (isWebKit ? webkit : chromium).launch(isWebKit ? {} : { executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--no-sandbox'] });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
 const page = await context.newPage();
 const errors = [];
@@ -264,4 +267,5 @@ try {
   process.exitCode = 1;
 } finally {
   await browser.close();
+  await server?.close();
 }

@@ -16,5 +16,215 @@
       "https://github.com/daniel-madrid-07/weeping-of-the-empire/releases/download/v0.1.1/screenshot-gliding.jpg",
       "https://github.com/daniel-madrid-07/weeping-of-the-empire/releases/download/v0.1.1/screenshot-fight.jpg"
     ]
+  },
+  "metal-gear-rising-revengeance": {
+    "note": "Android port screenshots from the Zandatsu project.",
+    "shots": [
+      "https://raw.githubusercontent.com/dfdx047/Zandatsu/main/docs/assets/v1.2/blade-toque.jpg",
+      "https://raw.githubusercontent.com/dfdx047/Zandatsu/main/docs/assets/v1.1/widescreen-20x9.jpg",
+      "https://raw.githubusercontent.com/dfdx047/Zandatsu/main/docs/assets/v1.1/original-16x9-em-20x9.jpg"
+    ]
+  },
+  "infamous-second-son": {
+    "note": "Screenshots from the inFAMOUS Second Son PC project; other ports may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/HayatoG/iss_pc/developer/docs/screenshots/01-grafite-sensor.jpg",
+      "https://raw.githubusercontent.com/HayatoG/iss_pc/developer/docs/screenshots/02-galpao.jpg",
+      "https://raw.githubusercontent.com/HayatoG/iss_pc/developer/docs/screenshots/03-cerca.jpg",
+      "https://raw.githubusercontent.com/HayatoG/iss_pc/developer/docs/screenshots/04-praia.jpg"
+    ]
+  },
+  "gears-of-war-2": {
+    "note": "Screenshots from the Gears of War 2 PC project; Android versions may differ.",
+    "shots": [
+      "https://raw.githubusercontent.com/santiquiroz/gears-of-war-2-pc-port/809eb46a79e4a6a9f6cd092dd6d8e85824f62b0a/docs/screenshots/act1-jacintomed.jpg",
+      "https://raw.githubusercontent.com/santiquiroz/gears-of-war-2-pc-port/809eb46a79e4a6a9f6cd092dd6d8e85824f62b0a/docs/screenshots/title.jpg"
+    ]
+  },
+  "grand-theft-auto-iv": {
+    "note": "Gameplay screenshot from the Theft4 project; other versions may differ.",
+    "shots": [
+      "https://raw.githubusercontent.com/KoreanSeats1/Theft4/88115fefad59cfcb62d17c0c9548a7a900c01a23/docs/images/capture-saved-gameplay.png"
+    ]
+  },
+  "killzone-shadowfall": {
+    "note": "Screenshots from the Killzone Shadow Fall Windows project; other versions may differ.",
+    "shots": [
+      "https://raw.githubusercontent.com/lesca-191204/killzone-shadowfall-pc/4ae4791b4f0264073589ef90459acc0229b262c1/docs/images/fov-100.jpg",
+      "https://raw.githubusercontent.com/lesca-191204/killzone-shadowfall-pc/4ae4791b4f0264073589ef90459acc0229b262c1/docs/images/fov-150.jpg"
+    ]
+  },
+  "medievil-medievil-ps4-for-pc": {
+    "note": "Screenshots from the MediEvil PC project; other versions may differ.",
+    "shots": [
+      "https://raw.githubusercontent.com/bc160201983/medievil_2019_pc_port/424f3ea8dbdcb02754a31e5225ef42e2f77f8e94/docs/screenshots/graveyard.jpg",
+      "https://raw.githubusercontent.com/bc160201983/medievil_2019_pc_port/424f3ea8dbdcb02754a31e5225ef42e2f77f8e94/docs/screenshots/combat.jpg",
+      "https://raw.githubusercontent.com/bc160201983/medievil_2019_pc_port/424f3ea8dbdcb02754a31e5225ef42e2f77f8e94/docs/screenshots/spirits.jpg"
+    ]
+  },
+  "doom-2016": {
+    "note": "Android port screenshots from the DOOM (2016) project.",
+    "shots": [
+      "https://raw.githubusercontent.com/Desm0nt/doom-port/c86e434da87f3f05761abdc137b1b33a316d48ba/docs/images/touch_desert.jpg",
+      "https://raw.githubusercontent.com/Desm0nt/doom-port/c86e434da87f3f05761abdc137b1b33a316d48ba/docs/images/touch_combat.jpg",
+      "https://raw.githubusercontent.com/Desm0nt/doom-port/c86e434da87f3f05761abdc137b1b33a316d48ba/docs/images/desert.jpg",
+      "https://raw.githubusercontent.com/Desm0nt/doom-port/c86e434da87f3f05761abdc137b1b33a316d48ba/docs/images/combat.jpg",
+      "https://raw.githubusercontent.com/Desm0nt/doom-port/c86e434da87f3f05761abdc137b1b33a316d48ba/docs/images/canyon.jpg"
+    ]
+  },
+  "pokemon-legends-za": {
+    "note": "Screenshots from the Pokémon Legends: Z-A PC project; other versions may differ.",
+    "shots": [
+      "https://raw.githubusercontent.com/Hexveil404/PokeZ-ARecomp/e2b0f9981d9e70a9daf16560f24e6919ad1dc127/docs/screenshots/lumiose.jpg",
+      "https://raw.githubusercontent.com/Hexveil404/PokeZ-ARecomp/e2b0f9981d9e70a9daf16560f24e6919ad1dc127/docs/screenshots/start-screen.png"
+    ]
+  },
+  "alex-kidd-in-miracle-world-dx": {
+    "note": "Android port screenshots from the Alex Kidd in Miracle World DX project.",
+    "shots": [
+      "https://raw.githubusercontent.com/CowKillers/alex-kidd-in-miracle-world-dx-nx2android/68a38f939e70b4f1fc8e3ef8acb6f6625affdee4/screenshots/01-retro-gameplay.jpg"
+    ]
+  },
+  "metroid-prime-remastered": {
+    "note": "Screenshots from the PrimeRecomp PC project; other versions may differ.",
+    "shots": [
+      "https://raw.githubusercontent.com/gminustwo/primerecomp/b09eb7998be6a4693d8ec6657f233572ea1b3e4c/docs/landing_site.jpg",
+      "https://raw.githubusercontent.com/gminustwo/primerecomp/b09eb7998be6a4693d8ec6657f233572ea1b3e4c/docs/start_screen.jpg"
+    ]
+  },
+  "hack-versus": {
+    "note": "Screenshot from the .hack//Versus port project; appearance may vary by platform.",
+    "shots": [
+      "https://raw.githubusercontent.com/joseflores-dev/dot-hack-versus-port/21bb84ba10d878d5fd927dd47633edfcccc1db13/docs/pelea.png"
+    ]
+  },
+  "army-of-two-the-40th-day": {
+    "note": "Screenshots from crabscrab650-sketch/ArmyOfTwo40thDay-Recomp project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/crabscrab650-sketch/ArmyOfTwo40thDay-Recomp/fbeb016aa7589d179d704ab6a707d115048d8560/gameplay_shanghai_first_boot.jpg",
+      "https://raw.githubusercontent.com/crabscrab650-sketch/ArmyOfTwo40thDay-Recomp/fbeb016aa7589d179d704ab6a707d115048d8560/gameplay_elevator_weapon_customization.png"
+    ]
+  },
+  "3-on-3-nhl-arcade": {
+    "note": "Screenshots from Wndwsqrrl/3on3NHL-recomp project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/Wndwsqrrl/3on3NHL-recomp/0abd1d0d4322b4cc282697380e2cbcf517f27001/docs/images/gameplay.jpg"
+    ]
+  },
+  "deadly-premonition": {
+    "note": "Screenshots from LittleBitUA/DPRecomp project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/LittleBitUA/DPRecomp/e0624129c06b9437aa0278b58f2f3eb954192aec/docs/screenshots/york.jpg",
+      "https://raw.githubusercontent.com/LittleBitUA/DPRecomp/e0624129c06b9437aa0278b58f2f3eb954192aec/docs/screenshots/native_20_station.jpg",
+      "https://raw.githubusercontent.com/LittleBitUA/DPRecomp/e0624129c06b9437aa0278b58f2f3eb954192aec/docs/screenshots/native_20_hallway.jpg"
+    ]
+  },
+  "earthworm-jim-hd": {
+    "note": "Screenshots from TekRantGaming/earthworm-jim-hd-recompiled project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/TekRantGaming/earthworm-jim-hd-recompiled/a0203ce6287e305cf0eef4e97f3c598cc6d953ab/docs/images/game-chain.jpg"
+    ]
+  },
+  "fifa-09": {
+    "note": "Screenshots from ChunchunQ/fifa09-recomp project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/ChunchunQ/fifa09-recomp/4dba1063d742911a81c81aa53347e463c2dc75d5/docs/images/match.jpg"
+    ]
+  },
+  "forza-motorsport-4": {
+    "note": "Screenshots from 0herculabs/hl360-forza4 project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/0herculabs/hl360-forza4/d6597d7d58d5f64bd171fd67b4f90562333d5d27/doc/img/vlcsnap-2026-10-16-08h50m02s529.png",
+      "https://raw.githubusercontent.com/0herculabs/hl360-forza4/d6597d7d58d5f64bd171fd67b4f90562333d5d27/doc/img/vlcsnap-2026-10-16-10h51m27s363.png"
+    ]
+  },
+  "forza-horizon-1": {
+    "note": "Screenshots from FH1-ReImagined/ForzaHorizon1-ReImagined project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/FH1-ReImagined/ForzaHorizon1-ReImagined/33ed8a62f88b8dda91ede6d315eba42c82f67436/docs/images/forza-free-roam.jpg",
+      "https://raw.githubusercontent.com/FH1-ReImagined/ForzaHorizon1-ReImagined/33ed8a62f88b8dda91ede6d315eba42c82f67436/docs/images/forza-race.jpg"
+    ]
+  },
+  "halo-3": {
+    "note": "Screenshots from GTTeancum/OpenH3M project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/GTTeancum/OpenH3M/9c4697202625b62157eeffaf0fe6eb290d637b3c/docs/images/last-resort-four-player.png",
+      "https://raw.githubusercontent.com/GTTeancum/OpenH3M/9c4697202625b62157eeffaf0fe6eb290d637b3c/docs/images/construct-four-player.png"
+    ]
+  },
+  "juiced-2-hot-import-nights": {
+    "note": "Screenshots from anishchandra24/Juiced2-Recompiled project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/anishchandra24/Juiced2-Recompiled/cd5cb875673fa13b0654bed26869341ae30aab19/docs/screenshots/03-ingame.png",
+      "https://raw.githubusercontent.com/anishchandra24/Juiced2-Recompiled/cd5cb875673fa13b0654bed26869341ae30aab19/docs/screenshots/04-ingame.png"
+    ]
+  },
+  "lost-odyssey": {
+    "note": "Screenshots from freefrank/LostOdysseyRecomp project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/freefrank/LostOdysseyRecomp/f9da0ae9bdd481a5ea4fe6431f3a4724d8261147/docs/images/ring-battle.png",
+      "https://raw.githubusercontent.com/freefrank/LostOdysseyRecomp/f9da0ae9bdd481a5ea4fe6431f3a4724d8261147/docs/images/city-exploration.png"
+    ]
+  },
+  "madden-nfl-08": {
+    "note": "Screenshots from anishchandra24/MaddenNFL08-Recompiled project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/anishchandra24/MaddenNFL08-Recompiled/9add2ea906730f23ae9697b07cca4c50070f59c4/docs/screenshots/03-in-game.png"
+    ]
+  },
+  "monopoly": {
+    "note": "Screenshots from josiahg2502-glitch/MonopolyRecompiled project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/josiahg2502-glitch/MonopolyRecompiled/04883b4ce07dcea8c82ec2082e8191c6a6ea41c5/docs/screenshots/board.jpg"
+    ]
+  },
+  "nba-jam-on-fire-edition": {
+    "note": "Screenshots from GTTeancum/OpenJam project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/GTTeancum/OpenJam/8daa317846f34125a147114b129f47063b7c23ee/screenshots/ingame_heat_vs_mavs.png"
+    ]
+  },
+  "nhl-2k8": {
+    "note": "Screenshots from anishchandra24/NHL2K8-Recompiled project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/anishchandra24/NHL2K8-Recompiled/4ec9b92e3f51bef6c2eb068e4f3175b8a4cbd032/docs/screenshots/03-in-game.png"
+    ]
+  },
+  "silent-hill-downpour": {
+    "note": "Screenshots from LittleBitUA/DownpourRecomp project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/LittleBitUA/DownpourRecomp/a183ff0b21f5e504526102754a04f2a9534a97b7/docs/screenshots/murphy-closeup.png",
+      "https://raw.githubusercontent.com/LittleBitUA/DownpourRecomp/a183ff0b21f5e504526102754a04f2a9534a97b7/docs/screenshots/v1-preview-silent-hill-sign.png",
+      "https://raw.githubusercontent.com/LittleBitUA/DownpourRecomp/a183ff0b21f5e504526102754a04f2a9534a97b7/docs/screenshots/v1-preview-yard-twilight.png"
+    ]
+  },
+  "sonic-free-riders": {
+    "note": "Screenshots from YuutaTsubasa/Free-Riders-Recompiled project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/YuutaTsubasa/Free-Riders-Recompiled/fe4ff08a0b7305eb7f3a8d34a53223a705a1c56e/docs/images/camera-input-skeleton.png",
+      "https://raw.githubusercontent.com/YuutaTsubasa/Free-Riders-Recompiled/fe4ff08a0b7305eb7f3a8d34a53223a705a1c56e/docs/images/online-3-devices.png"
+    ]
+  },
+  "the-darkness": {
+    "note": "Screenshots from invinceble55-wq/Estacado-The-Darkness-Recomp project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/invinceble55-wq/Estacado-The-Darkness-Recomp/5234f331dc5178af4245cc43a31fc5e6f3e61bf9/docs/screenshots/chinatown-street.jpg",
+      "https://raw.githubusercontent.com/invinceble55-wq/Estacado-The-Darkness-Recomp/5234f331dc5178af4245cc43a31fc5e6f3e61bf9/docs/screenshots/fulton-street-station.jpg"
+    ]
+  },
+  "tom-clancy-s-ghost-recon-future-soldier": {
+    "note": "Screenshots from alex-stampede/GRFS-Recomp project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/alex-stampede/GRFS-Recomp/e59b8336f4efacd42c00f3bf63d76e7ce024e997/docs/images/gameplay/campaign.jpg",
+      "https://raw.githubusercontent.com/alex-stampede/GRFS-Recomp/e59b8336f4efacd42c00f3bf63d76e7ce024e997/docs/images/gameplay/campaign-drone.jpg",
+      "https://raw.githubusercontent.com/alex-stampede/GRFS-Recomp/e59b8336f4efacd42c00f3bf63d76e7ce024e997/docs/images/gameplay/campaign-takedown.jpg"
+    ]
+  },
+  "vigilante-8-arcade": {
+    "note": "Screenshots from sp00nznet/vig8 project. Other versions, including Android, may look different.",
+    "shots": [
+      "https://raw.githubusercontent.com/sp00nznet/vig8/4a6860a6e6c6a819506a6b7651920ce7a2a49b9a/docs/screenshots/combat.png",
+      "https://raw.githubusercontent.com/sp00nznet/vig8/4a6860a6e6c6a819506a6b7651920ce7a2a49b9a/docs/screenshots/oil-fields.png"
+    ]
   }
 }

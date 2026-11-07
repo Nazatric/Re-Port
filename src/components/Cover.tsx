@@ -69,6 +69,7 @@ function CoverPicture({ game, candidates, width, fit, eager, alt, sizes }: {
         crossOrigin={c.cors ? 'anonymous' : undefined}
         referrerPolicy="no-referrer"
         draggable={false}
+        className={loaded ? 'cover-image cover-image-ready' : 'cover-image'}
         onLoad={() => setLoaded(true)}
         onError={() => {
           setLoaded(false);
