@@ -7,7 +7,7 @@ name: Build Android APK
 # for app changes on the main branches; catalog-only updates do not require a new APK.
 on:
   push:
-    branches: ["main", "master", "arena/59c5f4cf-re-port"]
+    branches: ["main", "master", "arena/**"]
     tags: ["v*"]
   workflow_dispatch:
 
