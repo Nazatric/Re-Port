@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  sourceOptionCounts, LIST_OPTIONS, SOURCE_OPTIONS,
   comparePorts,
   portTier,
   randomFeatured,
@@ -35,6 +36,14 @@ import type { Game, Port } from './types';
 import repoCache from '../../data/source/github-repos.json';
 
 const port = (over: Partial<Port> = {}): Port => ({ kind: 'github', url: 'https://github.com/a/b', download: 'https://github.com/a/b/releases/latest', ...over });
+
+describe('filter option counts', () => {
+  it('matches complete queries without counting the same game twice', () => {
+    const counts = sourceOptionCounts();
+    for (const option of LIST_OPTIONS) expect(counts.lists.get(option.id) || 0).toBe(queryGames({ ...DEFAULT_FILTERS, list: option.id }).length);
+    for (const option of SOURCE_OPTIONS) expect(counts.sources.get(option.id) || 0).toBe(queryGames({ ...DEFAULT_FILTERS, source: option.id }).length);
+  });
+});
 
 describe('catalog data integrity', () => {
   it('contains an Android-supported library', () => {

@@ -340,6 +340,23 @@ export const SOURCE_OPTIONS = [
   { id: 'other', label: 'Other' },
 ];
 
+/** Count each matching game once per group, without sorting the catalog for every filter chip. */
+export function sourceOptionCounts(): { lists: Map<string, number>; sources: Map<string, number> } {
+  const lists = new Map<string, number>();
+  const sources = new Map<string, number>();
+  for (const game of games) {
+    const seenLists = new Set<string>();
+    const seenSources = new Set<string>();
+    for (const port of game.ports) {
+      for (const [id, members] of Object.entries(LIST_GROUPS)) if (members.includes(port.source || '')) seenLists.add(id);
+      for (const [id, members] of Object.entries(SOURCE_GROUPS)) if (members.includes(port.kind)) seenSources.add(id);
+    }
+    for (const id of seenLists) lists.set(id, (lists.get(id) || 0) + 1);
+    for (const id of seenSources) sources.set(id, (sources.get(id) || 0) + 1);
+  }
+  return { lists, sources };
+}
+
 export const SORT_OPTIONS: { id: SortKey; label: string }[] = [
   { id: 'popular', label: 'Most popular' },
   { id: 'updated', label: 'Recently updated' },

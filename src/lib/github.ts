@@ -28,14 +28,28 @@ interface RawRelease {
 }
 
 export function toReleaseInfo(r: RawRelease): ReleaseInfo {
+  const text = (value: unknown) => typeof value === 'string' ? value : '';
+  const tag = text(r?.tag_name);
+  const assets = Array.isArray(r?.assets) ? r.assets : [];
   return {
-    tag: r.tag_name || '',
-    name: r.name || r.tag_name || '',
-    date: (r.published_at || '').slice(0, 10),
-    prerelease: Boolean(r.prerelease),
-    url: r.html_url || '',
-    assets: (r.assets || []).map((a) => ({ name: a.name, size: a.size, url: a.browser_download_url })),
+    tag,
+    name: text(r?.name) || tag,
+    date: text(r?.published_at).slice(0, 10),
+    prerelease: r?.prerelease === true,
+    url: text(r?.html_url),
+    assets: assets.filter((a) => a && typeof a.name === 'string' && typeof a.browser_download_url === 'string')
+      .map((a) => ({ name: a.name, size: typeof a.size === 'number' && Number.isFinite(a.size) ? a.size : 0, url: a.browser_download_url })),
   };
+}
+
+function validCachedResult(value: unknown): value is ReleaseResult {
+  if (!value || typeof value !== 'object' || !('state' in value)) return false;
+  const result = value as ReleaseResult;
+  if (result.state === 'none' || result.state === 'limited' || result.state === 'error') return true;
+  if (result.state !== 'ok' || !result.info || typeof result.info !== 'object') return false;
+  const info = result.info;
+  return [info.tag, info.name, info.date, info.url].every((v) => typeof v === 'string') && typeof info.prerelease === 'boolean' &&
+    Array.isArray(info.assets) && info.assets.every((a) => a && typeof a.name === 'string' && typeof a.url === 'string' && typeof a.size === 'number' && Number.isFinite(a.size));
 }
 
 export function apkAssets(info: ReleaseInfo): ReleaseAsset[] {
@@ -47,7 +61,7 @@ function readCache(o: string, r: string): ReleaseResult | null {
     const s = localStorage.getItem(key(o, r));
     if (!s) return null;
     const v = JSON.parse(s) as { t: number; v: ReleaseResult };
-    return Date.now() - v.t < TTL ? v.v : null;
+    return typeof v.t === 'number' && Date.now() - v.t >= 0 && Date.now() - v.t < TTL && validCachedResult(v.v) ? v.v : null;
   } catch {
     return null;
   }
@@ -62,9 +76,9 @@ function writeCache(o: string, r: string, v: ReleaseResult) {
 }
 
 /** Reads live release data from the public GitHub API. Cached for three hours to respect rate limits. */
-export async function fetchLatestRelease(owner: string, repo: string, signal?: AbortSignal): Promise<ReleaseResult> {
+export async function fetchLatestRelease(owner: string, repo: string, signal?: AbortSignal, force = false): Promise<ReleaseResult> {
   const cached = readCache(owner, repo);
-  if (cached) return cached;
+  if (cached && !force) return cached;
   try {
     const base = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
     const res = await fetch(`${base}/releases/latest`, { signal, headers: { accept: 'application/vnd.github+json' } });
@@ -76,7 +90,9 @@ export async function fetchLatestRelease(owner: string, repo: string, signal?: A
       // No stable release; fall back to the newest pre-release if one exists.
       const list = await fetch(`${base}/releases?per_page=1`, { signal, headers: { accept: 'application/vnd.github+json' } });
       if (list.status === 403 || list.status === 429) return { state: 'limited' };
-      const arr = list.ok ? ((await list.json()) as RawRelease[]) : [];
+      if (!list.ok) return { state: 'error' };
+      const arr: unknown = await list.json();
+      if (!Array.isArray(arr)) return { state: 'error' };
       result = arr.length ? { state: 'ok', info: toReleaseInfo(arr[0]) } : { state: 'none' };
     } else {
       return { state: 'error' };

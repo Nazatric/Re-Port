@@ -17,7 +17,8 @@ export function AvatarFor({ port, name, size = 40 }: { port: Port; name: string;
 /** The real download link: opens the developer's release page (GitHub latest release) or wherever the port is published. */
 export function DownloadButton({ port, size = 'large', gameTitle }: { port: Port; size?: 'large' | 'small'; gameTitle: string }) {
   const meta = linkMeta(port);
-  const isRelease = port.kind === 'github';
+  const isRelease = port.kind === 'github' && /\/releases(?:\/|$)/i.test(port.download);
+  const destination = isRelease ? 'GitHub release' : port.kind === 'github' ? 'Project on GitHub' : meta.sub;
   return (
     <a
       href={port.download}
@@ -25,14 +26,14 @@ export function DownloadButton({ port, size = 'large', gameTitle }: { port: Port
       rel="noopener noreferrer"
       onClick={() => haptic(12)}
       className={cn('btn-a', size === 'large' ? 'w-full' : 'small w-full')}
-      aria-label={`Download ${gameTitle} port${port.name ? ` ${port.name}` : ''}. ${meta.sub}. Opens in a new tab.`}
+      aria-label={`Download ${gameTitle} port${port.name ? ` ${port.name}` : ''}. ${destination}. Opens in a new tab.`}
     >
       <span className="orb" aria-hidden="true">
         <Icon name="download" size={size === 'large' ? 18 : 16} />
       </span>
       <span className="text-left leading-tight">
         Download
-        {size === 'large' && <small className="block text-[0.72rem] font-semibold opacity-95">{isRelease ? 'Latest release on GitHub' : meta.sub}</small>}
+        {size === 'large' && <small className="block text-[0.72rem] font-semibold opacity-95">{destination}</small>}
       </span>
       <Icon name={kindIcon(port.kind)} size={20} className="opacity-90" />
     </a>
@@ -131,7 +132,7 @@ export function ReleaseCard({ port }: { port: Port }) {
     if (!repo) return;
     const ctrl = new AbortController();
     setResult('loading');
-    fetchLatestRelease(repo.owner, repo.repo, ctrl.signal).then((r) => !ctrl.signal.aborted && setResult(r));
+    fetchLatestRelease(repo.owner, repo.repo, ctrl.signal, nonce > 0).then((r) => !ctrl.signal.aborted && setResult(r));
     return () => ctrl.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repo?.owner, repo?.repo, nonce]);
@@ -144,7 +145,7 @@ export function ReleaseCard({ port }: { port: Port }) {
           <Icon name="github" size={20} />
           Latest release
         </h3>
-        <button type="button" onClick={() => setNonce((n) => n + 1)} aria-label="Refresh release information" className="grid h-10 w-10 place-items-center rounded-full bg-[var(--surface-2)]">
+        <button type="button" onClick={() => setNonce((n) => n + 1)} aria-label="Refresh release information" className="grid h-12 w-12 place-items-center rounded-full bg-[var(--surface-2)]">
           <Icon name="refresh" size={18} />
         </button>
       </div>

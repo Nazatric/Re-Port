@@ -3,7 +3,7 @@ import { GameCard, GameRow } from '../components/GameCard';
 import { Icon } from '../components/Icons';
 import { EmptyState, Hero, Sheet } from '../components/ui';
 import { Link, navigate, pageMemory, useRoute } from '../lib/router';
-import { DEFAULT_FILTERS, LIST_OPTIONS, SORT_OPTIONS, SOURCE_OPTIONS, activeFilterCount, collectionById, collections, filtersFromParams, filtersToParams, platformById, platforms, queryGames, useCatalogVersion } from '../lib/catalog';
+import { DEFAULT_FILTERS, LIST_OPTIONS, SORT_OPTIONS, SOURCE_OPTIONS, activeFilterCount, collectionById, collections, filtersFromParams, filtersToParams, platformById, platforms, queryGames, sourceOptionCounts, useCatalogVersion } from '../lib/catalog';
 import { useSettings } from '../lib/store';
 import { plural } from '../lib/format';
 import type { Filters, SortKey } from '../lib/types';
@@ -24,16 +24,19 @@ export default function Library() {
   const catalogVersion = useCatalogVersion();
   const filters = useMemo(() => filtersFromParams(route.query), [route.raw]); // eslint-disable-line react-hooks/exhaustive-deps
   const results = useMemo(() => queryGames(filters), [filters, catalogVersion]);
-  const listOptions = useMemo(() => LIST_OPTIONS.map((s) => ({ ...s, count: queryGames({ ...DEFAULT_FILTERS, list: s.id }).length })).filter((s) => s.count), [catalogVersion]);
-  const sourceOptions = useMemo(() => SOURCE_OPTIONS.map((s) => ({ ...s, count: queryGames({ ...DEFAULT_FILTERS, source: s.id }).length })).filter((s) => s.count), [catalogVersion]);
+  const optionCounts = useMemo(() => sourceOptionCounts(), [catalogVersion]);
+  const listOptions = useMemo(() => LIST_OPTIONS.map((s) => ({ ...s, count: optionCounts.lists.get(s.id) || 0 })).filter((s) => s.count), [optionCounts]);
+  const sourceOptions = useMemo(() => SOURCE_OPTIONS.map((s) => ({ ...s, count: optionCounts.sources.get(s.id) || 0 })).filter((s) => s.count), [optionCounts]);
   const [settings, update] = useSettings();
   const [sheet, setSheet] = useState(false);
   const [text, setText] = useState(filters.q);
   const inputRef = useRef<HTMLInputElement>(null);
+  const latestFilters = useRef(filters);
+  latestFilters.current = filters;
   const sentinel = useRef<HTMLDivElement>(null);
   const [count, setCount] = useState(() => pageMemory.get(route.raw) ?? PAGE);
 
-  const apply = (patch: Partial<Filters>) => navigate('/library', filtersToParams({ ...filters, ...patch }), { replace: true, keepScroll: true });
+  const apply = (patch: Partial<Filters>) => navigate('/library', filtersToParams({ ...latestFilters.current, ...patch }), { replace: true, keepScroll: true });
 
   useEffect(() => setText(filters.q), [filters.q]);
   useEffect(() => {
@@ -84,7 +87,7 @@ export default function Library() {
             <input ref={inputRef} id="lib-q" type="search" value={text} onChange={(e) => setText(e.target.value)} enterKeyHint="search" autoComplete="off" placeholder="Search the library" className="field !min-h-[48px] !rounded-full !pl-11 !pr-10" />
             <Icon name="search" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink2" size={22} />
             {text && (
-              <button type="button" aria-label="Clear search" onClick={() => { setText(''); apply({ q: '' }); inputRef.current?.focus(); }} className="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center text-ink2">
+              <button type="button" aria-label="Clear search" onClick={() => { setText(''); apply({ q: '' }); inputRef.current?.focus(); }} className="absolute right-0 top-1/2 grid h-12 w-12 -translate-y-1/2 place-items-center text-ink2">
                 <Icon name="close" size={20} />
               </button>
             )}

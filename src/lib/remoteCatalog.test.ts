@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { validateCatalog } from './remoteCatalog';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { validateCatalog, checkForCatalogUpdate, readCachedCatalog, setRemoteUrl, catalogMirror } from './remoteCatalog';
+import bundled from '../data/catalog.json';
 import { setCatalog, games, gameById, collections, platforms, stats, engines, queryGames, DEFAULT_FILTERS, currentGenerated, currentRevision, isCatalogNewer } from './catalog';
 import type { Catalog } from './types';
 
@@ -44,6 +45,36 @@ describe('validateCatalog', () => {
   it('accepts a structurally sound catalog', () => {
     const ids = Array.from({ length: 60 }, (_, i) => `game-${i}`);
     expect(validateCatalog(catalog(nextDate(), ids))).not.toBeNull();
+  });
+
+  it('constructs a keyless mirror only for the intended public GitHub URL', () => {
+    expect(catalogMirror('https://raw.githubusercontent.com/Nazatric/Re-Port/main/public/catalog.json'))
+      .toBe('https://cdn.jsdelivr.net/gh/Nazatric/Re-Port@main/public/catalog.json');
+    expect(catalogMirror('https://example.com/data.json')).toBeNull();
+    expect(catalogMirror('https://raw.githubusercontent.com/a/b/main/private.json?token=secret')).toBeNull();
+  });
+
+  it('accepts the actual bundled catalog', () => {
+    expect(validateCatalog(bundled)).not.toBeNull();
+  });
+
+  it('rejects malformed nested data and unsafe links before adoption', () => {
+    const ids = Array.from({ length: 60 }, (_, i) => `safe-${i}`);
+    const badGenre = catalog(nextDate(), ids);
+    (badGenre.games[1] as unknown as { genres: unknown }).genres = null;
+    expect(validateCatalog(badGenre)).toBeNull();
+    const badSteam = catalog(nextDate(), ids);
+    (badSteam.games[1] as unknown as { steam: unknown }).steam = { id: 1, shots: null };
+    expect(validateCatalog(badSteam)).toBeNull();
+    const badLink = catalog(nextDate(), ids);
+    badLink.games[1].ports[0].download = 'javascript:alert(1)';
+    expect(validateCatalog(badLink)).toBeNull();
+    const duplicate = catalog(nextDate(), ids);
+    duplicate.games[1].id = duplicate.games[0].id;
+    expect(validateCatalog(duplicate)).toBeNull();
+    const badPlatform = catalog(nextDate(), ids);
+    (badPlatform.platforms[0] as unknown as { count: unknown }).count = null;
+    expect(validateCatalog(badPlatform)).toBeNull();
   });
 
   it('rejects payloads that could not serve as a catalog', () => {
@@ -148,5 +179,80 @@ describe('live catalog replacement', () => {
     const older = catalog(loaded, ['doom', 'quake'], { revision: `${loaded}T00:30:00.000Z` });
     expect(isCatalogNewer(older)).toBe(false);
     expect(setCatalog(older)).toBe(false);
+  });
+});
+
+
+describe('catalog refresh resilience', () => {
+  const remote = 'https://catalog.example/catalog.json';
+  const ids = Array.from({ length: 60 }, (_, i) => `remote-${i}`);
+  const good = () => catalog('2100-01-01', ids, { revision: '2100-01-01T00:00:00Z' });
+  let storage: Map<string, string>;
+  beforeEach(() => {
+    storage = new Map();
+    vi.stubGlobal('document', { baseURI: 'https://app.example/' });
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    });
+    vi.stubGlobal('caches', { open: async () => ({ put: async () => undefined }) });
+    setRemoteUrl(remote);
+  });
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+  it('skips and removes a corrupt cached entry instead of hiding a valid fallback', async () => {
+    const removed: string[] = [];
+    vi.stubGlobal('caches', { open: async () => ({
+      match: async (url: string) => url === remote ? new Response('{broken') : new Response(JSON.stringify(good())),
+      delete: async (url: string) => { removed.push(url); return true; },
+    }) });
+    expect((await readCachedCatalog())?.games).toHaveLength(60);
+    expect(removed).toEqual([remote]);
+  });
+
+  it('does not call a local snapshot a successful remote check after failures', async () => {
+    const mock = vi.fn(async (input: string) => input.startsWith(remote)
+      ? new Response('unavailable', { status: 503 })
+      : new Response(JSON.stringify(bundled)));
+    vi.stubGlobal('fetch', mock);
+    const result = await checkForCatalogUpdate();
+    expect(result.status).toBe('unavailable');
+    expect(mock.mock.calls.filter(([url]) => url.startsWith(remote))).toHaveLength(2);
+  });
+
+  it('rejects an oversized streamed response even without a content length', async () => {
+    const oversized = new Uint8Array(12 * 1024 * 1024 + 1);
+    vi.stubGlobal('fetch', vi.fn(async (input: string) => input.startsWith(remote)
+      ? new Response(oversized)
+      : new Response(JSON.stringify(bundled))));
+    expect((await checkForCatalogUpdate()).status).toBe('unavailable');
+  });
+
+  it('times out stalled sources instead of leaving a check pending indefinitely', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+      const pending = checkForCatalogUpdate();
+      await vi.advanceTimersByTimeAsync(17000);
+      expect((await pending).status).toBe('unavailable');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('coalesces concurrent refreshes and adopts the newest valid source', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const mock = vi.fn(async (input: string) => {
+      await gate;
+      return new Response(JSON.stringify(input.startsWith(remote) ? good() : bundled));
+    });
+    vi.stubGlobal('fetch', mock);
+    const first = checkForCatalogUpdate();
+    const second = checkForCatalogUpdate();
+    expect(first).toBe(second);
+    release();
+    expect((await first).status).toBe('updated');
+    expect(mock).toHaveBeenCalledTimes(2);
+    expect(games[0].id).toBe('remote-0');
   });
 });

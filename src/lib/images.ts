@@ -67,9 +67,11 @@ export function retryUrl(src: string): string {
 export function heroCandidates(g: Game, width = 1000): ImageCandidate[] {
   const list: ImageCandidate[] = [];
   if (g.steam) {
-    list.push({ src: proxied(steamHero(g.steam.id), width, 82), cors: true });
-    list.push({ src: proxied(steamHeader(g.steam.id), width, 82), cors: true });
-    if (g.steam.shots[0]) list.push({ src: proxied(g.steam.shots[0], width, 82), cors: true });
+    const originals = [steamHero(g.steam.id), steamHeader(g.steam.id), g.steam.shots[0]].filter((url): url is string => Boolean(url));
+    for (const original of originals) {
+      list.push({ src: proxied(original, width, 82), cors: true });
+      list.push({ src: original, cors: false });
+    }
   }
   return list;
 }

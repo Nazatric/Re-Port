@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Icon } from '../components/Icons';
 import { Hero, Switch } from '../components/ui';
 import { Link } from '../lib/router';
@@ -45,7 +46,7 @@ function CatalogUpdates() {
         <Icon name="refresh" size={20} /> Catalog updates
       </h2>
       <p className="pb-2 text-sm text-ink2">
-        New ports and release details are published continuously and picked up here automatically, so the library grows without an app update. Last checked: {when}.
+        When a newer catalog is published, Re:Port can pick it up without an app update. Last checked: {when}.
       </p>
       <Switch label="Automatic updates" hint="Check for a newer catalog when the app opens." checked={meta.auto} onChange={(v) => setAutoUpdate(v)} />
       <div className="flex flex-wrap items-center gap-3 border-t border-line py-3">
@@ -90,6 +91,7 @@ export default function Settings() {
   const [s, update] = useSettings();
   const online = useOnline();
   const [usage, setUsage] = useState('');
+  const native = Capacitor.isNativePlatform();
 
   const refreshUsage = () => {
     navigator.storage?.estimate?.().then((e) => setUsage(e.usage ? formatBytes(e.usage) : '')).catch(() => setUsage(''));
@@ -102,7 +104,7 @@ export default function Settings() {
       await Promise.all(keys.filter((k) => k.startsWith('portdeck-img')).map((k) => caches.delete(k)));
       showToast('Image cache cleared');
     } catch {
-      showToast('Nothing to clear');
+      showToast('Could not clear cached artwork');
     }
     refreshUsage();
   };
@@ -151,14 +153,15 @@ export default function Settings() {
             <Icon name={online ? 'download' : 'cloudOff'} size={20} /> Data and offline
           </h2>
           <p className="pb-2 text-sm text-ink2" role="status">
-            {online ? 'You are online. Artwork is streamed on demand and kept for offline use.' : 'You are offline. The full catalog and any artwork you have already seen are still available.'}
+            {online ? 'The catalog is available offline. Artwork loads on demand and may be cached by your device.' : 'You are offline. The catalog is available, but some artwork may not be.'}
           </p>
           <Switch label="Data saver" hint="Skip remote artwork and show generated covers instead." checked={s.dataSaver} onChange={(v) => update({ dataSaver: v })} />
           <div className="flex flex-wrap items-center gap-3 py-3">
-            <button type="button" className="btn-glass" onClick={clearImages}>
+            {!native && <button type="button" className="btn-glass" onClick={clearImages}>
               <Icon name="trash" size={18} /> Clear cached artwork
-            </button>
-            {usage && <span className="text-sm text-ink2">Using about {usage} on this device</span>}
+            </button>}
+            {native && <span className="text-sm text-ink2">Android manages its own artwork cache.</span>}
+            {usage && <span className="text-sm text-ink2">App storage: about {usage}</span>}
           </div>
           <div className="flex flex-wrap gap-3 border-t border-line py-3">
             <button
