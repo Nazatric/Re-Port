@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coverCandidates, gameScreenshots, proxied } from './images';
+import { coverCandidates, gameScreenshots, heroCandidates, proxied } from './images';
 import type { Game } from './types';
 
 const game = { id: 'example', title: 'Example', platform: 'pc', genres: [], summary: '', description: '', views: 0, ports: [] } satisfies Game;
@@ -20,6 +20,12 @@ describe('catalog artwork', () => {
     const fallback = 'https://thumbnails.libretro.com/console/Named_Boxarts/game.png';
     const candidates = coverCandidates({ ...game, cover: 'https://example.com/cover.jpg', coverFallback: fallback }, 360);
     expect(candidates.map((candidate) => candidate.src)).toContain(fallback);
+  });
+  it('falls back to original hero images if the image proxy is unavailable', () => {
+    const candidates = heroCandidates({ ...game, steam: { id: 10, shots: [] } });
+    expect(candidates[0].cors).toBe(true);
+    expect(candidates[1].src).toContain('/10/library_hero.jpg');
+    expect(candidates[1].cors).toBe(false);
   });
   it('tries real Steam art before a generated title card', () => {
     const cover = 'https://openportsgames.com/covers/generated/example.svg';

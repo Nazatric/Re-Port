@@ -23,7 +23,7 @@ function Backdrop({ game }: { game: Game }) {
     <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
       <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, var(--hero-1), var(--hero-2))' }} />
       {hero ? (
-        <img key={hero.src} src={hero.src} alt="" crossOrigin="anonymous" decoding="async" onError={() => setI((n) => n + 1)} className="absolute inset-0 h-full w-full object-cover" />
+        <img key={hero.src} src={hero.src} alt="" crossOrigin={hero.cors ? "anonymous" : undefined} decoding="async" onError={() => setI((n) => n + 1)} className="absolute inset-0 h-full w-full object-cover" />
       ) : (
         !saver && (
           <div className="fill absolute -inset-10 opacity-80 blur-2xl saturate-150">

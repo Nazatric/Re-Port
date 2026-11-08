@@ -14,16 +14,11 @@ import NotFound from './pages/NotFound';
 import Saved from './pages/Saved';
 import Settings from './pages/Settings';
 import Submit from './pages/Submit';
-import { currentGenerated, gameById, games, useCatalogVersion } from './lib/catalog';
-import { autoRefresh, rememberBundled, registerGenerated, warmFromCache } from './lib/remoteCatalog';
+import { gameById, useCatalogVersion } from './lib/catalog';
+import { autoRefresh, warmFromCache } from './lib/remoteCatalog';
 import { goBack, useRoute, useScrollManager, type Route } from './lib/router';
 import { applySettings, useSettings } from './lib/store';
 import { useOnline } from './lib/useOnline';
-
-// Let the updater know which catalog build shipped with this app, so it can tell a real
-// refresh from a redundant download.
-rememberBundled(games.map((g) => g.id));
-registerGenerated(currentGenerated);
 
 const TITLES: Record<string, string> = {
   '': 'Re:Port - Unofficial Android Port Library',
@@ -156,7 +151,7 @@ export default function App() {
       {!online && (
         <div role="status" className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+8px)] z-[90] flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/80 px-4 py-2 text-xs font-bold text-white shadow-lg">
           <Icon name="cloudOff" size={16} />
-          Offline. Saved artwork and the full catalog still work.
+          Offline. The catalog is available; some artwork may not be.
         </div>
       )}
       <div key={route.path} className={`page${hasNavigated.current ? (first === 'game' ? ' page-turn' : ' page-enter') : first === '' ? ' page-intro' : ''}`}>

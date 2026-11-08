@@ -2,6 +2,14 @@
 
 The notable changes in each Re:Port release are recorded here.
 
+## Unreleased
+
+- Validate remote catalogs and recover from corrupt cached entries before replacing the bundled Android-evidenced library.
+- Check catalog sources concurrently with timeouts, a transient retry, a keyless mirror for the configured public GitHub catalog, and deduplicated refreshes.
+- Make GitHub release refresh bypass its cache and distinguish a failed release lookup from a project with no releases.
+- Preserve a filter change made during a pending search, avoid repeated full sorts when calculating filter counts, and fall back to the original Steam hero image when its proxy fails.
+- Clarify native artwork caching and debug signing, refresh the technical documentation, and update vulnerable development dependencies.
+
 ## V1.0
 
 The first public Android release brings the Re:Port library together in a single universal APK.

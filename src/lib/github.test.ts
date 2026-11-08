@@ -46,3 +46,25 @@ describe('settings sanitising', () => {
     });
   });
 });
+
+describe('release refresh', () => {
+  it('refreshes the cache on request and does not mistake a server failure for no releases', async () => {
+    const { vi } = await import('vitest');
+    const { fetchLatestRelease } = await import('./github');
+    const storage = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => storage.get(k) ?? null, setItem: (k: string, v: string) => storage.set(k, v) });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ tag_name: 'v1', assets: [] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ tag_name: 'v2', assets: [] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response('', { status: 404 }))
+      .mockResolvedValueOnce(new Response('', { status: 500 }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      expect(await fetchLatestRelease('owner', 'repo')).toMatchObject({ state: 'ok', info: { tag: 'v1' } });
+      expect(await fetchLatestRelease('owner', 'repo')).toMatchObject({ state: 'ok', info: { tag: 'v1' } });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(await fetchLatestRelease('owner', 'repo', undefined, true)).toMatchObject({ state: 'ok', info: { tag: 'v2' } });
+      expect(await fetchLatestRelease('owner', 'other')).toEqual({ state: 'error' });
+    } finally { vi.unstubAllGlobals(); }
+  });
+});

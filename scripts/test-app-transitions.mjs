@@ -14,6 +14,7 @@ try {
   });
   const url = 'http://127.0.0.1:4274/';
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+  await context.route('https://**/*', (route) => route.fulfill({ status: 404 }));
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -39,6 +40,18 @@ try {
     assert.ok(parseFloat(await page.locator('.page').evaluate((el) => getComputedStyle(el).animationDuration)) >= 0.45, 'Page transitions should be unhurried');
     await page.waitForTimeout(520);
   }
+  // A pending debounced search must not undo a filter changed before the timer fires.
+  await page.locator('.dock a').filter({ hasText: 'Library' }).click();
+  await page.waitForSelector('button[aria-haspopup="dialog"]');
+  await page.locator('button[aria-haspopup="dialog"]').click();
+  await page.getByRole('dialog', { name: 'Filters' }).waitFor();
+  await page.evaluate(() => {
+    const input = document.querySelector('#lib-q');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'doom');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.querySelector('[role="dialog"] button[aria-pressed="false"]').click();
+  });
+  await page.waitForFunction(() => location.hash.includes('q=doom') && location.hash.includes('works=yes'));
   assert.deepEqual(errors, [], 'Navigation should not cause browser errors');
   await context.close();
 
@@ -46,6 +59,7 @@ try {
   for (const width of [320, 360, 390]) {
     for (const text of [0, 2]) {
       const mobile = await browser.newContext({ viewport: { width, height: 780 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+      await mobile.route('https://**/*', (route) => route.fulfill({ status: 404 }));
       await mobile.addInitScript((text) => localStorage.setItem('portdeck.settings.v1', JSON.stringify({ text, theme: 'azure' })), text);
       await mobile.route('https://api.github.com/repos/**', (route) => route.fulfill({
         status: 200, contentType: 'application/json', body: JSON.stringify({
@@ -79,6 +93,7 @@ try {
   // Exercise real catalog screenshot sources and the CDN-to-original fallback without live network.
   const images = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
   const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/vXQAAAAASUVORK5CYII=', 'base64');
+  await images.route('https://**/*', (route) => route.fulfill({ status: 404 }));
   await images.route('https://wsrv.nl/**', (route) => route.fulfill({ status: 503 }));
   await images.route('https://raw.githubusercontent.com/mamcjr/LASRecompAndroid/**', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: pixel }));
   await images.route('https://thumbnails.libretro.com/**', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: pixel }));
@@ -124,6 +139,7 @@ try {
   await fallback.close();
 
   const reduced = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  await reduced.route('https://**/*', (route) => route.fulfill({ status: 404 }));
   const reducedPage = await reduced.newPage();
   await reducedPage.goto(url);
   await reducedPage.waitForSelector('#page-title');
@@ -147,6 +163,7 @@ try {
   // Exercise the Android bridge callback: modal dismissal, in-app history, then app exit.
   // This mocks the bridge; real edge-swipe recognition still needs an Android device.
   const native = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+  await native.route('https://**/*', (route) => route.fulfill({ status: 404 }));
   await native.addInitScript(() => {
     const callbacks = new Map();
     let nextId = 0;
