@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set +e
-gradle :composeApp:assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+gradle :composeApp:assembleDebug --no-daemon --console=plain 2>&1 | tee build.log
 result=${PIPESTATUS[0]}
 if [ "$result" -ne 0 ]; then
   details=$(tail -n 120 build.log | tail -c 16000)
