@@ -1,0 +1,31 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: ["arena/c57b7306-re-port"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build debug APKs
+        run: gradle :composeApp:assembleDebug --no-daemon --stacktrace
+      - name: Upload debug APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: RePort-Android-debug
+          path: composeApp/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
