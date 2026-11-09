@@ -151,7 +151,7 @@ fun HomeScreen(topInset: Dp) {
                 }
                 Text("${t.dateLabel} · ${t.greeting}, ${state.name}", color = DColors.InkSoft, fontSize = 13.sp)
             }
-            SectionHeader("Featured community ports", Modifier.padding(horizontal = 20.dp, top = 16.dp), "See all") { state.tab = Tab.BROWSE }
+            SectionHeader("Featured community ports", Modifier.padding(horizontal = 20.dp).padding(top = 16.dp), "See all") { state.tab = Tab.BROWSE }
             CoverFlow(featured) { state.push(Route.GameDetail(it.id)) }
             Spacer(Modifier.height(12.dp))
             BladeStack(blades)
@@ -163,7 +163,7 @@ fun HomeScreen(topInset: Dp) {
             }
         }
         item {
-            SectionHeader("Collections", Modifier.padding(horizontal = 16.dp, top = 20.dp))
+            SectionHeader("Collections", Modifier.padding(horizontal = 16.dp).padding(top = 20.dp))
             Column(Modifier.padding(horizontal = 16.dp)) {
                 catalog.collections.take(9).chunked(3).forEach { row ->
                     Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -180,7 +180,7 @@ fun HomeScreen(topInset: Dp) {
             }
         }
         item {
-            SectionHeader("Recently added", Modifier.padding(horizontal = 16.dp, top = 12.dp))
+            SectionHeader("Recently added", Modifier.padding(horizontal = 16.dp).padding(top = 12.dp))
             Column(Modifier.padding(horizontal = 16.dp).glass().padding(6.dp)) {
                 catalog.games.filter { it.added.isNotEmpty() }.sortedByDescending { it.added }.take(5).forEach { g ->
                     Row(Modifier.fillMaxWidth().pressable { state.push(Route.GameDetail(g.id)) }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -299,7 +299,7 @@ private fun FilterSheet(current: Filters, facets: dev.dandelion.store.data.Filte
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .4f)).pressable { onClose() })
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
         Column(Modifier.fillMaxWidth().height(560.dp).glass(GlassTint.WHITE, RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)).padding(16.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalArrangement = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) { Text("Filters", color = DColors.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold); Text("Refine the community catalog", color = DColors.InkSoft, fontSize = 11.5.sp) }
                 IconButton(Icons.Default.Close) { onClose() }
             }
@@ -422,7 +422,7 @@ fun GameDetailScreen(id: String, topInset: Dp) {
         when (tab) {
             "Overview" -> {
                 item { Column(Modifier.padding(16.dp, 8.dp).glass().padding(16.dp)) { Text("About this game", color = DColors.Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold); Text(g.description.ifEmpty { g.summary }, Modifier.padding(top = 8.dp), color = DColors.InkSoft, style = DType.Body); androidx.compose.foundation.layout.FlowRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) { g.genres.forEach { x -> Text(x, Modifier.clip(CircleShape).background(subtleFill()).padding(horizontal = 10.dp, vertical = 4.dp), color = DColors.InkSoft, fontSize = 11.sp) } } } }
-                item { SectionHeader("Port requirements", Modifier.padding(horizontal = 16.dp, top = 12.dp)); Column(Modifier.padding(horizontal = 16.dp).glass().padding(horizontal = 16.dp)) { listOf("Game files" to (fileLabels[port.files] ?: port.files), "Details" to (port.filesNote.ifEmpty { "Follow the linked project instructions" }), "Engine" to (port.engine.ifEmpty { "See project" }), "Controller" to (port.controller.ifEmpty { "See project" }), "Android evidence" to (evidenceLabels[port.evidence] ?: port.evidence), "Updated" to port.updated).forEach { (k, v) -> Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text(k, color = DColors.InkSoft, fontSize = 12.5.sp); Text(v, Modifier.weight(1f), color = DColors.Ink, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End, maxLines = 2) } } } }
+                item { SectionHeader("Port requirements", Modifier.padding(horizontal = 16.dp).padding(top = 12.dp)); Column(Modifier.padding(horizontal = 16.dp).glass().padding(horizontal = 16.dp)) { listOf("Game files" to (fileLabels[port.files] ?: port.files), "Details" to (port.filesNote.ifEmpty { "Follow the linked project instructions" }), "Engine" to (port.engine.ifEmpty { "See project" }), "Controller" to (port.controller.ifEmpty { "See project" }), "Android evidence" to (evidenceLabels[port.evidence] ?: port.evidence), "Updated" to port.updated).forEach { (k, v) -> Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text(k, color = DColors.InkSoft, fontSize = 12.5.sp); Text(v, Modifier.weight(1f), color = DColors.Ink, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End, maxLines = 2) } } } }
             }
             "Files" -> item { Column(Modifier.padding(16.dp, 8.dp).glass().padding(16.dp)) { Text("Files you need", color = DColors.Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold); Text(fileLabels[port.files] ?: port.files, Modifier.padding(top = 8.dp), color = DColors.InkSoft, style = DType.Body); if (port.filesNote.isNotEmpty()) Text(port.filesNote, Modifier.padding(top = 8.dp), color = DColors.Ink, fontSize = 12.sp); Spacer(Modifier.height(12.dp)); GlossButton("Read the project setup guide", { openBrowser(port.url) }, Modifier.fillMaxWidth(), GlassTint.WHITE, ButtonSize.MEDIUM) } }
             "Gallery" -> {
@@ -443,7 +443,7 @@ fun GameDetailScreen(id: String, topInset: Dp) {
             }
         }
         item {
-            SectionHeader("More from the catalog", Modifier.padding(horizontal = 20.dp, top = 20.dp))
+            SectionHeader("More from the catalog", Modifier.padding(horizontal = 20.dp).padding(top = 20.dp))
             androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(horizontal = 20.dp)) {
                 items(catalog.games.filter { it.id != g.id && (it.platform == g.platform || it.genres.any { x -> g.genres.contains(x) }) }.take(6)) { r ->
                     Column(Modifier.width(92.dp).pressable { state.push(Route.GameDetail(r.id)) }) { GameArt(r, Modifier.fillMaxWidth().aspectRatio(r.coverRatio)); Text(r.title, Modifier.padding(top = 6.dp), color = DColors.Ink, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 2) }

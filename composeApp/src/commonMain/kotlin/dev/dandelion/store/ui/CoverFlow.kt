@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.dandelion.store.LocalAppState
 import dev.dandelion.store.data.Game
 import dev.dandelion.store.data.primaryPort
@@ -40,6 +41,7 @@ private val HEIGHT = 164.dp
 /** Native aspect-ratio cover flow. Tile width follows each game's real cover ratio. */
 @Composable
 fun CoverFlow(games: List<Game>, onOpen: (Game) -> Unit) {
+    if (games.isEmpty()) return
     val state = LocalAppState.current
     val start = min(2, games.lastIndex)
     var index by remember { mutableIntStateOf(start) }
@@ -77,7 +79,7 @@ fun CoverFlow(games: List<Game>, onOpen: (Game) -> Unit) {
         Text(cur.title, Modifier.padding(horizontal = 20.dp), color = DColors.Ink, style = DType.Title, textAlign = TextAlign.Center, maxLines = 1)
         Text("${primaryPort(cur).name} · ${cur.platform}", color = DColors.InkSoft, fontSize = 12.sp, maxLines = 1)
         Spacer(Modifier.height(8.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
             games.forEachIndexed { i, g -> Box(Modifier.size(if (i == index) 18.dp else 6.dp, 6.dp).clip(CircleShape).background(if (i == index) DColors.LimeDeep else Color.Black.copy(alpha = .18f)).pressable { index = i; pos = i.toFloat() }) }
         }
     }
