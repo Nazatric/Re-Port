@@ -3,8 +3,10 @@ set +e
 gradle :composeApp:assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
 result=${PIPESTATUS[0]}
 if [ "$result" -ne 0 ]; then
-  grep -E '(^e: |^\* (Where|What went wrong)|^> |^Caused by:|^Execution failed|^Build file|^Script |^  Line |^FAILURE:)' build.log | head -50 | while IFS= read -r line; do
-    echo "::error title=Gradle build::$line"
-  done
+  details=$(tail -n 120 build.log | tail -c 16000)
+  details=${details//'%'/'%25'}
+  details=${details//$'\r'/'%0D'}
+  details=${details//$'\n'/'%0A'}
+  echo "::error title=Gradle build::$details"
 fi
 exit "$result"
