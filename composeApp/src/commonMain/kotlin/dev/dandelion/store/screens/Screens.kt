@@ -523,7 +523,7 @@ fun SettingsScreen(topInset: Dp) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             rowItems.forEach { th ->
                                 val active = state.theme == th
-                                Column(Modifier.weight(1f).pressable { state.setTheme(th) }, horizontalAlignment = Alignment.CenterHorizontally) {
+                                Column(Modifier.weight(1f).pressable { state.updateTheme(th) }, horizontalAlignment = Alignment.CenterHorizontally) {
                                     Box(Modifier.fillMaxWidth().height(66.dp).clip(RoundedCornerShape(14.dp)).background(when (th) { ThemeName.NXE -> Brush.verticalGradient(listOf(Color(0xFFD9F183), Color(0xFF639F24))); ThemeName.MEADOW -> Brush.verticalGradient(listOf(Color(0xFF8FCFFF), Color(0xFF8CC63E))); ThemeName.SKY -> Brush.verticalGradient(listOf(Color(0xFF5FB4F7), Color.White)); ThemeName.NIGHT -> Brush.verticalGradient(listOf(Color(0xFF04101F), Color(0xFF0B3559), Color(0xFF0B6F8C))) }).then(if (active) Modifier.padding(3.dp) else Modifier))
                                     Text(th.label, color = if (active) DColors.LimeDeep else DColors.InkSoft, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold)
                                 }

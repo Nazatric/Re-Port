@@ -135,7 +135,7 @@ private fun Shell() {
             }
         }
         if (!state.onboarded) NamePrompt(firstRun = true) { n, av -> state.finishOnboarding(n, av) }
-        else if (state.editNameOpen) NamePrompt(firstRun = false) { n, av -> state.setName(n); state.saveAvatar(av); state.editNameOpen = false }
+        else if (state.editNameOpen) NamePrompt(firstRun = false) { n, av -> state.updateName(n); state.saveAvatar(av); state.editNameOpen = false }
     }
 }
 

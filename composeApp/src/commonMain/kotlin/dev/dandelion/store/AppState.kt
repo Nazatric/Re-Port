@@ -86,7 +86,7 @@ class AppState(private val store: LocalStore) {
         if (av != null) saveAvatar(av)
         onboarded = true
     }
-    fun setName(value: String) {
+    fun updateName(value: String) {
         val v = value.trim().take(20)
         if (v.isEmpty()) return
         name = v; store.put("name", v)
@@ -98,7 +98,7 @@ class AppState(private val store: LocalStore) {
     var bubbles by mutableStateOf(store.get("bubbles") != "0")
     var autoplay by mutableStateOf(store.get("autoplay") == "1")
     var haptics by mutableStateOf(store.get("haptics") != "0")
-    fun setTheme(v: ThemeName) { theme = v; store.put("theme", v.name) }
+    fun updateTheme(v: ThemeName) { theme = v; store.put("theme", v.name) }
     fun setBool(key: String, v: Boolean) {
         store.put(key, if (v) "1" else "0")
         when (key) {
