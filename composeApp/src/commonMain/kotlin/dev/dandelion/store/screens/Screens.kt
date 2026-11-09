@@ -68,6 +68,7 @@ import dev.dandelion.store.ThemeName
 import dev.dandelion.store.data.Collection
 import dev.dandelion.store.data.Filters
 import dev.dandelion.store.data.Game
+import dev.dandelion.store.data.gameById
 import dev.dandelion.store.data.PortProject
 import dev.dandelion.store.data.SortMode
 import dev.dandelion.store.data.applyFilters

@@ -110,7 +110,7 @@ fun GlossButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
     }
 }
 @Composable
-fun IconButton(icon: ImageVector, onClick: () -> Unit, size: Dp = 44.dp) {
+fun IconButton(icon: ImageVector, size: Dp = 44.dp, onClick: () -> Unit) {
     Box(Modifier.size(size).pressable { onClick() }.glass(GlassTint.WHITE, CircleShape), contentAlignment = Alignment.Center) { Icon(icon, null, Modifier.size(size * .45f), tint = DColors.Ink) }
 }
 @Composable
@@ -129,8 +129,8 @@ fun Chip(text: String, active: Boolean, onClick: () -> Unit) {
     }
 }
 @Composable
-fun SectionHeader(title: String, action: String? = null, onAction: () -> Unit = {}) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp), verticalAlignment = Alignment.Bottom) {
+fun SectionHeader(title: String, modifier: Modifier = Modifier, action: String? = null, onAction: () -> Unit = {}) {
+    Row(modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp), verticalAlignment = Alignment.Bottom) {
         Text(title, Modifier.weight(1f), color = DColors.Ink, style = DType.Title)
         if (action != null) Text(action, Modifier.pressable { onAction() }, color = DColors.Azure, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
     }

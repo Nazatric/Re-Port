@@ -8,6 +8,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import dev.dandelion.store.data.Catalog
 import dev.dandelion.store.data.CatalogStore
 import dev.dandelion.store.data.Game
+import dev.dandelion.store.data.gameById
 import dev.dandelion.store.data.SearchIndex
 
 enum class Tab(val label: String) { HOME("Home"), BROWSE("Browse"), LIBRARY("Library"), SETTINGS("Settings") }
