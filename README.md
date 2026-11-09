@@ -11,4 +11,4 @@ gradle wrapper --gradle-version 8.13
 ./gradlew :composeApp:assembleDebug
 ```
 
-Release builds in the supplied project use the debug signing key. Configure a persistent release key before distributing them. The extracted project has not been built or tested in this environment.
+GitHub Actions runs a debug build on pushes to this branch and uploads the APKs when it succeeds. Release builds in the supplied project use the debug signing key; configure a persistent release key before distributing them. The extracted project has not been built or tested in this environment.
