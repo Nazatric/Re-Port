@@ -8,7 +8,7 @@
     <path android:fillColor="#28B6EE" android:pathData="M54,22a32,32 0 1,0 0.1,0z" android:fillAlpha="0.85" />
     <path android:fillColor="#9FE9FF" android:pathData="M46,30a14,14 0 1,0 0.1,0z" android:fillAlpha="0.9" />
     <path android:fillColor="#FFFFFF" android:pathData="M43,34a5,5 0 1,0 0.1,0z" android:fillAlpha="0.9" />
-    <path android:fillColor="none" android:strokeColor="#C9D2DA" android:strokeWidth="3"
+    <path android:fillColor="#00000000" android:strokeColor="#C9D2DA" android:strokeWidth="3"
         android:pathData="M14,54a40,40 0 0,1 22,-34 M72,20a40,40 0 0,1 22,34 M94,54a40,40 0 0,1 -22,34 M36,88a40,40 0 0,1 -22,-34" />
     <path android:fillColor="#2B343D" android:pathData="M78,20a7,7 0 1,0 0.1,0z" />
     <path android:fillColor="#8E98A1" android:pathData="M78,23a3,3 0 1,0 0.1,0z" />
