@@ -23,7 +23,7 @@ export function GameArt({
   shadow?: boolean;
 }) {
   // A generated placeholder (data: URL) is shown until a verified real cover is found.
-  const placeholder = !game.cover || game.cover.startsWith("data:");
+  const placeholder = !game.cover || game.cover.startsWith("data:") || game.cover.includes("/covers/generated/");
   const [src, setSrc] = useState<string | undefined>(game.cover || undefined);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);

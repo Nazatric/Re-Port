@@ -127,7 +127,13 @@ async function fromSteam(game: Game): Promise<string | null> {
 }
 
 async function fromWikipedia(game: Game): Promise<string | null> {
-  const titles = [`${baseTitle(game.title)} (video game)`, baseTitle(game.title)];
+  const base = baseTitle(game.title);
+  // Year-qualified article first (e.g. "Doom (1993 video game)"), so reboots never shadow the original.
+  const titles = [
+    ...(game.year ? [`${base} (${game.year} video game)`] : []),
+    `${base} (video game)`,
+    base,
+  ];
   for (const t of titles) {
     const summary = await swrJson<WikiSummary>(`wiki:v2:${t}`, `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t.replace(/ /g, "_"))}`);
     if (!isWikiVideoGame(game, summary)) continue;

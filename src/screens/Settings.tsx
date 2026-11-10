@@ -39,9 +39,6 @@ const themes: { id: ThemeName; name: string; preview: string }[] = [
   { id: "night", name: t("Night · Aero"), preview: "radial-gradient(120% 80% at 70% 20%, rgba(90,220,255,.65), transparent 55%), linear-gradient(150deg,#04101f,#0b3559 48%,#08182e)" },
 ];
 
-/** Support payments go straight to this UPI ID (not shown in the README). */
-const UPI_ID = "nazaqat@fam";
-const UPI_LINK = `upi://pay?pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent("Nazatric")}&cu=INR&tn=${encodeURIComponent("Support Re:Port")}`;
 
 export function SettingsScreen() {
   const { name, avatar, setAvatar, setEditNameOpen, settings, setSetting, push, showToast, haptic, t } = useApp();
@@ -262,20 +259,6 @@ export function SettingsScreen() {
                 <button type="button" onClick={() => void openExternal(RELEASES_URL).catch(() => showToast("Couldn't open GitHub"))} className="press rounded-full bg-black/10 px-3 py-1.5 text-[11px] font-semibold text-ink">{t("Open latest release")}</button>
                 <button type="button" disabled={checking} onClick={() => setCheckKey((x) => x + 1)} className="press rounded-full bg-black/10 px-3 py-1.5 text-[11px] font-semibold text-ink disabled:opacity-50">{t("Check again")}</button>
               </div>
-            </div>
-          </div>
-        </Glass>
-      </section>
-      <section className="mt-5 px-4">
-        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">{t("Support")}</div>
-        <Glass className="p-3.5">
-          <div className="relative z-[2] flex flex-col items-center gap-3 text-center">
-            <p className="text-[12.5px] text-ink-soft">{t("Re:Port is free. If you like it, you can support its development with UPI.")}</p>
-            <img src="/support/upi-qr.png" alt={t("UPI QR code")} className="w-40 rounded-xl" loading="lazy" decoding="async" />
-            <div className="text-[13px] font-semibold text-ink">{UPI_ID}</div>
-            <div className="flex flex-wrap justify-center gap-2">
-              <a href={UPI_LINK} className="press rounded-full bg-black/10 px-3 py-1.5 text-[11px] font-semibold text-ink no-underline">{t("Pay with UPI")}</a>
-              <button type="button" onClick={() => { void navigator.clipboard?.writeText(UPI_ID).then(() => showToast(t("UPI ID copied")), () => showToast(UPI_ID)); }} className="press rounded-full bg-black/10 px-3 py-1.5 text-[11px] font-semibold text-ink">{t("Copy UPI ID")}</button>
             </div>
           </div>
         </Glass>
