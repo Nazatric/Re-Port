@@ -38,9 +38,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Check web and Android bridge flows
         run: |
-          node scripts/smoke-web.mjs
-          node scripts/smoke-profile-performance.mjs
-          node scripts/smoke-overlays.mjs
+          node scripts/run-smoke.mjs
       - name: Prepare Capacitor Android project
         run: |
           npx cap add android
