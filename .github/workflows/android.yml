@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: ["arena/551825be-re-port", "main"]
+    branches: ["arena/551825be-re-port", "arena/dcbf2003-re-port", "main"]
   workflow_dispatch:
     inputs:
       release_tag:
