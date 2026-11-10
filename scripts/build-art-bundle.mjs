@@ -132,6 +132,42 @@ const steamIds = games.filter((g) => g.steamAppId).map((g) => g.steamAppId);
 const steamArt = new Map();
 await pool(steamIds, 8, async (id) => steamArt.set(id, await steamCdn(id)));
 
+// ---------- libretro-thumbnails (keyless, console box art matched by title score) ----------
+const LIBRETRO = {
+  "PlayStation": "Sony_-_PlayStation", "PlayStation 2": "Sony_-_PlayStation_2", "PSP": "Sony_-_PlayStation_Portable",
+  "Xbox": "Microsoft_-_Xbox", "Xbox 360": "Microsoft_-_Xbox_360", "Nintendo 64": "Nintendo_-_Nintendo_64",
+  "GameCube": "Nintendo_-_GameCube", "Wii": "Nintendo_-_Wii", "Wii U": "Nintendo_-_Wii_U",
+  "Nintendo DS": "Nintendo_-_Nintendo_DS", "Nintendo 3DS": "Nintendo_-_Nintendo_3DS", "Game Boy": "Nintendo_-_Game_Boy",
+  "Game Boy Color": "Nintendo_-_Game_Boy_Color", "Game Boy Advance": "Nintendo_-_Game_Boy_Advance",
+  "NES": "Nintendo_-_Nintendo_Entertainment_System", "SNES": "Nintendo_-_Super_Nintendo_Entertainment_System",
+  "Super Nintendo": "Nintendo_-_Super_Nintendo_Entertainment_System", "Sega Saturn": "Sega_-_Saturn",
+  "Dreamcast": "Sega_-_Dreamcast", "Sega Genesis": "Sega_-_Mega_Drive",
+};
+const systems = [...new Set(Object.values(LIBRETRO))];
+const listing = new Map();
+await pool(systems, 6, async (system) => {
+  const tree = await get(`https://api.github.com/repos/libretro-thumbnails/${system}/git/trees/master?recursive=1`);
+  listing.set(system, (tree?.tree ?? []).map((f) => f.path).filter((p) => p.startsWith("Named_Boxarts/") && p.endsWith(".png")));
+});
+const REGIONS = ["(USA)", "(World)", "(Europe)", "(Japan)"];
+const libretro = new Map();
+for (const g of games) {
+  const system = LIBRETRO[g.platform];
+  if (!system) continue;
+  const groups = new Map();
+  for (const p of listing.get(system) ?? []) {
+    const name = p.slice("Named_Boxarts/".length);
+    const base = name.replace(/\.png$/, "").replace(/\s*\([^)]*\)/g, "").trim();
+    groups.set(base, [...(groups.get(base) ?? []), name]);
+  }
+  const pick = confidentChoice([...groups.keys()].map((base) => ({ base, ...scoreCandidate(g.title, base, { queryYear: g.year }) })), { min: 0.95, gap: 0.1 });
+  if (!pick) continue;
+  const files = groups.get(pick.base);
+  const name = REGIONS.map((r) => files.find((f) => f.includes(r))).find(Boolean) ?? files[0];
+  libretro.set(g.id, `https://thumbnails.libretro.com/${system}/Named_Boxarts/${encodeURIComponent(name)}`);
+}
+log(`libretro: ${libretro.size} console covers matched`);
+
 // Assemble. Only verified data goes in; the app falls back to the 1.1 lookup for anything missing.
 const out = { version: 4, generatedAt: new Date().toISOString(), games: {} };
 for (const g of games) {
@@ -154,8 +190,13 @@ for (const g of games) {
   else if (sg?.hero) e.hero = sg.hero;
   if (g.steamAppId) e.steamAppId = g.steamAppId;
   e.hit = !!(e.cover || e.description);
+  if (!e.cover && libretro.get(g.id)) { e.cover = libretro.get(g.id); e.coverSource = "libretro"; }
+  e.hit = !!(e.cover || e.description);
   if (e.hit) out.games[g.id] = e;
 }
+const missing = games.filter((g) => !out.games[g.id]?.cover);
+log(`still without a bundled cover: ${missing.length}`);
+for (const g of missing) log(`  no cover: ${g.id} | ${g.title} | ${g.platform} | ${g.year}`);
 await writeFile(OUT, JSON.stringify(out, null, 1) + "\n");
 const count = (f) => Object.values(out.games).filter(f).length;
 log(`bundle: ${Object.keys(out.games).length} games, ${count((x) => x.cover)} covers, ${count((x) => x.description)} descriptions, ${count((x) => x.hero)} heroes`);
