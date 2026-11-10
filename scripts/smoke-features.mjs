@@ -39,13 +39,33 @@ try {
   assert.equal(activeFilterCount({ ...emptyFilters, onlyRated: true }), 1);
   assert.deepEqual(applyFilters({ ...emptyFilters, onlyViewed: true }, saved, localViews).map((g) => g.id).sort(), ['bounce-classic', 'pokewilds']);
   assert.ok(applyFilters({ ...emptyFilters, onlyRated: true }, saved).every((g) => g.metacritic != null));
+  const { featuredForHour } = await server.ssrLoadModule('/src/data/ports.ts');
+  const hourA = featuredForHour(480000);
+  assert.equal(hourA.length, 8, 'cover flow shows 8 games');
+  assert.deepEqual(featuredForHour(480000).map((g) => g.id), hourA.map((g) => g.id), 'stable within one hour');
+  assert.notDeepEqual(featuredForHour(480001).map((g) => g.id), hourA.map((g) => g.id), 'changes at the next hour');
+  assert.ok(hourA.every((g) => g.cover && g.ports.some((p) => p.apk)), 'every featured game has cover art and an APK port');
   const { makeT, languages } = await server.ssrLoadModule('/src/lib/i18n.ts');
-  assert.equal(makeT('en')('tab.home'), 'Home');
-  assert.equal(makeT('es')('tab.home'), 'Inicio');
-  assert.equal(makeT('pt')('home.recentAdded'), 'Ports adicionados recentemente');
-  assert.equal(makeT('zh')('tab.settings'), '设置');
-  assert.equal(makeT('hi')('tab.library'), 'लाइब्रेरी');
-  for (const { id } of languages) assert.ok(makeT(id)('settings.about'), `${id} has a fallback`);
+  assert.equal(makeT('en')('Home'), 'Home');
+  assert.equal(makeT('es')('Home'), 'Inicio');
+  assert.equal(makeT('pt')('Recently added ports'), 'Ports adicionados recentemente');
+  assert.equal(makeT('zh')('Settings'), '设置');
+  assert.equal(makeT('hi')('Library'), 'लाइब्रेरी');
+  for (const { id } of languages) assert.ok(makeT(id)('About'), `${id} has a fallback`);
+  assert.equal(makeT('es')('Settings'), 'Ajustes');
+  assert.equal(makeT('pt')('Browse'), 'Explorar');
+  assert.equal(makeT('zh')('Filters'), '筛选');
+  assert.equal(makeT('hi')('Recently viewed'), 'हाल में देखे गए');
+  assert.equal(makeT('es')('{n} ports · no files needed', { n: 3 }), '3 ports · sin archivos necesarios');
+  // Every key must have a real translation in each language, not just the English fallback.
+  const fs = await import('node:fs');
+  const src = fs.readFileSync(new URL('../src/lib/i18n.ts', import.meta.url), 'utf8');
+  const entries = [...src.matchAll(/^  ("(?:[^"\\]|\\.)*"): (\[.*\]),$/gm)].map((m) => [JSON.parse(m[1]), JSON.parse(m[2])]);
+  assert.ok(entries.length > 150, 'translation table is populated');
+  for (const [key, translations] of entries) {
+    assert.equal(translations.length, 4, `"${key}" has es, pt, hi and zh`);
+    for (const value of translations) assert.ok(value.trim().length > 0, `empty translation for "${key}"`);
+  }
   console.log(`Update, catalog and metrics checks passed for ${games.length} games.`);
 } finally {
   await server.close();

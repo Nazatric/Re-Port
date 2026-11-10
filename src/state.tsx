@@ -1,4 +1,4 @@
-import { makeT, type LangCode, type TKey } from "@/lib/i18n";
+import { makeT, setLanguage, type LangCode, type TKey } from "@/lib/i18n";
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode,
 } from "react";
@@ -82,7 +82,7 @@ interface AppState {
   toggleSaved: (id: string) => void;
   recent: string[];
   localViews: Record<string, number>;
-  t: (key: TKey) => string;
+  t: (key: TKey, vars?: Record<string, string | number>) => string;
   visit: (id: string) => void;
   toast: string | null;
   toastKey: number;
@@ -167,6 +167,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useMemo(() => makeT(settings.language), [settings.language]);
+  setLanguage(settings.language);
+  useEffect(() => { document.documentElement.lang = settings.language; }, [settings.language]);
 
   const value = useMemo<AppState>(() => ({
     name, setName, avatar, setAvatar, onboarded, finishOnboarding, editNameOpen, setEditNameOpen,

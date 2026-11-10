@@ -29,14 +29,14 @@ import {
 } from "@/components/ui";
 import { cn } from "@/utils/cn";
 import { openExternal } from "@/lib/external";
-import { languages } from "@/lib/i18n";
+import { languages, t } from "@/lib/i18n";
 import { APP_VERSION, checkForUpdateCached, RELEASES_URL, type UpdateResult } from "@/lib/update";
 
 const themes: { id: ThemeName; name: string; preview: string }[] = [
-  { id: "nxe", name: "NXE Green", preview: "linear-gradient(180deg,#d9f183,#8cc63e 60%,#639f24)" },
-  { id: "meadow", name: "Meadow", preview: "linear-gradient(180deg,#8fcfff,#e8f6ff 55%,#8cc63e)" },
-  { id: "sky", name: "Sky", preview: "linear-gradient(180deg,#5fb4f7,#bfe6ff 60%,#fff)" },
-  { id: "night", name: "Night · Aero", preview: "radial-gradient(120% 80% at 70% 20%, rgba(90,220,255,.65), transparent 55%), linear-gradient(150deg,#04101f,#0b3559 48%,#08182e)" },
+  { id: "nxe", name: t("NXE Green"), preview: "linear-gradient(180deg,#d9f183,#8cc63e 60%,#639f24)" },
+  { id: "meadow", name: t("Meadow"), preview: "linear-gradient(180deg,#8fcfff,#e8f6ff 55%,#8cc63e)" },
+  { id: "sky", name: t("Sky"), preview: "linear-gradient(180deg,#5fb4f7,#bfe6ff 60%,#fff)" },
+  { id: "night", name: t("Night · Aero"), preview: "radial-gradient(120% 80% at 70% 20%, rgba(90,220,255,.65), transparent 55%), linear-gradient(150deg,#04101f,#0b3559 48%,#08182e)" },
 ];
 
 export function SettingsScreen() {
@@ -71,8 +71,8 @@ export function SettingsScreen() {
   return (
     <div className="v-scroll h-full overflow-y-auto pb-[116px]">
       <header className="px-5 pt-[calc(var(--sat)+16px)]">
-        <h1 className="t-light t-white-shadow text-[34px] leading-none text-ink">Settings</h1>
-        <div className="mt-1.5 text-[12.5px] text-ink-soft">Unofficial Android game ports</div>
+        <h1 className="t-light t-white-shadow text-[34px] leading-none text-ink">{t("Settings")}</h1>
+        <div className="mt-1.5 text-[12.5px] text-ink-soft">{t("Unofficial Android game ports")}</div>
       </header>
 
       {/* Hidden file input for instant photo upload */}
@@ -82,7 +82,7 @@ export function SettingsScreen() {
         accept="image/*"
         onChange={handleFileUpload}
         className="hidden"
-        aria-label="Upload profile picture"
+        aria-label={t("Upload profile picture")}
       />
 
       {/* Top Profile Banner */}
@@ -93,8 +93,8 @@ export function SettingsScreen() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className="press relative shrink-0 rounded-full focus:outline-none"
-              aria-label="Change profile picture"
-              title="Tap to upload photo"
+              aria-label={t("Change profile picture")}
+              title={t("Tap to upload photo")}
             >
               <InitialAvatar name={name} size={62} />
               <span className="absolute -bottom-0.5 -right-0.5 grid h-7 w-7 place-items-center rounded-full border-2 border-white bg-[#1f7fd6] text-white shadow-md">
@@ -103,10 +103,10 @@ export function SettingsScreen() {
             </button>
             <div className="min-w-0 flex-1">
               <div className="truncate text-[18px] font-bold leading-tight text-white">
-                {name || "Add your name"}
+                {name || t("Add your name")}
               </div>
               <div className="mt-0.5 text-[11.5px] text-white/90">
-                {avatar.mode === "image" ? "Custom profile picture" : `Avatar: ${AVATAR_PRESETS.find((p) => p.id === avatar.preset)?.label ?? "Custom"}`}
+                {avatar.mode === "image" ? t("Custom profile picture") : `${t("Avatar")}: ${t(AVATAR_PRESETS.find((p) => p.id === avatar.preset)?.label ?? t("Custom"))}`}
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <GlossButton
@@ -115,14 +115,14 @@ export function SettingsScreen() {
                   icon={Upload}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  Upload photo
+                  {t("Upload photo")}
                 </GlossButton>
                 <GlossButton
                   variant="white"
                   size="sm"
                   onClick={() => setEditNameOpen(true)}
                 >
-                  Customize
+                  {t("Customize")}
                 </GlossButton>
               </div>
             </div>
@@ -133,22 +133,22 @@ export function SettingsScreen() {
       {/* Inline Quick Avatar & Profile Customizer */}
       <section className="mt-5 px-4">
         <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">
-          Profile & Avatar Picture
+          {t("Profile & Avatar Picture")}
         </div>
         <Glass className="overflow-hidden">
           <SettingRow
             icon={User}
             color="#8cc63e"
-            title="Display name"
-            subtitle={name || "Not set"}
+            title={t("Display name")}
+            subtitle={name || t("Not set")}
             chevron
             onClick={() => setEditNameOpen(true)}
           />
           <SettingRow
             icon={ImageIcon}
             color="#1f7fd6"
-            title="Profile picture studio"
-            subtitle="Upload photo, pick game cover or icon"
+            title={t("Profile picture studio")}
+            subtitle={t("Upload photo, pick game cover or icon")}
             chevron
             onClick={() => setEditNameOpen(true)}
           />
@@ -156,7 +156,7 @@ export function SettingsScreen() {
           {/* Quick inline icon + color picker */}
           <div className="relative z-[2] border-t border-black/[0.06] px-3.5 py-3">
             <div className="flex items-center justify-between">
-              <span className="text-[12px] font-bold text-ink">Quick avatar style</span>
+              <span className="text-[12px] font-bold text-ink">{t("Quick avatar style")}</span>
               {avatar.mode === "image" && (
                 <button
                   type="button"
@@ -196,7 +196,7 @@ export function SettingsScreen() {
                       <PresetGlyph preset={p.id} size={42} initials={name.trim().slice(0, 2).toUpperCase() || "RP"} />
                     </span>
                     <span className={cn("text-[10px] font-semibold", selected ? "text-lime-deep" : "text-ink-soft")}>
-                      {p.label}
+                      {t(p.label)}
                     </span>
                   </button>
                 );
@@ -207,66 +207,66 @@ export function SettingsScreen() {
       </section>
 
       <section className="mt-5 px-4">
-        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">{t("settings.appearance")}</div>
+        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">{t("Appearance")}</div>
         <Glass>
           <div className="relative z-[2] border-b border-black/[0.06] px-3.5 py-3">
-            <div className="flex items-center gap-3"><span className="icon-gloss grid h-9 w-9 place-items-center rounded-full bg-gradient-to-b from-[#ff9ac8] to-[#b23a7d] text-white"><Palette size={18} className="relative z-[1]" /></span><div><div className="text-[14px] font-semibold text-ink">Theme</div><div className="text-[11.5px] text-ink-soft">Vector backdrop</div></div></div>
+            <div className="flex items-center gap-3"><span className="icon-gloss grid h-9 w-9 place-items-center rounded-full bg-gradient-to-b from-[#ff9ac8] to-[#b23a7d] text-white"><Palette size={18} className="relative z-[1]" /></span><div><div className="text-[14px] font-semibold text-ink">{t("Theme")}</div><div className="text-[11.5px] text-ink-soft">{t("Vector backdrop")}</div></div></div>
             <div className="mt-3 grid grid-cols-2 gap-2.5">
-              {themes.map((t) => {
-                const active = settings.theme === t.id;
-                return <button key={t.id} onClick={() => startTransition(() => setSetting("theme", t.id))} className="press text-center">
-                  <div className={cn("icon-gloss mx-auto h-[66px] w-full rounded-[14px] transition-shadow duration-300", active && "ring-[3px] ring-lime-deep ring-offset-2 ring-offset-white/60")} style={{ background: t.preview }} />
-                  <div className={cn("mt-1.5 text-[11.5px] font-semibold", active ? "text-lime-deep" : "text-ink-soft")}>{t.name}</div>
+              {themes.map((theme) => {
+                const active = settings.theme === theme.id;
+                return <button key={theme.id} onClick={() => startTransition(() => setSetting("theme", theme.id))} className="press text-center">
+                  <div className={cn("icon-gloss mx-auto h-[66px] w-full rounded-[14px] transition-shadow duration-300", active && "ring-[3px] ring-lime-deep ring-offset-2 ring-offset-white/60")} style={{ background: theme.preview }} />
+                  <div className={cn("mt-1.5 text-[11.5px] font-semibold", active ? "text-lime-deep" : "text-ink-soft")}>{t(theme.name)}</div>
                 </button>;
               })}
             </div>
-            {settings.theme === "night" && <div className="mt-4" role="group" aria-label="Night Aero appearance">
-              <div className="mb-2 text-[12px] font-semibold text-ink">Night Aero style</div>
+            {settings.theme === "night" && <div className="mt-4" role="group" aria-label={t("Night Aero appearance")}>
+              <div className="mb-2 text-[12px] font-semibold text-ink">{t("Night Aero style")}</div>
               <div className="grid grid-cols-2 gap-2">
-                {([ ["amoled", "AMOLED", "True black backdrop"], ["normal", "Normal", "Blue Aero backdrop"] ] as const).map(([id, label, detail]) =>
+                {([ ["amoled", t("AMOLED"), t("True black backdrop")], ["normal", t("Normal"), t("Blue Aero backdrop")] ] as const).map(([id, label, detail]) =>
                   <button key={id} type="button" aria-pressed={settings.nightVariant === id} onClick={() => setSetting("nightVariant", id)} className={cn("press rounded-xl border px-3 py-2 text-left", settings.nightVariant === id ? "border-cyan-400 bg-cyan-900/60" : "border-white/20 bg-black/30")}>
                     <span className="block text-[12px] font-bold text-ink">{label}</span><span className="text-[10px] text-ink-soft">{detail}</span>
                   </button>)}
               </div>
             </div>}
           </div>
-          <SettingToggle k="animations" icon={Sparkles} color="#f5a623" title="Smooth animations" subtitle="Interruptible, transform-only motion" />
-          <SettingToggle k="reflections" icon={Circle} color="#4fb6ff" title="Cover reflections" subtitle="Mirrored artwork in the cover flow" />
-          <SettingToggle k="bubbles" icon={Circle} color="#8cc63e" title="Floating bubbles" subtitle="Background particles on the home screen" />
-          <SettingToggle k="autoplay" icon={Sparkles} color="#8e6cff" title="Cover flow autoplay" subtitle="Rotate featured ports while idle" />
-          <SettingToggle k="haptics" icon={Vibrate} color="#8e6cff" title="Haptic feedback" subtitle="Vibration on supported devices" last />
+          <SettingToggle k="animations" icon={Sparkles} color="#f5a623" title={t("Smooth animations")} subtitle={t("Interruptible, transform-only motion")} />
+          <SettingToggle k="reflections" icon={Circle} color="#4fb6ff" title={t("Cover reflections")} subtitle={t("Mirrored artwork in the cover flow")} />
+          <SettingToggle k="bubbles" icon={Circle} color="#8cc63e" title={t("Floating bubbles")} subtitle={t("Background particles on the home screen")} />
+          <SettingToggle k="autoplay" icon={Sparkles} color="#8e6cff" title={t("Cover flow autoplay")} subtitle={t("Rotate featured ports while idle")} />
+          <SettingToggle k="haptics" icon={Vibrate} color="#8e6cff" title={t("Haptic feedback")} subtitle={t("Vibration on supported devices")} last />
         </Glass>
       </section>
 
       <section className="mt-5 px-4">
-        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">{t("settings.language")}</div>
+        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">{t("Language")}</div>
         <Glass className="p-3.5">
-          <div role="group" aria-label={t("settings.language")} className="grid grid-cols-3 gap-2">
+          <div role="group" aria-label={t("Language")} className="grid grid-cols-3 gap-2">
             {languages.map((l) => <button key={l.id} type="button" aria-pressed={settings.language === l.id} onClick={() => setSetting("language", l.id)} className={cn("press rounded-xl border px-2 py-2 text-[12px] font-semibold text-ink", settings.language === l.id ? "border-lime-deep bg-lime-glow/60" : "border-black/10 bg-black/5")}>{l.name}</button>)}
           </div>
-          <p className="mt-2 px-1 text-[11px] text-ink-soft">{t("settings.languageSubtitle")}. Game titles and notes stay in their original language.</p>
+          <p className="mt-2 px-1 text-[11px] text-ink-soft">{t("Interface language")}. Game titles and notes stay in their original language.</p>
         </Glass>
       </section>
       <section className="mt-5 px-4">
-        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">{t("settings.appUpdate")}</div>
+        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">{t("App update")}</div>
         <Glass className="p-3.5">
           <div className="relative z-[2] flex items-start gap-3">
             <span className="icon-gloss grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#62caff] to-[#1f7fd6] text-white"><RefreshCw size={17} /></span>
             <div className="min-w-0 flex-1"><div className="text-[14px] font-semibold text-ink">Re:Port v{APP_VERSION}</div>
-              <p role="status" className="mt-0.5 text-[11.5px] text-ink-soft">{checking ? "Checking GitHub for updates…" : update?.status === "new" ? `Update available: v${update.version}` : update?.status === "current" ? `You're up to date · latest v${update.version}` : "Couldn't check for updates. Check your connection and try again."}</p>
+              <p role="status" className="mt-0.5 text-[11.5px] text-ink-soft">{checking ? t("Checking GitHub for updates…") : update?.status === "new" ? `Update available: v${update.version}` : update?.status === "current" ? `You're up to date · latest v${update.version}` : t("Couldn't check for updates. Check your connection and try again.")}</p>
               <div className="mt-2 flex flex-wrap gap-2">
-                <button type="button" onClick={() => void openExternal(RELEASES_URL).catch(() => showToast("Couldn't open GitHub"))} className="press rounded-full bg-black/10 px-3 py-1.5 text-[11px] font-semibold text-ink">Open latest release</button>
-                <button type="button" disabled={checking} onClick={() => setCheckKey((x) => x + 1)} className="press rounded-full bg-black/10 px-3 py-1.5 text-[11px] font-semibold text-ink disabled:opacity-50">Check again</button>
+                <button type="button" onClick={() => void openExternal(RELEASES_URL).catch(() => showToast("Couldn't open GitHub"))} className="press rounded-full bg-black/10 px-3 py-1.5 text-[11px] font-semibold text-ink">{t("Open latest release")}</button>
+                <button type="button" disabled={checking} onClick={() => setCheckKey((x) => x + 1)} className="press rounded-full bg-black/10 px-3 py-1.5 text-[11px] font-semibold text-ink disabled:opacity-50">{t("Check again")}</button>
               </div>
             </div>
           </div>
         </Glass>
       </section>
       <section className="mt-5 px-4">
-        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">{t("settings.about")}</div>
-        <Glass><SettingRow icon={Info} color="#1f7fd6" title="About Re:Port" subtitle="Catalog and downloads" chevron onClick={() => push({ type: "about" })} last /></Glass>
+        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">{t("About")}</div>
+        <Glass><SettingRow icon={Info} color="#1f7fd6" title={t("About Re:Port")} subtitle={t("Catalog and downloads")} chevron onClick={() => push({ type: "about" })} last /></Glass>
       </section>
-      <div className="mt-8 px-6 text-center"><div className="t-light t-white-shadow text-[13px] italic text-ink-soft">A directory, not an emulator.</div></div>
+      <div className="mt-8 px-6 text-center"><div className="t-light t-white-shadow text-[13px] italic text-ink-soft">{t("A directory, not an emulator.")}</div></div>
     </div>
   );
 }
@@ -287,6 +287,7 @@ export function NamePrompt({
   const [tab, setTab] = useState<StudioTab>("presets");
   const [gameQuery, setGameQuery] = useState("");
   const [customUrl, setCustomUrl] = useState("");
+  const coverCount = games.filter((g) => g.cover && !g.cover.startsWith("data:")).length;
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const gameChoices = useMemo(() => {
@@ -335,12 +336,12 @@ export function NamePrompt({
         accept="image/*"
         onChange={onFileSelected}
         className="hidden"
-        aria-label="Upload avatar file"
+        aria-label={t("Upload avatar file")}
       />
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          const finalName = value.trim() || name.trim() || "Player";
+          const finalName = value.trim() || name.trim() || t("Player");
           onDone(finalName, draftAvatar);
         }}
         className="anim-sheet-in glass flex max-h-[90%] w-full max-w-[368px] flex-col overflow-y-auto rounded-[26px] p-4"
@@ -348,14 +349,14 @@ export function NamePrompt({
         {/* Header */}
         <div className="flex items-center justify-between px-1">
           <div className="text-[17px] font-bold text-ink">
-            {firstRun ? "Welcome to Re:Port" : "Customize Profile"}
+            {firstRun ? t("Welcome to Re:Port") : t("Customize Profile")}
           </div>
           {!firstRun && (
             <button
               type="button"
               onClick={() => onDone(name, avatar)}
               className="press grid h-8 w-8 place-items-center rounded-full bg-black/[0.06] text-ink-soft"
-              aria-label="Close"
+              aria-label={t("Close")}
             >
               <X size={16} />
             </button>
@@ -368,7 +369,7 @@ export function NamePrompt({
             type="button"
             onClick={() => fileRef.current?.click()}
             className="press relative shrink-0 rounded-full"
-            title="Tap to upload your own photo"
+            title={t("Tap to upload your own photo")}
           >
             <InitialAvatar name={value || "RP"} size={68} configOverride={draftAvatar} />
             <span className="absolute -bottom-0.5 -right-0.5 grid h-7 w-7 place-items-center rounded-full border-2 border-white bg-[#1f7fd6] text-white shadow">
@@ -377,13 +378,13 @@ export function NamePrompt({
           </button>
           <div className="min-w-0 flex-1">
             <label className="block text-[10.5px] font-bold uppercase tracking-wider text-ink-soft">
-              Display Name
+              {t("Display Name")}
             </label>
             <input
               autoFocus={firstRun}
               value={value}
               onChange={(e) => setValue(e.target.value.slice(0, 20))}
-              placeholder="Your name"
+              placeholder={t("Your name")}
               maxLength={20}
               className="mt-1 h-10 w-full rounded-xl bg-white/90 px-3 text-[14.5px] font-semibold text-ink shadow-inner outline-none focus:ring-2 focus:ring-lime-deep"
             />
@@ -393,7 +394,7 @@ export function NamePrompt({
                 onClick={() => fileRef.current?.click()}
                 className="press flex h-7 items-center gap-1 rounded-full bg-white px-2.5 text-[11px] font-semibold text-ink shadow-sm"
               >
-                <Upload size={11} /> Upload photo
+                <Upload size={11} /> {t("Upload photo")}
               </button>
               {draftAvatar.mode === "image" && (
                 <button
@@ -401,7 +402,7 @@ export function NamePrompt({
                   onClick={() => setDraftAvatar((prev) => ({ ...prev, mode: "preset", imageUrl: "" }))}
                   className="press flex h-7 items-center gap-1 rounded-full bg-black/[0.07] px-2.5 text-[11px] font-semibold text-ink-soft"
                 >
-                  Reset
+                  {t("Reset")}
                 </button>
               )}
             </div>
@@ -412,9 +413,9 @@ export function NamePrompt({
         <div className="mt-3 grid grid-cols-3 gap-1 rounded-full bg-black/[0.06] p-1">
           {(
             [
-              ["presets", "Icons"],
-              ["games", "Game Art"],
-              ["upload", "Custom Photo"],
+              ["presets", t("Icons")],
+              ["games", t("Game Art")],
+              ["upload", t("Custom Photo")],
             ] as [StudioTab, string][]
           ).map(([id, label]) => (
             <button
@@ -436,7 +437,7 @@ export function NamePrompt({
           {tab === "presets" && (
             <div>
               <div className="text-[11px] font-bold uppercase tracking-wider text-ink-soft">
-                Choose Icon
+                {t("Choose Icon")}
               </div>
               <div className="mt-2 grid grid-cols-4 gap-2">
                 {AVATAR_PRESETS.map((p) => {
@@ -460,7 +461,7 @@ export function NamePrompt({
                       >
                         <PresetGlyph preset={p.id} size={42} initials={value.trim().slice(0, 2).toUpperCase() || "RP"} />
                       </span>
-                      <span className="text-[10.5px] font-semibold text-ink">{p.label}</span>
+                      <span className="text-[10.5px] font-semibold text-ink">{t(p.label)}</span>
                     </button>
                   );
                 })}
@@ -475,7 +476,7 @@ export function NamePrompt({
                 <input
                   value={gameQuery}
                   onChange={(e) => setGameQuery(e.target.value)}
-                  placeholder="Search 869 game covers…"
+                  placeholder={t("Search {n} game covers…", { n: coverCount })}
                   className="w-full bg-transparent text-[12.5px] text-ink outline-none placeholder:text-ink-soft/70"
                 />
                 {gameQuery && (
@@ -523,13 +524,13 @@ export function NamePrompt({
                 <span className="icon-gloss grid h-12 w-12 place-items-center rounded-full bg-gradient-to-b from-[#c9ee6a] to-[#5f9f22] text-white">
                   <Upload size={20} />
                 </span>
-                <div className="text-[13.5px] font-bold text-ink">Choose photo from device</div>
-                <div className="text-[11px] text-ink-soft">PNG, JPG, WebP or GIF · auto center-cropped</div>
+                <div className="text-[13.5px] font-bold text-ink">{t("Choose photo from device")}</div>
+                <div className="text-[11px] text-ink-soft">{t("PNG, JPG, WebP or GIF · auto center-cropped")}</div>
               </button>
 
               <div className="rounded-2xl bg-black/[0.04] p-3">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-ink-soft">
-                  Or paste an image URL
+                  {t("Or paste an image URL")}
                 </div>
                 <div className="mt-1.5 flex gap-1.5">
                   <input
@@ -544,7 +545,7 @@ export function NamePrompt({
                     disabled={!customUrl.trim()}
                     className="glass-lime sheen press h-9 rounded-full px-3.5 text-[12px] font-semibold text-white disabled:opacity-40"
                   >
-                    Use
+                    {t("Use")}
                   </button>
                 </div>
               </div>
@@ -560,7 +561,7 @@ export function NamePrompt({
               onClick={() => onDone(name, avatar)}
               className="press h-11 flex-1 rounded-full bg-black/[0.06] text-[13px] font-semibold text-ink-soft"
             >
-              Cancel
+              {t("Cancel")}
             </button>
           )}
           <button
@@ -568,7 +569,7 @@ export function NamePrompt({
             disabled={firstRun && !value.trim()}
             className="glass-lime sheen press h-11 flex-[2] rounded-full text-[14px] font-semibold text-white disabled:opacity-50"
           >
-            {firstRun ? "Start exploring" : "Save profile"}
+            {firstRun ? t("Start exploring") : t("Save profile")}
           </button>
         </div>
       </form>

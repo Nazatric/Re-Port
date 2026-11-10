@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { LOCALE_TAGS } from "@/lib/i18n";
 import { Bookmark, CheckCircle2, FolderOpen, Search, Sparkles } from "lucide-react";
-import { collections, featuredGames, games, primaryPort, type Game } from "@/data/ports";
+import { collections, currentHourIndex, featuredForHour, games, primaryPort, type Game } from "@/data/ports";
 import { useApp } from "@/state";
 import { CoverFlow } from "@/components/CoverFlow";
 import { BladeStack, type Blade } from "@/components/BladeStack";
@@ -21,18 +22,26 @@ function useClock() {
 }
 
 export function Home() {
-  const { push, setTab, goBrowse, name, saved, recent, setEditNameOpen, t } = useApp();
+  // Cover flow picks a new random set at each hour boundary; the check runs every minute.
+  const [hour, setHour] = useState(currentHourIndex);
+  useEffect(() => {
+    const t = setInterval(() => setHour(currentHourIndex()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const featuredNow = useMemo(() => featuredForHour(hour), [hour]);
+
+  const { push, setTab, goBrowse, name, saved, recent, setEditNameOpen, settings, t } = useApp();
   const now = useClock();
   const h24 = now.getHours();
-  const date = now.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
-  const greeting = h24 < 12 ? t("home.morning") : h24 < 18 ? t("home.afternoon") : t("home.evening");
+  const date = now.toLocaleDateString(LOCALE_TAGS[settings.language], { weekday: "short", day: "numeric", month: "short" });
+  const greeting = h24 < 12 ? t("Good morning") : h24 < 18 ? t("Good afternoon") : t("Good evening");
   const recentGames = recent.map((id) => games.find((g) => g.id === id)).filter((g): g is Game => !!g).slice(0, 6);
 
   const blades: Blade[] = [
-    { id: "library", title: "My Library", subtitle: `${saved.size} saved · ${recent.length} viewed`, icon: Bookmark, action: "Open Library", onOpen: () => setTab("library") },
-    { id: "ready", title: "Ready to play", subtitle: `${readyCount} ports · no files needed`, icon: CheckCircle2, action: "See them", onOpen: () => goBrowse({ fileNeeds: ["none"] }) },
-    { id: "apk", title: "APK releases", subtitle: `${apkCount} with Android builds`, icon: Sparkles, action: "Browse catalog", onOpen: () => goBrowse({ onlyApk: true }) },
-    { id: "files", title: "Bring your own files", subtitle: `${needFilesCount} need a legal copy`, icon: FolderOpen, action: "View requirements", onOpen: () => goBrowse({ fileNeeds: ["files", "rom"] }) },
+    { id: "library", title: t("My Library"), subtitle: t("{a} saved · {b} viewed", { a: saved.size, b: recent.length }), icon: Bookmark, action: t("Open Library"), onOpen: () => setTab("library") },
+    { id: "ready", title: t("Ready to play"), subtitle: t("{n} ports · no files needed", { n: readyCount }), icon: CheckCircle2, action: t("See them"), onOpen: () => goBrowse({ fileNeeds: ["none"] }) },
+    { id: "apk", title: t("APK releases"), subtitle: t("{n} with Android builds", { n: apkCount }), icon: Sparkles, action: t("Browse catalog"), onOpen: () => goBrowse({ onlyApk: true }) },
+    { id: "files", title: t("Bring your own files"), subtitle: t("{n} need a legal copy", { n: needFilesCount }), icon: FolderOpen, action: t("View requirements"), onOpen: () => goBrowse({ fileNeeds: ["files", "rom"] }) },
   ];
 
   const open = (g: Game) => push({ type: "game", id: g.id });
@@ -62,15 +71,15 @@ export function Home() {
       </div>
 
       <section className="pt-4">
-        <SectionHeader title={t("home.featured")} action={t("home.seeAll")} className="px-5" onAction={() => setTab("browse")} />
-        <CoverFlow games={featuredGames} onOpen={open} />
+        <SectionHeader title={t("Featured community ports")} action={t("See all")} className="px-5" onAction={() => setTab("browse")} />
+        <CoverFlow games={featuredNow} onOpen={open} />
       </section>
 
       <section className="mt-3"><BladeStack blades={blades} /></section>
 
       {recentGames.length > 0 && (
         <section className="mt-2 px-4">
-          <SectionHeader title={t("home.recentViewed")} action={t("home.library")} onAction={() => setTab("library")} />
+          <SectionHeader title={t("Recently viewed")} action={t("Library")} onAction={() => setTab("library")} />
           <div className="h-scroll no-scrollbar -mx-4 flex gap-3 px-4 pb-2 pt-1" style={{ touchAction: "pan-x pan-y" }}>
             {recentGames.map((g) => (
               <TapSurface key={g.id} onTap={() => open(g)} className="w-[92px] shrink-0">
@@ -83,7 +92,7 @@ export function Home() {
       )}
 
       <section className="mt-5 px-4">
-        <SectionHeader title={t("home.collections")} action={t("home.browse")} onAction={() => setTab("browse")} />
+        <SectionHeader title={t("Collections")} action={t("Browse")} onAction={() => setTab("browse")} />
         <div className="grid grid-cols-3 gap-3">
           {collections.slice(0, 6).map((c, i) => {
             const members = games.filter((g) => g.collections.includes(c.id));
@@ -103,7 +112,7 @@ export function Home() {
       </section>
 
       <section className="mt-5 px-4">
-        <SectionHeader title={t("home.recentAdded")} action={t("home.seeAll")} onAction={() => setTab("browse")} />
+        <SectionHeader title={t("Recently added ports")} action={t("See all")} onAction={() => setTab("browse")} />
         <Glass className="divide-y divide-black/[0.06] p-1.5">
           {latest.map((g) => (
             <TapSurface key={g.id} onTap={() => open(g)} className="flex items-center gap-3 p-2">
@@ -120,7 +129,7 @@ export function Home() {
 
       <footer className="mt-8 px-6 text-center">
         <div className="glass inline-block rounded-full px-5 py-2.5">
-          <div className="t-light relative z-[2] text-[13px] italic text-ink">A directory, not an emulator.</div>
+          <div className="t-light relative z-[2] text-[13px] italic text-ink">{t("A directory, not an emulator.")}</div>
           <div className="relative z-[2] mt-0.5 text-[11px] text-ink-soft tabular-nums">{games.length} unofficial ports · {collections.length} collections</div>
         </div>
       </footer>

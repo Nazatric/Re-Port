@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import type { Game } from "@/data/ports";
 import { resolveArtwork } from "@/lib/artwork";
 import { cn } from "@/utils/cn";
+import { t } from "@/lib/i18n";
 
 /** Steam serves 1920×1080 originals; lists and heroes only need its 600×338 thumbnail. */
 export function thumbShot(url: string): string {
@@ -58,7 +59,7 @@ export function GameArt({
       {!loaded && <span className="absolute inset-0 grid place-items-center px-3 text-center text-[13px] font-semibold leading-tight text-white/90">{game.title}</span>}
       <img
         src={src}
-        alt={`${game.title} cover art`}
+        alt={t("{title} cover art", { title: game.title })}
         draggable={false}
         loading={priority ? "eager" : "lazy"}
         decoding="async"

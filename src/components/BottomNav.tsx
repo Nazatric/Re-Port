@@ -4,10 +4,10 @@ import { useApp, type Tab } from "@/state";
 import type { TKey } from "@/lib/i18n";
 
 const tabs: { id: Tab; key: TKey; icon: LucideIcon }[] = [
-  { id: "home", key: "tab.home", icon: Home },
-  { id: "browse", key: "tab.browse", icon: Search },
-  { id: "library", key: "tab.library", icon: Bookmark },
-  { id: "settings", key: "tab.settings", icon: Settings },
+  { id: "home", key: "Home", icon: Home },
+  { id: "browse", key: "Browse", icon: Search },
+  { id: "library", key: "Library", icon: Bookmark },
+  { id: "settings", key: "Settings", icon: Settings },
 ];
 
 export function BottomNav() {

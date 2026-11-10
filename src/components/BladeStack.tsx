@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { t } from "@/lib/i18n";
 
 export interface Blade { id: string; title: string; subtitle: string; icon: LucideIcon; action: string; onOpen: () => void }
 const COLLAPSED = 40;
@@ -35,7 +36,7 @@ export function BladeStack({ blades }: { blades: Blade[] }) {
               style={{ width: expandedWidth, zIndex: active ? 50 : 40 - i, transform: `translate3d(${x}px,0,0) ${active ? "rotateY(0deg)" : i < sel ? "rotateY(14deg) scale(.96)" : "rotateY(-14deg) scale(.96)"}`, transformOrigin: "left center" }}>
               <div className="blade-surface glass-lime sheen absolute inset-0 rounded-[12px]"
                 style={{ clipPath: active ? "inset(0 0 0 0 round 12px)" : `inset(0 ${expandedWidth - COLLAPSED}px 0 0 round 12px)` }} />
-              <button type="button" aria-label={active ? `${b.title}: ${b.action}` : `Select ${b.title}`}
+              <button type="button" aria-label={active ? t("{title}: {action}", { title: b.title, action: b.action }) : t("Select {title}", { title: b.title })}
                 onClick={() => { if (active) b.onOpen(); else setSel(i); }}
                 className="pointer-events-auto absolute inset-y-0 left-0 z-[2] cursor-pointer text-left"
                 style={{ width: active ? expandedWidth : COLLAPSED }}>
@@ -43,7 +44,7 @@ export function BladeStack({ blades }: { blades: Blade[] }) {
                 <div className={cn("absolute inset-0 flex flex-col justify-between p-3.5 transition-opacity duration-200", active ? "opacity-100 delay-100" : "pointer-events-none opacity-0")}>
                   <div className="flex items-start justify-between">
                     <span className="icon-gloss grid h-11 w-11 place-items-center rounded-full bg-gradient-to-b from-white to-[#e4f3c8] text-lime-deep"><Icon size={21} strokeWidth={2.3} className="relative z-[1]" /></span>
-                    <span className="text-[11px] font-semibold text-white/90 tabular-nums">{i + 1} of {n}</span>
+                    <span className="text-[11px] font-semibold text-white/90 tabular-nums">{t("{i} of {n}", { i: i + 1, n })}</span>
                   </div>
                   <div className="min-w-0"><div className="t-shadow truncate text-[18px] font-semibold leading-tight text-white">{b.title}</div><div className="truncate text-[11.5px] text-white/90">{b.subtitle}</div></div>
                   <div className="flex items-center gap-2"><span className="glass sheen inline-flex h-8 items-center gap-1 rounded-full pl-3 pr-2 text-[12px] font-semibold text-lime-deep"><span className="relative z-[2]">{b.action}</span><ChevronRight size={14} strokeWidth={3} className="relative z-[2]" /></span></div>

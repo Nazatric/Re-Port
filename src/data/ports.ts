@@ -163,13 +163,39 @@ const featuredIds = [
   "the-elder-scrolls-iii-morrowind", "the-legend-of-zelda-ocarina-of-time",
   "half-life", "sonic-mania",
 ];
+/** Curated picks used when the hourly rotation has no pool (kept for safety). */
 export const featuredGames: Game[] = featuredIds.map(gameById).filter((g): g is Game => !!g && !!g.cover);
-const isTool = (name: string) => /launcher|tool|manager|patcher|builder|art loader|frontend/i.test(name);
-for (const g of games) {
-  if (featuredGames.length >= 8) break;
-  if (!g.cover || featuredGames.includes(g)) continue;
-  if (g.ports.some((p) => p.apk && !isTool(p.name))) featuredGames.push(g);
+
+const HOUR_MS = 60 * 60 * 1000;
+/** Cover-flow pool: every game with real artwork that has at least one native Android port. */
+const featuredPool: Game[] = games.filter((g) => !!g.cover && g.ports.some((p) => p.apk));
+
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
+
+/** Random featured set that is stable within one hour and changes automatically each hour. */
+export function featuredForHour(hourIndex: number, count = 8): Game[] {
+  const pool = featuredPool.length >= count ? featuredPool : featuredGames;
+  const rand = mulberry32(hourIndex * 2654435761 + 12345);
+  const picked: Game[] = [];
+  const used = new Set<number>();
+  while (picked.length < Math.min(count, pool.length)) {
+    const i = Math.floor(rand() * pool.length);
+    if (used.has(i)) continue;
+    used.add(i);
+    picked.push(pool[i]);
+  }
+  return picked;
+}
+export const currentHourIndex = () => Math.floor(Date.now() / HOUR_MS);
 
 /** Highest known catalog download count first; unknown counts use a quality-based fallback. */
 export function rankedPortIndices(g: Game): number[] {
