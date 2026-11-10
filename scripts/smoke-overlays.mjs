@@ -17,8 +17,7 @@ try {
       const errors = [];
       page.on('pageerror', err => errors.push(err.message));
       await page.goto('http://127.0.0.1:4279/');
-      await page.getByPlaceholder('Your name').fill('Player');
-      await page.getByRole('button', { name: 'Start exploring' }).click();
+      // No name is required: the app opens straight to Home.
       await page.locator('nav').getByRole('button', { name: 'Browse' }).click();
       await page.getByRole('button', { name: 'Open filters' }).click();
       const dialog = page.getByRole('dialog', { name: 'Filters' });

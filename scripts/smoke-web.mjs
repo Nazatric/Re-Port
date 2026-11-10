@@ -12,8 +12,7 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('http://127.0.0.1:4277/');
-  await page.getByPlaceholder('Your name').fill('Player');
-  await page.getByRole('button', { name: 'Start exploring' }).click();
+  // No name is required: the app opens straight to Home.
   await page.locator('nav').getByRole('button', { name: 'Browse' }).click();
   await page.getByPlaceholder('Games, port projects, engines, repos…').fill('doom');
   await page.getByLabel('Open Doom', { exact: true }).first().click();
