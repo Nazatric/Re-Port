@@ -26,6 +26,8 @@ const CATALOG = resolve(ROOT, "src/data/catalog.json");
 const OUT = resolve(ROOT, "src/data/enrichment.json");
 const UA = "Re-Port/1.2 (https://github.com/Nazatric/Re-Port; catalog artwork build)";
 const DAY = 24 * 3600 * 1000;
+/** Bump when detection rules change: games without a cover are then checked again with the new rules. */
+const PIPELINE = 3;
 const args = process.argv.slice(2);
 const arg = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
 const LIMIT = Number(arg("--limit") ?? Infinity);
@@ -137,10 +139,24 @@ async function wikidataGame(game) {
     if (!isGame) continue;
     const year = yearOf(e.claims?.P577?.[0]?.mainsnak?.datavalue?.value?.time) ?? null;
     const steamIds = (e.claims?.P1733 ?? []).map((c) => Number(c.mainsnak?.datavalue?.value)).filter(Boolean);
+    const image = (e.claims?.P18 ?? []).map((c) => c.mainsnak?.datavalue?.value).find((f) => typeof f === "string" && /box|cover|jacket|front/i.test(f));
     const label = e.labels?.en?.value ?? hit.label ?? "";
-    candidates.push({ id: hit.id, year, steamIds, wikiTitle: e.sitelinks?.enwiki?.title ?? null, ...scoreCandidate(game.title, label, { queryYear: game.year, candidateYear: year }) });
+    candidates.push({ id: hit.id, year, steamIds, image, wikiTitle: e.sitelinks?.enwiki?.title ?? null, ...scoreCandidate(game.title, label, { queryYear: game.year, candidateYear: year }) });
   }
   return confidentChoice(candidates, { min: 0.95, gap: 0.1 });
+}
+
+/** PCGamingWiki infobox: the page for this exact title lists its Steam AppID. */
+async function pcgwAppId(game) {
+  const page = editionBase(game.title);
+  const q = new URLSearchParams({ action: "cargoquery", tables: "Infobox_game", fields: "Infobox_game._pageName=Page,Infobox_game.Steam_AppID", where: `Infobox_game._pageName="${page.replace(/"/g, "")}"`, format: "json" });
+  const data = await getJson(`https://www.pcgamingwiki.com/w/api.php?${q}`);
+  for (const row of data?.cargoquery ?? []) {
+    const t = row.title ?? {};
+    const id = Number(String(t["Steam AppID"] ?? t.Steam_AppID ?? "").split(/[,;\s]+/)[0]);
+    if (id > 0 && normalizeTitle(t.Page ?? "") === normalizeTitle(page)) return id;
+  }
+  return null;
 }
 
 /** Steam store search: only a single confident title match is accepted. */
@@ -185,29 +201,28 @@ async function steamArt(id) {
 }
 
 /** Wikipedia lead text, used only for games with no other description. */
-async function wikipediaText(title, year) {
+async function wikipediaSummary(title, year) {
   const base = editionBase(title);
   for (const t of [title, year ? `${base} (${year} video game)` : null, `${base} (video game)`].filter(Boolean)) {
     const s = await getJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t.replace(/ /g, "_"))}`);
     if (!s || s.type === "disambiguation" || !/video game/i.test(s.description ?? "")) continue;
     if (normalizeTitle(s.title ?? "").replace(/ video game$/, "") !== normalizeTitle(base)) continue;
-    return s.extract ? s.extract.split(/(?<=\.)\s/).slice(0, 2).join(" ") : null;
+    return s;
   }
   return null;
 }
+const textOf = (s) => (s?.extract ? s.extract.split(/(?<=\.)\s/).slice(0, 2).join(" ") : null);
 
 async function enrichOne(game) {
   const out = { sources: [] };
   const wd = await wikidataGame(game).catch(() => null);
   if (wd?.year) out.year = wd.year;
 
-  // 1. AppID with evidence: catalog → Wikidata P1733 → Steam search.
+  // 1. Steam AppID with evidence: catalog → Wikidata P1733 → PCGamingWiki → Steam store search.
   let appId = game.steamAppId || wd?.steamIds?.[0] || null;
   if (appId) out.sources.push(game.steamAppId ? "catalog-appid" : "wikidata-appid");
-  if (!appId && !LIBRETRO[game.platform]) {
-    appId = await steamSearch(game);
-    if (appId) out.sources.push("steam-search");
-  }
+  if (!appId) { appId = await pcgwAppId(game).catch(() => null); if (appId) out.sources.push("pcgamingwiki-appid"); }
+  if (!appId && !LIBRETRO[game.platform]) { appId = await steamSearch(game); if (appId) out.sources.push("steam-search"); }
 
   // 2. Steam details and CDN art.
   if (appId) {
@@ -218,11 +233,11 @@ async function enrichOne(game) {
       Object.assign(out, { description: details.description, developer: details.developer, genres: details.genres, shots: details.shots });
       if (details.year) out.year ??= details.year;
       Object.assign(out, await steamArt(appId));
-      out.coverSource = out.cover ? "steam" : null;
+      if (out.cover) out.coverSource = "steam";
     }
   }
 
-  // 3. Console box art and snapshots from libretro-thumbnails, only where Steam gave no cover.
+  // 3. Console box art and snapshots from libretro-thumbnails, matched by title score against the real file list.
   if (!out.cover) {
     const lr = await libretroArt(game).catch(() => null);
     if (lr?.cover) {
@@ -231,10 +246,17 @@ async function enrichOne(game) {
     }
   }
 
-  // 4. Text: Wikipedia only when nothing else described the game.
-  if (!out.description) {
-    const text = await wikipediaText(game.title, out.year ?? game.year);
-    if (text) { out.description = text; out.sources.push("wikipedia"); }
+  // 4. Wikidata box-art image (Wikimedia Commons file whose name marks it as a box/cover scan).
+  if (!out.cover && wd?.image) {
+    const url = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(wd.image)}?width=600`;
+    if (await exists(url)) { out.cover = url; out.coverSource = "wikidata-image"; out.sources.push("wikidata-image"); }
+  }
+
+  // 5. Wikipedia: lead image and text for video-game articles only.
+  const wiki = await wikipediaSummary(game.title, out.year ?? game.year).catch(() => null);
+  if (wiki) {
+    if (!out.cover && wiki.thumbnail?.source) { out.cover = wiki.thumbnail.source; out.coverSource = "wikipedia"; out.sources.push("wikipedia-image"); }
+    if (!out.description) { const text = textOf(wiki); if (text) { out.description = text; out.sources.push("wikipedia"); } }
   }
 
   const useful = out.cover || out.description || out.shots?.length;
@@ -251,13 +273,15 @@ async function save(store) {
 
 async function main() {
   const catalog = JSON.parse(await readFile(CATALOG, "utf8"));
-  let store = { version: 2, generatedAt: null, games: {} };
-  try { store = JSON.parse(await readFile(OUT, "utf8")); store.version = 2; } catch { /* first run */ }
+  let store = { version: 3, generatedAt: null, games: {} };
+  try { store = JSON.parse(await readFile(OUT, "utf8")); store.version = 3; } catch { /* first run */ }
   const now = Date.now();
   const todo = catalog.games.filter((game) => {
     if (ONLY && !ONLY.includes(game.id)) return false;
     const prev = store.games[game.id];
     if (FORCE || !prev) return true;
+    // Games still without a cover are re-checked whenever the detection rules change.
+    if ((prev.pipeline ?? 0) < PIPELINE && !prev.cover) return true;
     return now - Date.parse(prev.checkedAt) >= (prev.hit ? 30 * DAY : 7 * DAY);
   }).slice(0, LIMIT);
   console.log(`building artwork for ${todo.length} games with ${WORKERS} workers`);
@@ -268,7 +292,7 @@ async function main() {
       const game = todo[next++];
       let result = null;
       try { result = await enrichOne(game); } catch (err) { console.warn(`${game.id}: ${err.message}`); }
-      store.games[game.id] = result ? { hit: true, checkedAt: new Date().toISOString(), ...result } : { hit: false, checkedAt: new Date().toISOString() };
+      store.games[game.id] = result ? { hit: true, pipeline: PIPELINE, checkedAt: new Date().toISOString(), ...result } : { hit: false, pipeline: PIPELINE, checkedAt: new Date().toISOString() };
       if (result) hits++;
       done++;
       if (done % 50 === 0) { await save(store); console.log(`${done}/${todo.length} done, ${hits} with artwork or details`); }
