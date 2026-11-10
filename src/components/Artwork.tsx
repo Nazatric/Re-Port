@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import type { Game } from "@/data/ports";
 import { resolveArtwork } from "@/lib/artwork";
 import { cn } from "@/utils/cn";
@@ -25,6 +25,14 @@ export function GameArt({
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [retrying, setRetrying] = useState(false);
+
+  // Games without a bundled cover resolve one from the keyless artwork sources once, then show it.
+  useEffect(() => {
+    if (game.cover) return;
+    let live = true;
+    resolveArtwork(game).then((url) => { if (!live) return; if (url) setSrc(url); else setFailed(true); }).catch(() => { if (live) setFailed(true); });
+    return () => { live = false; };
+  }, [game]);
 
   const handleError = async () => {
     if (retrying || failed) return;
