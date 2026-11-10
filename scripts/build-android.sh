@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set +e
-gradle :composeApp:assembleDebug --no-daemon --console=plain 2>&1 | tee build.log
+./gradlew assembleDebug --no-daemon --console=plain 2>&1 | tee build.log
 result=${PIPESTATUS[0]}
 if [ "$result" -ne 0 ]; then
   python3 - <<'PY'
@@ -14,17 +14,8 @@ if not errors:
         errors = lines[start:end]
     except ValueError:
         errors = lines[-30:]
-chunks, chunk = [], ''
-for line in errors:
-    if len(chunk) + len(line) > 3000:
-        chunks.append(chunk)
-        chunk = ''
-    chunk += line + '\n'
-if chunk:
-    chunks.append(chunk)
-for chunk in chunks[:9]:
-    escaped = chunk.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
-    print(f'::error title=Gradle build::{escaped}')
+text = '\n'.join(errors)[:3000].replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+print(f'::error title=Gradle build::{text}')
 PY
 fi
 exit "$result"

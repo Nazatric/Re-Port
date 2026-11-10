@@ -14,18 +14,35 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.13'
-      - name: Build debug APKs
-        run: bash scripts/build-android.sh
-      - name: Upload debug APKs
+      - name: Install and check web app
+        run: |
+          npm ci
+          npm run typecheck
+          npm run build
+      - name: Check web and Android bridge flows
+        env:
+          CHROMIUM_PATH: /usr/bin/google-chrome
+        run: node scripts/smoke-web.mjs
+      - name: Prepare Capacitor Android project
+        run: |
+          npx cap add android
+          node scripts/prepare-android.mjs
+          npx cap sync android
+      - name: Build universal debug APK
+        working-directory: android
+        run: bash ../scripts/build-android.sh
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: RePort-Android-debug
-          path: composeApp/build/outputs/apk/debug/*.apk
+          name: RePort-Capacitor-Android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
