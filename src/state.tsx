@@ -1,3 +1,4 @@
+import { makeT, type LangCode, type TKey } from "@/lib/i18n";
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode,
 } from "react";
@@ -32,6 +33,7 @@ export interface BrowsePreset {
 }
 
 export interface Settings {
+  language: LangCode;
   theme: ThemeName;
   nightVariant: "amoled" | "normal";
   animations: boolean;
@@ -55,7 +57,7 @@ function save(key: string, value: unknown) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* private mode */ }
 }
 
-const defaultSettings: Settings = { theme: "nxe", nightVariant: "amoled", animations: true, reflections: true, bubbles: true, autoplay: false, haptics: true };
+const defaultSettings: Settings = { language: "en", theme: "nxe", nightVariant: "amoled", animations: true, reflections: true, bubbles: true, autoplay: false, haptics: true };
 export const defaultAvatar: AvatarConfig = { mode: "preset", preset: "gamepad", imageUrl: "" };
 
 interface AppState {
@@ -80,6 +82,7 @@ interface AppState {
   toggleSaved: (id: string) => void;
   recent: string[];
   localViews: Record<string, number>;
+  t: (key: TKey) => string;
   visit: (id: string) => void;
   toast: string | null;
   toastKey: number;
@@ -163,11 +166,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setLocalViews((v) => ({ ...v, [id]: (v[id] || 0) + 1 }));
   }, []);
 
+  const t = useMemo(() => makeT(settings.language), [settings.language]);
+
   const value = useMemo<AppState>(() => ({
     name, setName, avatar, setAvatar, onboarded, finishOnboarding, editNameOpen, setEditNameOpen,
-    tab, setTab, browsePreset, goBrowse, stack, push, pop, settings, setSetting, saved, toggleSaved, recent, localViews, visit,
+    tab, setTab, browsePreset, goBrowse, stack, push, pop, settings, setSetting, saved, toggleSaved, recent, localViews, t, visit,
     toast, toastKey, showToast, haptic,
-  }), [name, setName, avatar, setAvatar, onboarded, finishOnboarding, editNameOpen, tab, setTab, browsePreset, goBrowse, stack, push, pop, settings, setSetting, saved, toggleSaved, recent, localViews, visit, toast, toastKey, showToast, haptic]);
+  }), [name, setName, avatar, setAvatar, onboarded, finishOnboarding, editNameOpen, tab, setTab, browsePreset, goBrowse, stack, push, pop, settings, setSetting, saved, toggleSaved, recent, localViews, t, visit, toast, toastKey, showToast, haptic]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -39,6 +39,13 @@ try {
   assert.equal(activeFilterCount({ ...emptyFilters, onlyRated: true }), 1);
   assert.deepEqual(applyFilters({ ...emptyFilters, onlyViewed: true }, saved, localViews).map((g) => g.id).sort(), ['bounce-classic', 'pokewilds']);
   assert.ok(applyFilters({ ...emptyFilters, onlyRated: true }, saved).every((g) => g.metacritic != null));
+  const { makeT, languages } = await server.ssrLoadModule('/src/lib/i18n.ts');
+  assert.equal(makeT('en')('tab.home'), 'Home');
+  assert.equal(makeT('es')('tab.home'), 'Inicio');
+  assert.equal(makeT('pt')('home.recentAdded'), 'Ports adicionados recentemente');
+  assert.equal(makeT('zh')('tab.settings'), '设置');
+  assert.equal(makeT('hi')('tab.library'), 'लाइब्रेरी');
+  for (const { id } of languages) assert.ok(makeT(id)('settings.about'), `${id} has a fallback`);
   console.log(`Update, catalog and metrics checks passed for ${games.length} games.`);
 } finally {
   await server.close();

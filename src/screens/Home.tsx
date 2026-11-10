@@ -21,11 +21,11 @@ function useClock() {
 }
 
 export function Home() {
-  const { push, setTab, goBrowse, name, saved, recent, setEditNameOpen } = useApp();
+  const { push, setTab, goBrowse, name, saved, recent, setEditNameOpen, t } = useApp();
   const now = useClock();
   const h24 = now.getHours();
   const date = now.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
-  const greeting = h24 < 12 ? "Good morning" : h24 < 18 ? "Good afternoon" : "Good evening";
+  const greeting = h24 < 12 ? t("home.morning") : h24 < 18 ? t("home.afternoon") : t("home.evening");
   const recentGames = recent.map((id) => games.find((g) => g.id === id)).filter((g): g is Game => !!g).slice(0, 6);
 
   const blades: Blade[] = [
@@ -62,7 +62,7 @@ export function Home() {
       </div>
 
       <section className="pt-4">
-        <SectionHeader title="Featured community ports" action="See all" className="px-5" onAction={() => setTab("browse")} />
+        <SectionHeader title={t("home.featured")} action={t("home.seeAll")} className="px-5" onAction={() => setTab("browse")} />
         <CoverFlow games={featuredGames} onOpen={open} />
       </section>
 
@@ -70,7 +70,7 @@ export function Home() {
 
       {recentGames.length > 0 && (
         <section className="mt-2 px-4">
-          <SectionHeader title="Recently viewed" action="Library" onAction={() => setTab("library")} />
+          <SectionHeader title={t("home.recentViewed")} action={t("home.library")} onAction={() => setTab("library")} />
           <div className="h-scroll no-scrollbar -mx-4 flex gap-3 px-4 pb-2 pt-1" style={{ touchAction: "pan-x pan-y" }}>
             {recentGames.map((g) => (
               <TapSurface key={g.id} onTap={() => open(g)} className="w-[92px] shrink-0">
@@ -83,7 +83,7 @@ export function Home() {
       )}
 
       <section className="mt-5 px-4">
-        <SectionHeader title="Collections" action="Browse" onAction={() => setTab("browse")} />
+        <SectionHeader title={t("home.collections")} action={t("home.browse")} onAction={() => setTab("browse")} />
         <div className="grid grid-cols-3 gap-3">
           {collections.slice(0, 6).map((c, i) => {
             const members = games.filter((g) => g.collections.includes(c.id));
@@ -103,7 +103,7 @@ export function Home() {
       </section>
 
       <section className="mt-5 px-4">
-        <SectionHeader title="Recently added ports" action="See all" onAction={() => setTab("browse")} />
+        <SectionHeader title={t("home.recentAdded")} action={t("home.seeAll")} onAction={() => setTab("browse")} />
         <Glass className="divide-y divide-black/[0.06] p-1.5">
           {latest.map((g) => (
             <TapSurface key={g.id} onTap={() => open(g)} className="flex items-center gap-3 p-2">

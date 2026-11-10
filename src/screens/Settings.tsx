@@ -29,7 +29,8 @@ import {
 } from "@/components/ui";
 import { cn } from "@/utils/cn";
 import { openExternal } from "@/lib/external";
-import { APP_VERSION, checkForUpdate, RELEASES_URL, type UpdateResult } from "@/lib/update";
+import { languages } from "@/lib/i18n";
+import { APP_VERSION, checkForUpdateCached, RELEASES_URL, type UpdateResult } from "@/lib/update";
 
 const themes: { id: ThemeName; name: string; preview: string }[] = [
   { id: "nxe", name: "NXE Green", preview: "linear-gradient(180deg,#d9f183,#8cc63e 60%,#639f24)" },
@@ -39,7 +40,7 @@ const themes: { id: ThemeName; name: string; preview: string }[] = [
 ];
 
 export function SettingsScreen() {
-  const { name, avatar, setAvatar, setEditNameOpen, settings, setSetting, push, showToast, haptic } = useApp();
+  const { name, avatar, setAvatar, setEditNameOpen, settings, setSetting, push, showToast, haptic, t } = useApp();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [update, setUpdate] = useState<UpdateResult | null>(null);
   const [checking, setChecking] = useState(true);
@@ -47,7 +48,7 @@ export function SettingsScreen() {
   useEffect(() => {
     let active = true;
     setChecking(true);
-    checkForUpdate().then((result) => { if (active) { setUpdate(result); setChecking(false); } });
+    checkForUpdateCached(checkKey > 0).then((result) => { if (active) { setUpdate(result); setChecking(false); } });
     return () => { active = false; };
   }, [checkKey]);
 
@@ -206,7 +207,7 @@ export function SettingsScreen() {
       </section>
 
       <section className="mt-5 px-4">
-        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">Appearance</div>
+        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">{t("settings.appearance")}</div>
         <Glass>
           <div className="relative z-[2] border-b border-black/[0.06] px-3.5 py-3">
             <div className="flex items-center gap-3"><span className="icon-gloss grid h-9 w-9 place-items-center rounded-full bg-gradient-to-b from-[#ff9ac8] to-[#b23a7d] text-white"><Palette size={18} className="relative z-[1]" /></span><div><div className="text-[14px] font-semibold text-ink">Theme</div><div className="text-[11.5px] text-ink-soft">Vector backdrop</div></div></div>
@@ -238,7 +239,16 @@ export function SettingsScreen() {
       </section>
 
       <section className="mt-5 px-4">
-        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">App update</div>
+        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">{t("settings.language")}</div>
+        <Glass className="p-3.5">
+          <div role="group" aria-label={t("settings.language")} className="grid grid-cols-3 gap-2">
+            {languages.map((l) => <button key={l.id} type="button" aria-pressed={settings.language === l.id} onClick={() => setSetting("language", l.id)} className={cn("press rounded-xl border px-2 py-2 text-[12px] font-semibold text-ink", settings.language === l.id ? "border-lime-deep bg-lime-glow/60" : "border-black/10 bg-black/5")}>{l.name}</button>)}
+          </div>
+          <p className="mt-2 px-1 text-[11px] text-ink-soft">{t("settings.languageSubtitle")}. Game titles and notes stay in their original language.</p>
+        </Glass>
+      </section>
+      <section className="mt-5 px-4">
+        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">{t("settings.appUpdate")}</div>
         <Glass className="p-3.5">
           <div className="relative z-[2] flex items-start gap-3">
             <span className="icon-gloss grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#62caff] to-[#1f7fd6] text-white"><RefreshCw size={17} /></span>
@@ -253,7 +263,7 @@ export function SettingsScreen() {
         </Glass>
       </section>
       <section className="mt-5 px-4">
-        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">About</div>
+        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">{t("settings.about")}</div>
         <Glass><SettingRow icon={Info} color="#1f7fd6" title="About Re:Port" subtitle="Catalog and downloads" chevron onClick={() => push({ type: "about" })} last /></Glass>
       </section>
       <div className="mt-8 px-6 text-center"><div className="t-light t-white-shadow text-[13px] italic text-ink-soft">A directory, not an emulator.</div></div>

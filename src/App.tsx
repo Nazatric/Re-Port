@@ -49,6 +49,26 @@ function TabLayers({ pushed }: { pushed: boolean }) {
   useEffect(() => {
     setVisited((previous) => previous.has(tab) ? previous : new Set([...previous, tab]));
   }, [tab]);
+  // Warm the other tabs once the app is idle, one per idle slot, so their first visit
+  // doesn't pay the cost of building the screen, glass layers and first artwork decode.
+  useEffect(() => {
+    let cancelled = false;
+    const idle = (cb: () => void) => {
+      const w = window as Window & { requestIdleCallback?: (fn: () => void, o?: { timeout: number }) => number };
+      if (w.requestIdleCallback) w.requestIdleCallback(cb, { timeout: 1500 });
+      else window.setTimeout(cb, 400);
+    };
+    const warm = () => {
+      if (cancelled) return;
+      setVisited((previous) => {
+        const next = TABS.find((t) => !previous.has(t));
+        return next ? new Set([...previous, next]) : previous;
+      });
+      setTimeout(() => { if (!cancelled) idle(warm); }, 250);
+    };
+    const start = window.setTimeout(() => idle(warm), 1200);
+    return () => { cancelled = true; window.clearTimeout(start); };
+  }, []);
   return <div className="absolute inset-0 transition-transform duration-[520ms]" style={{ transform: pushed ? "translate3d(-5%,0,0) scale(.97)" : "translate3d(0,0,0) scale(1)", transitionTimingFunction: "var(--ease-out-expo)" }}>
     <div className="pointer-events-none absolute inset-0 z-10 bg-black transition-opacity duration-[520ms]" style={{ opacity: pushed ? 0.14 : 0 }} />
     {TABS.map((t) => {

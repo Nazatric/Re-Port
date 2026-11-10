@@ -1,16 +1,17 @@
 import { Home, Bookmark, Search, Settings, type LucideIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useApp, type Tab } from "@/state";
+import type { TKey } from "@/lib/i18n";
 
-const tabs: { id: Tab; label: string; icon: LucideIcon }[] = [
-  { id: "home", label: "Home", icon: Home },
-  { id: "browse", label: "Browse", icon: Search },
-  { id: "library", label: "Library", icon: Bookmark },
-  { id: "settings", label: "Settings", icon: Settings },
+const tabs: { id: Tab; key: TKey; icon: LucideIcon }[] = [
+  { id: "home", key: "tab.home", icon: Home },
+  { id: "browse", key: "tab.browse", icon: Search },
+  { id: "library", key: "tab.library", icon: Bookmark },
+  { id: "settings", key: "tab.settings", icon: Settings },
 ];
 
 export function BottomNav() {
-  const { tab, setTab } = useApp();
+  const { tab, setTab, t: tr } = useApp();
   const idx = Math.max(0, tabs.findIndex((t) => t.id === tab));
   return (
     <nav className="absolute inset-x-0 bottom-0 z-40 px-3 pb-[calc(var(--sab)+10px)]">
@@ -26,7 +27,7 @@ export function BottomNav() {
             const Icon = t.icon;
             return <button key={t.id} onClick={() => setTab(t.id)} className={cn("press relative flex min-h-12 flex-1 flex-col items-center justify-center gap-1 rounded-[16px] transition-colors duration-300", active ? "text-white" : "text-ink-soft")}>
               <Icon size={21} strokeWidth={active ? 2.5 : 2} />
-              <span className={cn("text-[10px] font-semibold tracking-wide", active && "t-shadow")}>{t.label}</span>
+              <span className={cn("text-[10px] font-semibold tracking-wide", active && "t-shadow")}>{tr(t.key)}</span>
             </button>;
           })}
         </div>

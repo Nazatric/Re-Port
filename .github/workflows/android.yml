@@ -13,6 +13,11 @@ on:
 permissions:
   contents: read
 
+# A newer push cancels the older run for the same branch, so stale builds stop using runner minutes.
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -34,8 +39,19 @@ jobs:
           npm run typecheck
           node scripts/test-release-links.mjs
           npm run build
+      - name: Cache Playwright Chromium
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
       - name: Check web and Android bridge flows
         run: |
           node scripts/run-smoke.mjs

@@ -20,6 +20,16 @@ export function compareVersions(a: string, b: string): number | null {
   return 0;
 }
 
+let cachedUpdate: { at: number; result: UpdateResult } | null = null;
+const UPDATE_CACHE_MS = 10 * 60 * 1000;
+/** Reuses a successful check for 10 minutes so background screen warm-up never repeats the request. */
+export async function checkForUpdateCached(force = false): Promise<UpdateResult> {
+  if (!force && cachedUpdate && Date.now() - cachedUpdate.at < UPDATE_CACHE_MS) return cachedUpdate.result;
+  const result = await checkForUpdate();
+  if (result.status !== "error") cachedUpdate = { at: Date.now(), result };
+  return result;
+}
+
 export async function checkForUpdate(fetcher: typeof fetch = fetch): Promise<UpdateResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
