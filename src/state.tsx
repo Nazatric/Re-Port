@@ -33,6 +33,7 @@ export interface BrowsePreset {
 
 export interface Settings {
   theme: ThemeName;
+  nightVariant: "amoled" | "normal";
   animations: boolean;
   reflections: boolean;
   bubbles: boolean;
@@ -45,6 +46,7 @@ const AVATAR_KEY = "report:avatar";
 const SETTINGS_KEY = "report:settings";
 const SAVED_KEY = "report:saved";
 const RECENT_KEY = "report:recent";
+const VIEWS_KEY = "report:local-views";
 
 function load<T>(key: string, fallback: T): T {
   try { const v = localStorage.getItem(key); return v ? (JSON.parse(v) as T) : fallback; } catch { return fallback; }
@@ -53,7 +55,7 @@ function save(key: string, value: unknown) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* private mode */ }
 }
 
-const defaultSettings: Settings = { theme: "nxe", animations: true, reflections: true, bubbles: true, autoplay: false, haptics: true };
+const defaultSettings: Settings = { theme: "nxe", nightVariant: "amoled", animations: true, reflections: true, bubbles: true, autoplay: false, haptics: true };
 export const defaultAvatar: AvatarConfig = { mode: "preset", preset: "gamepad", imageUrl: "" };
 
 interface AppState {
@@ -77,6 +79,7 @@ interface AppState {
   saved: Set<string>;
   toggleSaved: (id: string) => void;
   recent: string[];
+  localViews: Record<string, number>;
   visit: (id: string) => void;
   toast: string | null;
   toastKey: number;
@@ -97,6 +100,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => ({ ...defaultSettings, ...load<Partial<Settings>>(SETTINGS_KEY, {}) }));
   const [saved, setSaved] = useState<Set<string>>(() => new Set(load<string[]>(SAVED_KEY, [])));
   const [recent, setRecent] = useState<string[]>(() => load<string[]>(RECENT_KEY, []));
+  const [localViews, setLocalViews] = useState<Record<string, number>>(() => load(VIEWS_KEY, {}));
   const [toast, setToast] = useState<string | null>(null);
   const [toastKey, setToastKey] = useState(0);
 
@@ -104,6 +108,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { save(AVATAR_KEY, avatar); }, [avatar]);
   useEffect(() => { save(SAVED_KEY, [...saved]); }, [saved]);
   useEffect(() => { save(RECENT_KEY, recent); }, [recent]);
+  useEffect(() => { save(VIEWS_KEY, localViews); }, [localViews]);
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 2600);
@@ -155,13 +160,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [haptic, showToast]);
   const visit = useCallback((id: string) => {
     setRecent((r) => [id, ...r.filter((x) => x !== id)].slice(0, 24));
+    setLocalViews((v) => ({ ...v, [id]: (v[id] || 0) + 1 }));
   }, []);
 
   const value = useMemo<AppState>(() => ({
     name, setName, avatar, setAvatar, onboarded, finishOnboarding, editNameOpen, setEditNameOpen,
-    tab, setTab, browsePreset, goBrowse, stack, push, pop, settings, setSetting, saved, toggleSaved, recent, visit,
+    tab, setTab, browsePreset, goBrowse, stack, push, pop, settings, setSetting, saved, toggleSaved, recent, localViews, visit,
     toast, toastKey, showToast, haptic,
-  }), [name, setName, avatar, setAvatar, onboarded, finishOnboarding, editNameOpen, tab, setTab, browsePreset, goBrowse, stack, push, pop, settings, setSetting, saved, toggleSaved, recent, visit, toast, toastKey, showToast, haptic]);
+  }), [name, setName, avatar, setAvatar, onboarded, finishOnboarding, editNameOpen, tab, setTab, browsePreset, goBrowse, stack, push, pop, settings, setSetting, saved, toggleSaved, recent, localViews, visit, toast, toastKey, showToast, haptic]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

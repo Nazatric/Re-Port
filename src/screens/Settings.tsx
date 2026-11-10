@@ -1,9 +1,10 @@
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   Camera,
   Circle,
   Image as ImageIcon,
   Info,
+  RefreshCw,
   Palette,
   Search,
   Sparkles,
@@ -27,6 +28,8 @@ import {
   processImageFileToDataUrl,
 } from "@/components/ui";
 import { cn } from "@/utils/cn";
+import { openExternal } from "@/lib/external";
+import { APP_VERSION, checkForUpdate, RELEASES_URL, type UpdateResult } from "@/lib/update";
 
 const themes: { id: ThemeName; name: string; preview: string }[] = [
   { id: "nxe", name: "NXE Green", preview: "linear-gradient(180deg,#d9f183,#8cc63e 60%,#639f24)" },
@@ -38,6 +41,15 @@ const themes: { id: ThemeName; name: string; preview: string }[] = [
 export function SettingsScreen() {
   const { name, avatar, setAvatar, setEditNameOpen, settings, setSetting, push, showToast, haptic } = useApp();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [update, setUpdate] = useState<UpdateResult | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [checkKey, setCheckKey] = useState(0);
+  useEffect(() => {
+    let active = true;
+    setChecking(true);
+    checkForUpdate().then((result) => { if (active) { setUpdate(result); setChecking(false); } });
+    return () => { active = false; };
+  }, [checkKey]);
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -207,6 +219,15 @@ export function SettingsScreen() {
                 </button>;
               })}
             </div>
+            {settings.theme === "night" && <div className="mt-4" role="group" aria-label="Night Aero appearance">
+              <div className="mb-2 text-[12px] font-semibold text-ink">Night Aero style</div>
+              <div className="grid grid-cols-2 gap-2">
+                {([ ["amoled", "AMOLED", "True black backdrop"], ["normal", "Normal", "Blue Aero backdrop"] ] as const).map(([id, label, detail]) =>
+                  <button key={id} type="button" aria-pressed={settings.nightVariant === id} onClick={() => setSetting("nightVariant", id)} className={cn("press rounded-xl border px-3 py-2 text-left", settings.nightVariant === id ? "border-cyan-400 bg-cyan-900/60" : "border-white/20 bg-black/30")}>
+                    <span className="block text-[12px] font-bold text-ink">{label}</span><span className="text-[10px] text-ink-soft">{detail}</span>
+                  </button>)}
+              </div>
+            </div>}
           </div>
           <SettingToggle k="animations" icon={Sparkles} color="#f5a623" title="Smooth animations" subtitle="Interruptible, transform-only motion" />
           <SettingToggle k="reflections" icon={Circle} color="#4fb6ff" title="Cover reflections" subtitle="Mirrored artwork in the cover flow" />
@@ -216,6 +237,21 @@ export function SettingsScreen() {
         </Glass>
       </section>
 
+      <section className="mt-5 px-4">
+        <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">App update</div>
+        <Glass className="p-3.5">
+          <div className="relative z-[2] flex items-start gap-3">
+            <span className="icon-gloss grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#62caff] to-[#1f7fd6] text-white"><RefreshCw size={17} /></span>
+            <div className="min-w-0 flex-1"><div className="text-[14px] font-semibold text-ink">Re:Port v{APP_VERSION}</div>
+              <p role="status" className="mt-0.5 text-[11.5px] text-ink-soft">{checking ? "Checking GitHub for updates…" : update?.status === "new" ? `Update available: v${update.version}` : update?.status === "current" ? `You're up to date · latest v${update.version}` : "Couldn't check for updates. Check your connection and try again."}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button type="button" onClick={() => void openExternal(RELEASES_URL).catch(() => showToast("Couldn't open GitHub"))} className="press rounded-full bg-black/10 px-3 py-1.5 text-[11px] font-semibold text-ink">Open latest release</button>
+                <button type="button" disabled={checking} onClick={() => setCheckKey((x) => x + 1)} className="press rounded-full bg-black/10 px-3 py-1.5 text-[11px] font-semibold text-ink disabled:opacity-50">Check again</button>
+              </div>
+            </div>
+          </div>
+        </Glass>
+      </section>
       <section className="mt-5 px-4">
         <div className="t-white-shadow mb-2 px-2 text-[12px] font-bold uppercase tracking-wider text-ink-soft">About</div>
         <Glass><SettingRow icon={Info} color="#1f7fd6" title="About Re:Port" subtitle="Catalog and downloads" chevron onClick={() => push({ type: "about" })} last /></Glass>

@@ -1,13 +1,14 @@
 {
   "name": "re-port",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/smoke-features.mjs && node scripts/test-release-links.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.2",

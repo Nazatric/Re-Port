@@ -30,7 +30,6 @@ export interface Game {
   cover: string;
   coverRatio: number;
   shots: string[];
-  price: string | null;
   metacritic: number | null;
   reviewCount: number | null;
   releaseDate: string;
@@ -39,7 +38,6 @@ export interface Game {
   steamPublisher: string | null;
   updated: string;
   added: string;
-  views: number;
   ports: PortProject[];
 }
 
@@ -108,21 +106,22 @@ export interface Filters {
   onlySaved: boolean;
   onlyApk: boolean;
   onlyRated: boolean;
+  onlyViewed: boolean;
   sort: SortMode;
 }
 
 export const emptyFilters: Filters = {
   query: "", genres: [], collections: [], platforms: [], kinds: [], engines: [],
-  fileNeeds: [], evidence: [], decades: [], onlySaved: false, onlyApk: false, onlyRated: false, sort: "relevance",
+  fileNeeds: [], evidence: [], decades: [], onlySaved: false, onlyApk: false, onlyRated: false, onlyViewed: false, sort: "relevance",
 };
 
 export function activeFilterCount(f: Filters): number {
   return (f.query.trim() ? 1 : 0) + f.genres.length + f.collections.length + f.platforms.length +
     f.kinds.length + f.engines.length + f.fileNeeds.length + f.evidence.length + f.decades.length +
-    (f.onlySaved ? 1 : 0) + (f.onlyApk ? 1 : 0);
+    (f.onlySaved ? 1 : 0) + (f.onlyApk ? 1 : 0) + (f.onlyRated ? 1 : 0) + (f.onlyViewed ? 1 : 0);
 }
 
-export function applyFilters(f: Filters, saved: Set<string>): Game[] {
+export function applyFilters(f: Filters, saved: Set<string>, localViews: Record<string, number> = {}): Game[] {
   const q = f.query.trim().toLowerCase();
   const terms = q ? q.split(/\s+/).filter(Boolean) : [];
   const index = terms.length ? getSearchIndex() : null;
@@ -143,16 +142,17 @@ export function applyFilters(f: Filters, saved: Set<string>): Game[] {
     if (f.onlySaved && !saved.has(g.id)) continue;
     if (f.onlyApk && !g.ports.some((p) => p.apk)) continue;
     if (f.onlyRated && g.metacritic == null) continue;
+    if (f.onlyViewed && !localViews[g.id]) continue;
     out.push(g);
   }
   switch (f.sort) {
     case "name": out.sort((a, b) => a.title.localeCompare(b.title)); break;
     case "newest": out.sort((a, b) => b.year - a.year || a.title.localeCompare(b.title)); break;
     case "oldest": out.sort((a, b) => a.year - b.year || a.title.localeCompare(b.title)); break;
-    case "popular": out.sort((a, b) => b.views - a.views); break;
-    case "ports": out.sort((a, b) => b.ports.length - a.ports.length || b.views - a.views); break;
-    case "rating": out.sort((a, b) => (b.metacritic ?? -1) - (a.metacritic ?? -1) || b.views - a.views); break;
-    default: out.sort((a, b) => Number(b.ports.some((p) => p.apk)) - Number(a.ports.some((p) => p.apk)) || (b.metacritic ?? -1) - (a.metacritic ?? -1) || b.views - a.views);
+    case "popular": out.sort((a, b) => (localViews[b.id] || 0) - (localViews[a.id] || 0) || a.title.localeCompare(b.title)); break;
+    case "ports": out.sort((a, b) => b.ports.length - a.ports.length || a.title.localeCompare(b.title)); break;
+    case "rating": out.sort((a, b) => (b.metacritic ?? -1) - (a.metacritic ?? -1) || a.title.localeCompare(b.title)); break;
+    default: out.sort((a, b) => Number(b.ports.some((p) => p.apk)) - Number(a.ports.some((p) => p.apk)) || (b.metacritic ?? -1) - (a.metacritic ?? -1) || a.title.localeCompare(b.title));
   }
   return out;
 }

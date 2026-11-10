@@ -162,7 +162,7 @@ function Shell() {
   }, [showToast]);
 
   return <div className={cn("device-stage", Capacitor.isNativePlatform() && "native-stage")}>
-    <div className={cn("device", !settings.animations && "reduce-motion")} data-theme={settings.theme} style={{ ["--sat" as string]: framed ? "30px" : "env(safe-area-inset-top)", ["--sab" as string]: framed ? "0px" : "env(safe-area-inset-bottom)" }}>
+    <div className={cn("device", !settings.animations && "reduce-motion")} data-theme={settings.theme} data-night-variant={settings.nightVariant} style={{ ["--sat" as string]: framed ? "30px" : "env(safe-area-inset-top)", ["--sab" as string]: framed ? "0px" : "env(safe-area-inset-bottom)" }}>
       <Background />
       <TabLayers pushed={pushed} />
       <div className="absolute inset-x-0 bottom-0 z-40 transition-[transform,opacity] duration-[480ms]" style={{ transform: pushed ? "translate3d(0,110%,0)" : "translate3d(0,0,0)", opacity: pushed ? 0 : 1, transitionTimingFunction: "var(--ease-out-expo)" }}><BottomNav /></div>

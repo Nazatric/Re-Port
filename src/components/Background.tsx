@@ -18,10 +18,12 @@ export function Background({ quiet = false }: { quiet?: boolean }) {
     }));
   }, []);
   const theme = settings.theme;
+  // AMOLED keeps the full Night scene (stars, aurora, bubbles) but dims it over true black.
+  const amoled = theme === "night" && settings.nightVariant === "amoled";
   const animate = settings.animations && !quiet && settings.bubbles;
 
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden style={amoled ? { opacity: 0.62 } : undefined}>
       {theme === "nxe" ? (
         <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,#d9f183 0%,#b7e23e 34%,#8cc63e 68%,#639f24 100%)" }} />
       ) : theme === "night" ? (
@@ -49,7 +51,7 @@ export function Background({ quiet = false }: { quiet?: boolean }) {
               <stop offset="0" stopColor="#7de3ff" stopOpacity="0" /><stop offset="1" stopColor="#7de3ff" stopOpacity=".2" />
             </linearGradient>
           </defs>
-          <rect width="412" height="892" fill="url(#rp-night)" />
+          <rect width="412" height="892" fill={amoled ? "#000" : "url(#rp-night)"} />
           {/* deep luminous glows */}
           <circle cx="330" cy="150" r="220" fill="url(#rp-nhalo)" />
           <circle cx="70" cy="520" r="190" fill="url(#rp-nbore)" opacity=".55" />

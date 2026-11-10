@@ -86,12 +86,16 @@ export function Home() {
         <SectionHeader title="Collections" action="Browse" onAction={() => setTab("browse")} />
         <div className="grid grid-cols-3 gap-3">
           {collections.slice(0, 6).map((c, i) => {
-            const count = games.filter((g) => g.collections.includes(c.id)).length;
+            const members = games.filter((g) => g.collections.includes(c.id));
+            const count = members.length;
+            const previews = members.filter((g) => g.cover).slice(0, 3);
             return (
               <TapSurface key={c.id} onTap={() => push({ type: "collection", name: c.name })} className="icon-gloss relative flex h-[92px] flex-col items-start justify-end rounded-[16px] p-2.5 text-left"
                 style={{ background: `linear-gradient(160deg, ${["#b91c1c", "#0284c7", "#854d0e", "#64748b", "#15803d", "#7c3aed"][i]}, #1c2530)` }}>
+                <span className="pointer-events-none absolute inset-y-0 right-0 flex w-[75%] items-start justify-end gap-0.5 overflow-hidden opacity-70" aria-hidden="true">{previews.map((g) => <img key={g.id} src={g.cover} alt="" loading="lazy" decoding="async" className="h-full w-[34%] object-cover" />)}</span>
+                <span className="pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-r from-black/80 via-black/45 to-black/20" />
                 <span className="t-shadow relative z-[1] text-[13px] font-semibold text-white">{c.name}</span>
-                <span className="relative z-[1] text-[10px] text-white/80 tabular-nums">{count} ports</span>
+                <span className="relative z-[1] text-[10px] text-white/80 tabular-nums">{count} games</span>
               </TapSurface>
             );
           })}

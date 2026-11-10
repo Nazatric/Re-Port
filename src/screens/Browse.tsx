@@ -17,7 +17,7 @@ const PAGE = 24;
 
 const sortLabels: Record<SortMode, string> = {
   relevance: "Relevance", name: "Title A–Z", newest: "Newest", oldest: "Oldest",
-  popular: "Most viewed", ports: "Most ports", rating: "Top rated",
+  popular: "Most viewed by you", ports: "Most ports", rating: "Highest Metascore",
 };
 
 function Group({ title, options, selected, onToggle, label }: {
@@ -34,8 +34,8 @@ function Group({ title, options, selected, onToggle, label }: {
 }
 
 function FilterSheet({ filters, setFilters, onClose }: { filters: Filters; setFilters: (f: Filters) => void; onClose: () => void }) {
-  const { saved } = useApp();
-  const count = applyFilters(filters, saved).length;
+  const { saved, localViews } = useApp();
+  const count = applyFilters(filters, saved, localViews).length;
   const toggle = (key: keyof Filters, v: string) => {
     const list = filters[key] as string[];
     setFilters({ ...filters, [key]: list.includes(v) ? list.filter((x) => x !== v) : [...list, v] });
@@ -66,6 +66,7 @@ function FilterSheet({ filters, setFilters, onClose }: { filters: Filters; setFi
             <Chip active={filters.onlySaved} onClick={() => setFilters({ ...filters, onlySaved: !filters.onlySaved })}>Saved</Chip>
             <Chip active={filters.onlyApk} onClick={() => setFilters({ ...filters, onlyApk: !filters.onlyApk })}>Has APK release</Chip>
             <Chip active={filters.onlyRated} onClick={() => setFilters({ ...filters, onlyRated: !filters.onlyRated })}>Critically rated</Chip>
+            <Chip active={filters.onlyViewed} onClick={() => setFilters({ ...filters, onlyViewed: !filters.onlyViewed })}>Viewed on this device</Chip>
           </div>
         </div>
       </div>
@@ -96,14 +97,14 @@ export function GameCard({ game, onOpen }: { game: Game; onOpen: () => void }) {
       <div className="mt-0.5 truncate text-[11px] text-ink-soft">{game.steamDeveloper || game.ports[0]?.developer || game.ports[0]?.name}</div>
       <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-ink-soft tabular-nums">
         <span className="truncate">{game.platform} · {game.year || "—"}</span>
-        {game.price && <span className="shrink-0 font-semibold text-ink">{game.price}</span>}
+
       </div>
     </TapSurface>
   </div>;
 }
 
 export function Browse() {
-  const { push, saved, browsePreset } = useApp();
+  const { push, saved, browsePreset, localViews } = useApp();
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [sheet, setSheet] = useState(false);
   const [limit, setLimit] = useState(PAGE);
@@ -121,7 +122,7 @@ export function Browse() {
     setLimit(PAGE);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [browsePreset]);
-  const results = useMemo(() => applyFilters(filters, saved), [filters, saved]);
+  const results = useMemo(() => applyFilters(filters, saved, localViews), [filters, saved, localViews]);
   const visible = results.slice(0, limit);
   const count = activeFilterCount(filters);
   const activeChips: { label: string; clear: () => void }[] = [
@@ -135,6 +136,7 @@ export function Browse() {
     ...(filters.onlySaved ? [{ label: "Saved", clear: () => setFilters({ ...filters, onlySaved: false }) }] : []),
     ...(filters.onlyApk ? [{ label: "Has APK", clear: () => setFilters({ ...filters, onlyApk: false }) }] : []),
     ...(filters.onlyRated ? [{ label: "Rated", clear: () => setFilters({ ...filters, onlyRated: false }) }] : []),
+    ...(filters.onlyViewed ? [{ label: "Viewed on this device", clear: () => setFilters({ ...filters, onlyViewed: false }) }] : []),
   ];
 
   return (
@@ -163,7 +165,7 @@ export function Browse() {
 
       <div className="mt-3 flex items-center justify-between gap-2 px-4">
         <span className="text-[12px] font-semibold text-ink-soft tabular-nums">{results.length} results</span>
-        <select value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value as SortMode })} className="glass h-9 rounded-full px-3 text-[12px] font-semibold text-ink outline-none">
+        <select aria-label="Sort games" value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value as SortMode })} className="glass h-9 rounded-full px-3 text-[12px] font-semibold text-ink outline-none">
           {(Object.keys(sortLabels) as SortMode[]).map((k) => <option key={k} value={k}>{sortLabels[k]}</option>)}
         </select>
       </div>

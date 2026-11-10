@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowUpRight, Bookmark, CheckCircle2, Download, ExternalLink, FolderOpen,
   Heart, Info, Share2,
@@ -24,14 +24,15 @@ export function GameDetail({ id }: { id: string }) {
 }
 
 function GameDetailContent({ game: g }: { game: Game }) {
-  const { push, saved, toggleSaved, visit, showToast } = useApp();
+  const { push, saved, toggleSaved, visit, localViews, showToast } = useApp();
   const [tab, setTab] = useState<Tab>("overview");
   const [selected, setSelected] = useState(() => primaryPortIndex(g));
   const wished = saved.has(g.id);
   const port = g.ports[selected] ?? primaryPort(g);
   const ranked = rankedPortIndices(g);
 
-  useEffect(() => { visit(g.id); }, [g.id, visit]);
+  const visitedId = useRef<string | null>(null);
+  useEffect(() => { if (visitedId.current !== g.id) { visitedId.current = g.id; visit(g.id); } }, [g.id, visit]);
 
   const onDownload = (project = port) => {
     const destination = downloadDestination(project);
@@ -95,14 +96,14 @@ function GameDetailContent({ game: g }: { game: Game }) {
 
       {/* Scores strip */}
       <div className="relative mt-4 px-4">
-        <Glass className="grid grid-cols-4 divide-x divide-black/[0.06] py-3 text-center">
+        <Glass className="grid grid-cols-3 divide-x divide-black/[0.06] py-3 text-center">
           {[
-            ["Score", g.metacritic ? String(g.metacritic) : "—"],
-            ["Price", g.price ?? "—"],
+            ["Metascore", g.metacritic != null ? String(g.metacritic) : "—"],
             ["Ports", String(g.ports.length)],
-            ["Views", g.views ? g.views.toLocaleString() : "—"],
+            ["Your views", (localViews[g.id] || 0).toLocaleString()],
           ].map(([k, v]) => <div key={k} className="px-1"><div className="truncate text-[13px] font-bold text-ink tabular-nums">{v}</div><div className="truncate text-[10px] uppercase tracking-wide text-ink-soft">{k}</div></div>)}
         </Glass>
+        <p className="mt-2 px-1 text-[11px] leading-relaxed text-ink-soft">Metascore is the original game's Metacritic critic score, not a port rating. Ports counts listed projects. Your views counts opens on this device only; it is not a global popularity figure.</p>
       </div>
 
       <div className="relative mt-4 px-4">
@@ -130,7 +131,6 @@ function GameDetailContent({ game: g }: { game: Game }) {
                 ["Released", g.releaseDate || (g.year ? String(g.year) : "—")],
                 ["Metascore", g.metacritic ? String(g.metacritic) : "—"],
                 ["Reviews", g.reviewCount ? g.reviewCount.toLocaleString() : "—"],
-                ["Store price", g.price ?? "—"],
               ].map(([k, v]) => <div key={k} className="flex items-center justify-between gap-4 py-2.5 text-[12.5px]"><span className="shrink-0 text-ink-soft">{k}</span><span className="truncate text-right font-semibold text-ink tabular-nums">{v}</span></div>)}
             </Glass>
           </section>
