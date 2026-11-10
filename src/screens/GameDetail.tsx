@@ -8,7 +8,7 @@ import {
   type Game,
 } from "@/data/ports";
 import { useApp } from "@/state";
-import { GameArt, GameShot } from "@/components/Artwork";
+import { GameArt, GameShot, thumbShot } from "@/components/Artwork";
 import { TapSurface } from "@/components/TapSurface";
 import { BackHeader, Glass, GlossButton, IconButton, SectionHeader } from "@/components/ui";
 import { downloadDestination } from "@/lib/download";
@@ -26,6 +26,9 @@ export function GameDetail({ id }: { id: string }) {
 function GameDetailContent({ game: g }: { game: Game }) {
   const { push, saved, toggleSaved, visit, localViews, showToast } = useApp();
   const [tab, setTab] = useState<Tab>("overview");
+  // Screenshots wait until the push animation has finished so they never compete with it.
+  const [mediaReady, setMediaReady] = useState(false);
+  useEffect(() => { const t = window.setTimeout(() => setMediaReady(true), 620); return () => window.clearTimeout(t); }, [g.id]);
   const [selected, setSelected] = useState(() => primaryPortIndex(g));
   const wished = saved.has(g.id);
   const port = g.ports[selected] ?? primaryPort(g);
@@ -47,7 +50,7 @@ function GameDetailContent({ game: g }: { game: Game }) {
       {/* Quiet hero: real screenshot at natural ratio, no filters, no bubbles. */}
       <div className="detail-hero pointer-events-none absolute inset-x-0 top-0 h-[300px] overflow-hidden bg-[#e8f1d6]">
         <div className="absolute inset-0 opacity-[0.32]">
-          <img src={g.shots[0] ?? g.cover} alt="" draggable={false} className="block h-auto w-full" />
+          <img src={mediaReady && g.shots[0] ? thumbShot(g.shots[0]) : g.cover} alt="" draggable={false} className="block h-auto w-full" />
         </div>
         <div className="detail-hero-wash absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.78) 62%, #fff)" }} />
       </div>
@@ -150,7 +153,7 @@ function GameDetailContent({ game: g }: { game: Game }) {
             </Glass>
           </section>
 
-          {g.shots.length > 0 && (
+          {mediaReady && g.shots.length > 0 && (
             <section>
               <SectionHeader title="Screenshots" />
               <div className="h-scroll no-scrollbar flex gap-3 pb-2 pt-1" style={{ touchAction: "pan-x pan-y" }}>
@@ -191,7 +194,7 @@ function GameDetailContent({ game: g }: { game: Game }) {
           <SectionHeader title="Cover art" />
           <div className="flex justify-center"><GameArt game={g} radius={18} priority shadow className="w-[240px]" /></div>
           <SectionHeader title={`Screenshots ${g.shots.length}`} className="pt-2" />
-          <div className="space-y-3">{g.shots.map((s, i) => <GameShot key={s + i} src={s} alt={`${g.title} screenshot ${i + 1}`} className="w-full" />)}</div>
+          <div className="space-y-3">{mediaReady && g.shots.map((s, i) => <GameShot key={s + i} src={s} alt={`${g.title} screenshot ${i + 1}`} className="w-full" />)}</div>
         </div>
       )}
 

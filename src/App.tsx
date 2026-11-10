@@ -106,10 +106,10 @@ function StatusBar() {
 }
 
 function Shell() {
-  const { stack, pop, tab, setTab, settings, onboarded, finishOnboarding, editNameOpen, setEditNameOpen, setName, setAvatar, showToast } = useApp();
+  const { stack, pop, tab, setTab, settings, onboarded, editNameOpen, setEditNameOpen, setName, setAvatar, showToast } = useApp();
   const framed = useMedia("(min-width: 540px) and (min-height: 700px)") && !Capacitor.isNativePlatform();
   const pushed = stack.length > 0;
-  const modalOpen = !onboarded || editNameOpen;
+  const modalOpen = editNameOpen;
   const depth = useRef(0);
 
   // Keep the browser/system status bar in sync with the selected theme.
@@ -169,7 +169,6 @@ function Shell() {
       <RouteStack />
       <Toast />
       {framed && <StatusBar />}
-      {!onboarded && <NamePrompt firstRun onDone={(n, av) => finishOnboarding(n, av)} />}
       {onboarded && editNameOpen && (
         <NamePrompt
           firstRun={false}

@@ -92,7 +92,8 @@ const Ctx = createContext<AppState | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [name, setNameRaw] = useState<string>(() => load<string>(NAME_KEY, ""));
   const [avatar, setAvatarState] = useState<AvatarConfig>(() => ({ ...defaultAvatar, ...load<Partial<AvatarConfig>>(AVATAR_KEY, {}) }));
-  const [onboarded, setOnboarded] = useState(() => !!load<string>(NAME_KEY, ""));
+  // A display name is optional: there is no forced first-run step. Name and avatar live in Settings.
+  const onboarded = true;
   const [editNameOpen, setEditNameOpen] = useState(false);
   const [tab, setTabRaw] = useState<Tab>("home");
   const [browsePreset, setBrowsePreset] = useState<BrowsePreset | null>(null);
@@ -136,7 +137,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!v) return;
     setNameRaw(v); save(NAME_KEY, v);
     if (av) { setAvatarState(av); save(AVATAR_KEY, av); }
-    setOnboarded(true);
   }, []);
   const setTab = useCallback((t: Tab) => { haptic(); setTabRaw(t); }, [haptic]);
   const goBrowse = useCallback((preset?: BrowsePreset) => {

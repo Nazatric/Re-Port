@@ -3,6 +3,11 @@ import type { Game } from "@/data/ports";
 import { resolveArtwork } from "@/lib/artwork";
 import { cn } from "@/utils/cn";
 
+/** Steam serves 1920×1080 originals; lists and heroes only need its 600×338 thumbnail. */
+export function thumbShot(url: string): string {
+  return url.replace(/\.1920x1080\.jpg/, ".600x338.jpg");
+}
+
 /** Renders artwork at its real measured aspect ratio — no crops, no letterboxing.
  *  The URL is never upscaled by the browser: the element is constrained by the
  *  container width and the intrinsic ratio, so the CDN serves its native size. */
@@ -62,8 +67,9 @@ export function GameArt({
 }
 
 /** Screenshots keep their intrinsic size: `width:100%; height:auto`. */
-export function GameShot({ src, alt, className, radius = 14 }: { src: string; alt: string; className?: string; radius?: number }) {
+export function GameShot({ src: original, alt, className, radius = 14 }: { src: string; alt: string; className?: string; radius?: number }) {
   const [failed, setFailed] = useState(false);
+  const src = thumbShot(original);
   if (failed || !src) return <div className={cn("min-h-[120px] rounded-[14px] bg-black/[0.05]", className)} />;
   return (
     <div className={cn("relative overflow-hidden bg-black/[0.04]", className)} style={{ borderRadius: radius }}>

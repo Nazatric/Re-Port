@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { useApp } from "@/state";
 
 interface Bubble { x: number; y: number; size: number; dur: number; delay: number; sway: number; op: number; filled: boolean }
@@ -7,7 +7,7 @@ function seeded(seed: number) { let s = seed; return () => { s = (s * 16807) % 2
 /** Static vector backdrops. NXE stays graphic; Meadow and Sky are rich nature
  *  scenes (sun glow, layered clouds, mountains, meadows). Bubbles only animate
  *  on the home shell so long lists stay GPU-cheap. */
-export function Background({ quiet = false }: { quiet?: boolean }) {
+function BackgroundInner({ quiet = false }: { quiet?: boolean }) {
   const { settings } = useApp();
   const bubbles = useMemo<Bubble[]>(() => {
     const r = seeded(42);
@@ -20,12 +20,24 @@ export function Background({ quiet = false }: { quiet?: boolean }) {
   const theme = settings.theme;
   // AMOLED keeps the full Night scene (stars, aurora, bubbles) but dims it over true black.
   const amoled = theme === "night" && settings.nightVariant === "amoled";
+  // Plain white star dots only: AMOLED has no tinted layers.
+  const stars = useMemo(() => {
+    const r = seeded(7);
+    return Array.from({ length: 70 }, () => ({ x: r() * 412, y: r() * 892, r: 0.5 + r() * 1.1, o: 0.25 + r() * 0.6 }));
+  }, []);
   const animate = settings.animations && !quiet && settings.bubbles;
 
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden style={amoled ? { opacity: 0.62 } : undefined}>
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
       {theme === "nxe" ? (
         <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,#d9f183 0%,#b7e23e 34%,#8cc63e 68%,#639f24 100%)" }} />
+      ) : amoled ? (
+        <svg viewBox="0 0 412 892" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full" aria-hidden>
+          <rect width="412" height="892" fill="#000" />
+          <g fill="#fff">
+            {stars.map((st, i) => <circle key={i} cx={st.x} cy={st.y} r={st.r} opacity={st.o} />)}
+          </g>
+        </svg>
       ) : theme === "night" ? (
         <svg viewBox="0 0 412 892" preserveAspectRatio="xMidYMax slice" className="absolute inset-0 h-full w-full" style={{ transform: "translateZ(0)" }}>
           <defs>
@@ -252,3 +264,5 @@ export function Background({ quiet = false }: { quiet?: boolean }) {
     </div>
   );
 }
+
+export const Background = memo(BackgroundInner);

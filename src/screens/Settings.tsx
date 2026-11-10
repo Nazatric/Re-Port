@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   Camera,
   Circle,
@@ -213,7 +213,7 @@ export function SettingsScreen() {
             <div className="mt-3 grid grid-cols-2 gap-2.5">
               {themes.map((t) => {
                 const active = settings.theme === t.id;
-                return <button key={t.id} onClick={() => setSetting("theme", t.id)} className="press text-center">
+                return <button key={t.id} onClick={() => startTransition(() => setSetting("theme", t.id))} className="press text-center">
                   <div className={cn("icon-gloss mx-auto h-[66px] w-full rounded-[14px] transition-shadow duration-300", active && "ring-[3px] ring-lime-deep ring-offset-2 ring-offset-white/60")} style={{ background: t.preview }} />
                   <div className={cn("mt-1.5 text-[11.5px] font-semibold", active ? "text-lime-deep" : "text-ink-soft")}>{t.name}</div>
                 </button>;
