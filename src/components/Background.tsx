@@ -25,7 +25,7 @@ export function Background({ quiet = false }: { quiet?: boolean }) {
       {theme === "nxe" ? (
         <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,#d9f183 0%,#b7e23e 34%,#8cc63e 68%,#639f24 100%)" }} />
       ) : theme === "night" ? (
-        <svg viewBox="0 0 412 892" preserveAspectRatio="xMidYMax slice" className="absolute inset-0 h-full w-full">
+        <svg viewBox="0 0 412 892" preserveAspectRatio="xMidYMax slice" className="absolute inset-0 h-full w-full" style={{ transform: "translateZ(0)" }}>
           <defs>
             <linearGradient id="rp-night" x1="0" y1="0" x2="0.25" y2="1">
               <stop offset="0" stopColor="#020813" /><stop offset=".28" stopColor="#06182f" />

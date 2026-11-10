@@ -32,7 +32,9 @@ jobs:
       - name: Check web and Android bridge flows
         env:
           CHROMIUM_PATH: /usr/bin/google-chrome
-        run: node scripts/smoke-web.mjs
+        run: |
+          node scripts/smoke-web.mjs
+          node scripts/smoke-profile-performance.mjs
       - name: Prepare Capacitor Android project
         run: |
           npx cap add android

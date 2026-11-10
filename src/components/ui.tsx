@@ -1,9 +1,10 @@
-import { type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useApp, type AvatarConfig, type AvatarPreset, type Settings } from "@/state";
 import type { Game } from "@/data/ports";
 import { GameArt } from "./Artwork";
+import { isStoredAvatar, loadStoredAvatar } from "@/lib/avatar-storage";
 
 type Tint = "white" | "lime" | "blue" | "dark" | "amber";
 const tintClass: Record<Tint, string> = { white: "glass", lime: "glass-lime", blue: "glass-blue", dark: "glass-dark", amber: "glass-amber" };
@@ -209,6 +210,19 @@ export function InitialAvatar({
 }) {
   const { avatar: ctxAvatar } = useApp();
   const cfg = configOverride ?? ctxAvatar;
+  const [storedUrl, setStoredUrl] = useState("");
+  useEffect(() => {
+    if (!isStoredAvatar(cfg.imageUrl)) { setStoredUrl(""); return; }
+    let cancelled = false;
+    let objectUrl = "";
+    setStoredUrl("");
+    void loadStoredAvatar(cfg.imageUrl).then((blob) => {
+      if (cancelled || !blob) return;
+      objectUrl = URL.createObjectURL(blob);
+      setStoredUrl(objectUrl);
+    }).catch(() => setStoredUrl(""));
+    return () => { cancelled = true; if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [cfg.imageUrl]);
   const initials = name.trim().slice(0, 2).toUpperCase() || "RP";
 
   if (cfg.mode === "image" && cfg.imageUrl) {
@@ -218,7 +232,7 @@ export function InitialAvatar({
         style={{ width: size, height: size }}
       >
         <img
-          src={cfg.imageUrl}
+          src={isStoredAvatar(cfg.imageUrl) ? storedUrl || undefined : cfg.imageUrl}
           alt={name || "Profile avatar"}
           draggable={false}
           className="h-full w-full object-cover"

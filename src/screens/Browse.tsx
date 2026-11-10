@@ -11,7 +11,8 @@ import { TapSurface } from "@/components/TapSurface";
 import { Chip, EmptyState } from "@/components/ui";
 import { cn } from "@/utils/cn";
 
-const PAGE = 48;
+// Smaller batches keep image decoding and scrolling responsive; all results remain available.
+const PAGE = 24;
 
 const sortLabels: Record<SortMode, string> = {
   relevance: "Relevance", name: "Title A–Z", newest: "Newest", oldest: "Oldest",

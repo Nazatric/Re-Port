@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useApp, type AvatarConfig, type ThemeName } from "@/state";
 import { featuredGames, games } from "@/data/ports";
+import { storeAnimatedAvatar } from "@/lib/avatar-storage";
 import {
   AVATAR_PRESETS,
   Glass,
@@ -43,7 +44,9 @@ export function SettingsScreen() {
     e.target.value = "";
     if (!file) return;
     try {
-      const dataUrl = await processImageFileToDataUrl(file);
+      const dataUrl = file.type === "image/gif" || /\.gif$/i.test(file.name)
+        ? await storeAnimatedAvatar(file)
+        : await processImageFileToDataUrl(file);
       haptic();
       setAvatar((prev) => ({ ...prev, mode: "image", imageUrl: dataUrl }));
       showToast("Profile picture updated");
@@ -258,12 +261,14 @@ export function NamePrompt({
     e.target.value = "";
     if (!file) return;
     try {
-      const dataUrl = await processImageFileToDataUrl(file);
+      const dataUrl = file.type === "image/gif" || /\.gif$/i.test(file.name)
+        ? await storeAnimatedAvatar(file)
+        : await processImageFileToDataUrl(file);
       haptic();
       setDraftAvatar((prev) => ({ ...prev, mode: "image", imageUrl: dataUrl }));
       showToast("Photo ready");
     } catch {
-      showToast("Could not read that image");
+      showToast("Could not save that image. Check available storage and try again.");
     }
   };
 
