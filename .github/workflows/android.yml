@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: ["arena/c57b7306-re-port", "main"]
+    branches: ["arena/551825be-re-port", "main"]
   workflow_dispatch:
     inputs:
       release_tag:
@@ -12,6 +12,11 @@ on:
 
 permissions:
   contents: read
+
+# A newer push cancels the older run for the same branch, so stale builds stop using runner minutes.
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   android:
@@ -34,13 +39,22 @@ jobs:
           npm run typecheck
           node scripts/test-release-links.mjs
           npm run build
-      - name: Check web and Android bridge flows
-        env:
-          CHROMIUM_PATH: /usr/bin/google-chrome
+      - name: Cache Playwright Chromium
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - name: Install Playwright Chromium
         run: |
-          node scripts/smoke-web.mjs
-          node scripts/smoke-profile-performance.mjs
-          node scripts/smoke-overlays.mjs
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
+      - name: Check web and Android bridge flows
+        run: |
+          node scripts/run-smoke.mjs
       - name: Prepare Capacitor Android project
         run: |
           npx cap add android
@@ -57,7 +71,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    if: (github.event_name == 'workflow_dispatch' && inputs.release_tag != '') || (github.event_name == 'push' && github.ref == 'refs/heads/arena/c57b7306-re-port' && contains(github.event.head_commit.message, '[release-v1.0.0]'))
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
     needs: android
     runs-on: ubuntu-latest
     permissions:

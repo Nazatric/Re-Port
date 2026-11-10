@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
@@ -39,7 +40,7 @@ export function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: 
     <button role="switch" aria-checked={checked} onClick={(e) => { e.stopPropagation(); onChange(!checked); }} className="relative h-[32px] w-[56px] shrink-0 rounded-full transition-colors duration-300"
       style={{ background: checked ? "linear-gradient(180deg,#a9df52,#7dbb2c)" : "linear-gradient(180deg,#e9e9e9,#c7c7c7)", boxShadow: "inset 0 2px 4px rgba(0,0,0,.28), inset 0 -1px 0 rgba(255,255,255,.7), 0 1px 0 rgba(255,255,255,.8)" }}>
       <span className={cn("absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-white transition-opacity duration-300", checked ? "opacity-100" : "opacity-0")}>ON</span>
-      <span className={cn("absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-[#8a8a8a] transition-opacity duration-300", checked ? "opacity-0" : "opacity-100")}>OFF</span>
+      <span className={cn("absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-[#8a8a8a] transition-opacity duration-300", checked ? "opacity-0" : "opacity-100")}>{t("OFF")}</span>
       <span className="absolute left-[3px] top-[3px] h-[26px] w-[26px] rounded-full" style={{ transform: `translateX(${checked ? 24 : 0}px)`, transition: "transform 320ms var(--ease-spring)", background: "linear-gradient(180deg,#fff,#e4e4e4)", boxShadow: "0 2px 4px rgba(0,0,0,.35)" }} />
     </button>
   );
@@ -78,7 +79,7 @@ export function RePortLogo({ size = 28, className }: { size?: number; color?: st
   return (
     <img
       src="/icon.png"
-      alt="Re:Port app icon"
+      alt={t("Re:Port app icon")}
       width={size}
       height={size}
       draggable={false}
@@ -89,18 +90,18 @@ export function RePortLogo({ size = 28, className }: { size?: number; color?: st
 }
 
 export const AVATAR_PRESETS: { id: AvatarPreset; label: string }[] = [
-  { id: "gamepad", label: "Gamepad" },
-  { id: "initials", label: "Initials" },
-  { id: "nxe", label: "NXE Buddy" },
-  { id: "dandelion", label: "Dandelion" },
-  { id: "sword", label: "Blade" },
-  { id: "crown", label: "Crown" },
-  { id: "ghost", label: "Ghost" },
-  { id: "flame", label: "Flame" },
-  { id: "bolt", label: "Volt" },
-  { id: "planet", label: "Orbit" },
+  { id: "gamepad", label: t("Gamepad") },
+  { id: "initials", label: t("Initials") },
+  { id: "nxe", label: t("NXE Buddy") },
+  { id: "dandelion", label: t("Dandelion") },
+  { id: "sword", label: t("Blade") },
+  { id: "crown", label: t("Crown") },
+  { id: "ghost", label: t("Ghost") },
+  { id: "flame", label: t("Flame") },
+  { id: "bolt", label: t("Volt") },
+  { id: "planet", label: t("Orbit") },
   { id: "heart", label: "1-Up" },
-  { id: "shield", label: "Crest" },
+  { id: "shield", label: t("Crest") },
 ];
 
 export function PresetGlyph({ preset, size, initials }: { preset: AvatarPreset; size: number; initials: string }) {
@@ -233,7 +234,7 @@ export function InitialAvatar({
       >
         <img
           src={isStoredAvatar(cfg.imageUrl) ? storedUrl || undefined : cfg.imageUrl}
-          alt={name || "Profile avatar"}
+          alt={name || t("Profile avatar")}
           draggable={false}
           className="h-full w-full object-cover"
         />
@@ -259,10 +260,10 @@ export function InitialAvatar({
 export function processImageFileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Could not read image file"));
+    reader.onerror = () => reject(new Error(t("Could not read image file")));
     reader.onload = () => {
       const img = new Image();
-      img.onerror = () => reject(new Error("Invalid image format"));
+      img.onerror = () => reject(new Error(t("Invalid image format")));
       img.onload = () => {
         const target = 256;
         const canvas = document.createElement("canvas");

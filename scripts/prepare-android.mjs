@@ -53,3 +53,15 @@ public class MainActivity extends BridgeActivity {
 }
 `);
 console.log('Prepared Re:Port Android icon, launch theme and WebView background.');
+
+// package.json is the single build version for the web UI and Android package.
+const version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+const parts = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+if (!parts || parts.slice(1).some((x) => Number(x) > 999)) throw new Error('Android build requires a stable major.minor.patch version with components <= 999');
+const versionCode = Number(parts[1]) * 1000000 + Number(parts[2]) * 1000 + Number(parts[3]);
+if (versionCode < 1 || versionCode > 2100000000) throw new Error('Invalid Android version code');
+const gradle = 'android/app/build.gradle';
+let build = fs.readFileSync(gradle, 'utf8');
+if (!/versionCode\s+\d+/.test(build) || !/versionName\s+["'][^"']+["']/.test(build)) throw new Error('Unexpected Android version configuration');
+build = build.replace(/versionCode\s+\d+/, `versionCode ${versionCode}`).replace(/versionName\s+["'][^"']+["']/, `versionName "${version}"`);
+fs.writeFileSync(gradle, build);

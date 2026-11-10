@@ -1,7 +1,13 @@
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import type { Game } from "@/data/ports";
 import { resolveArtwork } from "@/lib/artwork";
 import { cn } from "@/utils/cn";
+import { t } from "@/lib/i18n";
+
+/** Steam serves 1920×1080 originals; lists and heroes only need its 600×338 thumbnail. */
+export function thumbShot(url: string): string {
+  return url.replace(/\.1920x1080\.jpg/, ".600x338.jpg");
+}
 
 /** Renders artwork at its real measured aspect ratio — no crops, no letterboxing.
  *  The URL is never upscaled by the browser: the element is constrained by the
@@ -20,6 +26,14 @@ export function GameArt({
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [retrying, setRetrying] = useState(false);
+
+  // Games without a bundled cover resolve one from the keyless artwork sources once, then show it.
+  useEffect(() => {
+    if (game.cover) return;
+    let live = true;
+    resolveArtwork(game).then((url) => { if (!live) return; if (url) setSrc(url); else setFailed(true); }).catch(() => { if (live) setFailed(true); });
+    return () => { live = false; };
+  }, [game]);
 
   const handleError = async () => {
     if (retrying || failed) return;
@@ -45,7 +59,7 @@ export function GameArt({
       {!loaded && <span className="absolute inset-0 grid place-items-center px-3 text-center text-[13px] font-semibold leading-tight text-white/90">{game.title}</span>}
       <img
         src={src}
-        alt={`${game.title} cover art`}
+        alt={t("{title} cover art", { title: game.title })}
         draggable={false}
         loading={priority ? "eager" : "lazy"}
         decoding="async"
@@ -62,8 +76,9 @@ export function GameArt({
 }
 
 /** Screenshots keep their intrinsic size: `width:100%; height:auto`. */
-export function GameShot({ src, alt, className, radius = 14 }: { src: string; alt: string; className?: string; radius?: number }) {
+export function GameShot({ src: original, alt, className, radius = 14 }: { src: string; alt: string; className?: string; radius?: number }) {
   const [failed, setFailed] = useState(false);
+  const src = thumbShot(original);
   if (failed || !src) return <div className={cn("min-h-[120px] rounded-[14px] bg-black/[0.05]", className)} />;
   return (
     <div className={cn("relative overflow-hidden bg-black/[0.04]", className)} style={{ borderRadius: radius }}>

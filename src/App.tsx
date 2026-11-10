@@ -49,6 +49,26 @@ function TabLayers({ pushed }: { pushed: boolean }) {
   useEffect(() => {
     setVisited((previous) => previous.has(tab) ? previous : new Set([...previous, tab]));
   }, [tab]);
+  // Warm the other tabs once the app is idle, one per idle slot, so their first visit
+  // doesn't pay the cost of building the screen, glass layers and first artwork decode.
+  useEffect(() => {
+    let cancelled = false;
+    const idle = (cb: () => void) => {
+      const w = window as Window & { requestIdleCallback?: (fn: () => void, o?: { timeout: number }) => number };
+      if (w.requestIdleCallback) w.requestIdleCallback(cb, { timeout: 1500 });
+      else window.setTimeout(cb, 400);
+    };
+    const warm = () => {
+      if (cancelled) return;
+      setVisited((previous) => {
+        const next = TABS.find((t) => !previous.has(t));
+        return next ? new Set([...previous, next]) : previous;
+      });
+      setTimeout(() => { if (!cancelled) idle(warm); }, 250);
+    };
+    const start = window.setTimeout(() => idle(warm), 1200);
+    return () => { cancelled = true; window.clearTimeout(start); };
+  }, []);
   return <div className="absolute inset-0 transition-transform duration-[520ms]" style={{ transform: pushed ? "translate3d(-5%,0,0) scale(.97)" : "translate3d(0,0,0) scale(1)", transitionTimingFunction: "var(--ease-out-expo)" }}>
     <div className="pointer-events-none absolute inset-0 z-10 bg-black transition-opacity duration-[520ms]" style={{ opacity: pushed ? 0.14 : 0 }} />
     {TABS.map((t) => {
@@ -106,10 +126,10 @@ function StatusBar() {
 }
 
 function Shell() {
-  const { stack, pop, tab, setTab, settings, onboarded, finishOnboarding, editNameOpen, setEditNameOpen, setName, setAvatar, showToast } = useApp();
+  const { stack, pop, tab, setTab, settings, onboarded, editNameOpen, setEditNameOpen, setName, setAvatar, showToast } = useApp();
   const framed = useMedia("(min-width: 540px) and (min-height: 700px)") && !Capacitor.isNativePlatform();
   const pushed = stack.length > 0;
-  const modalOpen = !onboarded || editNameOpen;
+  const modalOpen = editNameOpen;
   const depth = useRef(0);
 
   // Keep the browser/system status bar in sync with the selected theme.
@@ -162,14 +182,13 @@ function Shell() {
   }, [showToast]);
 
   return <div className={cn("device-stage", Capacitor.isNativePlatform() && "native-stage")}>
-    <div className={cn("device", !settings.animations && "reduce-motion")} data-theme={settings.theme} style={{ ["--sat" as string]: framed ? "30px" : "env(safe-area-inset-top)", ["--sab" as string]: framed ? "0px" : "env(safe-area-inset-bottom)" }}>
+    <div className={cn("device", !settings.animations && "reduce-motion")} data-theme={settings.theme} data-night-variant={settings.nightVariant} style={{ ["--sat" as string]: framed ? "30px" : "env(safe-area-inset-top)", ["--sab" as string]: framed ? "0px" : "env(safe-area-inset-bottom)" }}>
       <Background />
       <TabLayers pushed={pushed} />
       <div className="absolute inset-x-0 bottom-0 z-40 transition-[transform,opacity] duration-[480ms]" style={{ transform: pushed ? "translate3d(0,110%,0)" : "translate3d(0,0,0)", opacity: pushed ? 0 : 1, transitionTimingFunction: "var(--ease-out-expo)" }}><BottomNav /></div>
       <RouteStack />
       <Toast />
       {framed && <StatusBar />}
-      {!onboarded && <NamePrompt firstRun onDone={(n, av) => finishOnboarding(n, av)} />}
       {onboarded && editNameOpen && (
         <NamePrompt
           firstRun={false}

@@ -30,7 +30,6 @@ export interface Game {
   cover: string;
   coverRatio: number;
   shots: string[];
-  price: string | null;
   metacritic: number | null;
   reviewCount: number | null;
   releaseDate: string;
@@ -39,7 +38,6 @@ export interface Game {
   steamPublisher: string | null;
   updated: string;
   added: string;
-  views: number;
   ports: PortProject[];
 }
 
@@ -108,21 +106,22 @@ export interface Filters {
   onlySaved: boolean;
   onlyApk: boolean;
   onlyRated: boolean;
+  onlyViewed: boolean;
   sort: SortMode;
 }
 
 export const emptyFilters: Filters = {
   query: "", genres: [], collections: [], platforms: [], kinds: [], engines: [],
-  fileNeeds: [], evidence: [], decades: [], onlySaved: false, onlyApk: false, onlyRated: false, sort: "relevance",
+  fileNeeds: [], evidence: [], decades: [], onlySaved: false, onlyApk: false, onlyRated: false, onlyViewed: false, sort: "relevance",
 };
 
 export function activeFilterCount(f: Filters): number {
   return (f.query.trim() ? 1 : 0) + f.genres.length + f.collections.length + f.platforms.length +
     f.kinds.length + f.engines.length + f.fileNeeds.length + f.evidence.length + f.decades.length +
-    (f.onlySaved ? 1 : 0) + (f.onlyApk ? 1 : 0);
+    (f.onlySaved ? 1 : 0) + (f.onlyApk ? 1 : 0) + (f.onlyRated ? 1 : 0) + (f.onlyViewed ? 1 : 0);
 }
 
-export function applyFilters(f: Filters, saved: Set<string>): Game[] {
+export function applyFilters(f: Filters, saved: Set<string>, localViews: Record<string, number> = {}): Game[] {
   const q = f.query.trim().toLowerCase();
   const terms = q ? q.split(/\s+/).filter(Boolean) : [];
   const index = terms.length ? getSearchIndex() : null;
@@ -143,16 +142,17 @@ export function applyFilters(f: Filters, saved: Set<string>): Game[] {
     if (f.onlySaved && !saved.has(g.id)) continue;
     if (f.onlyApk && !g.ports.some((p) => p.apk)) continue;
     if (f.onlyRated && g.metacritic == null) continue;
+    if (f.onlyViewed && !localViews[g.id]) continue;
     out.push(g);
   }
   switch (f.sort) {
     case "name": out.sort((a, b) => a.title.localeCompare(b.title)); break;
     case "newest": out.sort((a, b) => b.year - a.year || a.title.localeCompare(b.title)); break;
     case "oldest": out.sort((a, b) => a.year - b.year || a.title.localeCompare(b.title)); break;
-    case "popular": out.sort((a, b) => b.views - a.views); break;
-    case "ports": out.sort((a, b) => b.ports.length - a.ports.length || b.views - a.views); break;
-    case "rating": out.sort((a, b) => (b.metacritic ?? -1) - (a.metacritic ?? -1) || b.views - a.views); break;
-    default: out.sort((a, b) => Number(b.ports.some((p) => p.apk)) - Number(a.ports.some((p) => p.apk)) || (b.metacritic ?? -1) - (a.metacritic ?? -1) || b.views - a.views);
+    case "popular": out.sort((a, b) => (localViews[b.id] || 0) - (localViews[a.id] || 0) || a.title.localeCompare(b.title)); break;
+    case "ports": out.sort((a, b) => b.ports.length - a.ports.length || a.title.localeCompare(b.title)); break;
+    case "rating": out.sort((a, b) => (b.metacritic ?? -1) - (a.metacritic ?? -1) || a.title.localeCompare(b.title)); break;
+    default: out.sort((a, b) => Number(b.ports.some((p) => p.apk)) - Number(a.ports.some((p) => p.apk)) || (b.metacritic ?? -1) - (a.metacritic ?? -1) || a.title.localeCompare(b.title));
   }
   return out;
 }
@@ -163,13 +163,39 @@ const featuredIds = [
   "the-elder-scrolls-iii-morrowind", "the-legend-of-zelda-ocarina-of-time",
   "half-life", "sonic-mania",
 ];
+/** Curated picks used when the hourly rotation has no pool (kept for safety). */
 export const featuredGames: Game[] = featuredIds.map(gameById).filter((g): g is Game => !!g && !!g.cover);
-const isTool = (name: string) => /launcher|tool|manager|patcher|builder|art loader|frontend/i.test(name);
-for (const g of games) {
-  if (featuredGames.length >= 8) break;
-  if (!g.cover || featuredGames.includes(g)) continue;
-  if (g.ports.some((p) => p.apk && !isTool(p.name))) featuredGames.push(g);
+
+const HOUR_MS = 60 * 60 * 1000;
+/** Cover-flow pool: every game with real artwork that has at least one native Android port. */
+const featuredPool: Game[] = games.filter((g) => !!g.cover && g.ports.some((p) => p.apk));
+
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
+
+/** Random featured set that is stable within one hour and changes automatically each hour. */
+export function featuredForHour(hourIndex: number, count = 8): Game[] {
+  const pool = featuredPool.length >= count ? featuredPool : featuredGames;
+  const rand = mulberry32(hourIndex * 2654435761 + 12345);
+  const picked: Game[] = [];
+  const used = new Set<number>();
+  while (picked.length < Math.min(count, pool.length)) {
+    const i = Math.floor(rand() * pool.length);
+    if (used.has(i)) continue;
+    used.add(i);
+    picked.push(pool[i]);
+  }
+  return picked;
+}
+export const currentHourIndex = () => Math.floor(Date.now() / HOUR_MS);
 
 /** Highest known catalog download count first; unknown counts use a quality-based fallback. */
 export function rankedPortIndices(g: Game): number[] {
