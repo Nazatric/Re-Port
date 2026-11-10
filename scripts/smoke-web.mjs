@@ -92,6 +92,23 @@ try {
   await phone.waitForFunction(() => window.__hasBack());
   await phone.evaluate(() => window.__back());
   await phone.getByPlaceholder('Games, port projects, engines, repos…').waitFor();
+  await phone.getByPlaceholder('Games, port projects, engines, repos…').fill('morrowind');
+  await phone.getByLabel('Open The Elder Scrolls III: Morrowind', { exact: true }).first().click();
+  const portSelector = phone.locator('select').filter({ hasText: 'Morrowind (OpenMW)' });
+  assert.equal(await portSelector.locator('option:checked').textContent(), 'Morrowind (OpenMW)', 'Most downloaded port is selected');
+  assert.deepEqual(await portSelector.locator('option').allTextContents(), [
+    'Morrowind (OpenMW)', 'Morrowind DS (OpenMW-DS)', 'OpenMW Android (Andiweli)', 'OpenMW Android',
+  ], 'Port selector is sorted by downloads');
+  await phone.getByRole('button', { name: 'Get latest APK' }).click();
+  await phone.waitForFunction(() => window.__opened.length === 2);
+  assert.equal(await phone.evaluate(() => window.__opened[1]), 'https://github.com/xyzz/openmw-android/releases', 'Nightly opens release list directly');
+  await portSelector.selectOption({ label: 'Morrowind DS (OpenMW-DS)' });
+  await phone.getByRole('button', { name: 'Get latest APK' }).click();
+  await phone.waitForFunction(() => window.__opened.length === 3);
+  assert.equal(await phone.evaluate(() => window.__opened[2]), 'https://github.com/Josh-Daniels/OpenMW-DS/releases/latest', 'Stable opens latest release directly');
+  await phone.getByRole('button', { name: 'Ports 4' }).click();
+  const cards = phone.getByText('4 community ports').locator('..').locator('..');
+  assert.ok((await cards.textContent()).indexOf('Morrowind (OpenMW)') < (await cards.textContent()).indexOf('Morrowind DS'), 'Port cards show most downloaded first');
   assert.deepEqual(errors, [], 'No uncaught errors during native bridge smoke test');
   await native.close();
   console.log('Web onboarding, browse, detail, native external links and back button passed.');

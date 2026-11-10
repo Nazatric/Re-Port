@@ -27,6 +27,7 @@ jobs:
         run: |
           npm ci
           npm run typecheck
+          node scripts/test-release-links.mjs
           npm run build
       - name: Check web and Android bridge flows
         env:

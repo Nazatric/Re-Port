@@ -171,16 +171,20 @@ for (const g of games) {
   if (g.ports.some((p) => p.apk && !isTool(p.name))) featuredGames.push(g);
 }
 
-export function primaryPort(g: Game): PortProject {
-  const score = (p: PortProject) =>
+/** Highest known catalog download count first; unknown counts use a quality-based fallback. */
+export function rankedPortIndices(g: Game): number[] {
+  const fallbackScore = (p: PortProject) =>
     (p.apk ? 1000 : 0) + (p.evidence === "github-apk" ? 600 : 0) +
-    (p.kind === "github" ? 300 : 0) + Math.min(p.downloads ?? 0, 200) +
-    (p.stars ? Math.min(p.stars, 100) : 0) + (p.version ? 20 : 0) +
-    (/android|apk|mobile/i.test(p.name) ? 150 : 0) +
-    (/launcher|tool|manager|patcher|builder|art/i.test(p.name) ? -500 : 0);
-  return [...g.ports].sort((a, b) => score(b) - score(a))[0] ?? g.ports[0];
+    (p.kind === "github" ? 300 : 0) + Math.min(p.stars || 0, 100) +
+    (p.version ? 20 : 0) + (/android|apk|mobile/i.test(p.name) ? 150 : 0) -
+    (/launcher|tool|manager|patcher|builder|art/i.test(p.name) ? 500 : 0);
+  return g.ports.map((_, i) => i).sort((a, b) =>
+    Math.max(0, g.ports[b].downloads || 0) - Math.max(0, g.ports[a].downloads || 0) ||
+    fallbackScore(g.ports[b]) - fallbackScore(g.ports[a]) || a - b);
+}
+export function primaryPort(g: Game): PortProject {
+  return g.ports[rankedPortIndices(g)[0]] ?? g.ports[0];
 }
 export function primaryPortIndex(g: Game): number {
-  const p = primaryPort(g);
-  return Math.max(0, g.ports.indexOf(p));
+  return rankedPortIndices(g)[0] ?? 0;
 }

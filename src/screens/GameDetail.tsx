@@ -1,17 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  AlertCircle, ArrowUpRight, Bookmark, CheckCircle2, Download, ExternalLink, FolderOpen,
-  Heart, Info, RefreshCw, Share2,
+  ArrowUpRight, Bookmark, CheckCircle2, Download, ExternalLink, FolderOpen,
+  Heart, Info, Share2,
 } from "lucide-react";
 import {
-  evidenceLabels, fileLabels, gameById, games, kindLabels, primaryPortIndex, primaryPort,
+  evidenceLabels, fileLabels, gameById, games, kindLabels, primaryPortIndex, primaryPort, rankedPortIndices,
   type Game,
 } from "@/data/ports";
 import { useApp } from "@/state";
 import { GameArt, GameShot } from "@/components/Artwork";
 import { TapSurface } from "@/components/TapSurface";
 import { BackHeader, Glass, GlossButton, IconButton, SectionHeader } from "@/components/ui";
-import { performDownload, rememberDownload, resolveDownload, type ResolvedDownload } from "@/lib/download";
+import { downloadDestination } from "@/lib/download";
 import { cn } from "@/utils/cn";
 import { openExternal } from "@/lib/external";
 
@@ -27,33 +27,15 @@ function GameDetailContent({ game: g }: { game: Game }) {
   const { push, saved, toggleSaved, visit, showToast } = useApp();
   const [tab, setTab] = useState<Tab>("overview");
   const [selected, setSelected] = useState(() => primaryPortIndex(g));
-  const [resolving, setResolving] = useState(false);
-  const [resolved, setResolved] = useState<ResolvedDownload | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [attempt, setAttempt] = useState(0);
   const wished = saved.has(g.id);
   const port = g.ports[selected] ?? primaryPort(g);
+  const ranked = rankedPortIndices(g);
 
   useEffect(() => { visit(g.id); }, [g.id, visit]);
-  useEffect(() => { setResolved(null); setError(null); }, [selected]);
 
-  const resolve = useCallback(async () => {
-    setResolving(true); setError(null);
-    try { const r = await resolveDownload(g, port); setResolved(r); }
-    catch (e) { setError(e instanceof Error ? e.message : "Could not reach the release index"); }
-    finally { setResolving(false); }
-  }, [g, port, attempt]);
-
-  const onDownload = async () => {
-    let r = resolved;
-    if (!r) {
-      setResolving(true); setError(null);
-      try { r = await resolveDownload(g, port); setResolved(r); }
-      catch (e) { setError(e instanceof Error ? e.message : "Could not reach the release index"); setResolving(false); return; }
-      setResolving(false);
-    }
-    rememberDownload(g.id, r);
-    performDownload(r, showToast);
+  const onDownload = (project = port) => {
+    const destination = downloadDestination(project);
+    void openExternal(destination).catch(() => showToast("Could not open the download link"));
   };
 
   const related = games.filter((x) => x.id !== g.id && (x.platform === g.platform || x.genres.some((v) => g.genres.includes(v)))).slice(0, 6);
@@ -95,31 +77,18 @@ function GameDetailContent({ game: g }: { game: Game }) {
           </div>
           {g.ports.length > 1 && (
             <select value={selected} onChange={(e) => setSelected(Number(e.target.value))} className="mb-2 h-10 w-full rounded-full bg-black/[0.05] px-3 text-[12.5px] font-semibold text-ink outline-none">
-              {g.ports.map((p, i) => <option key={`${p.url}-${i}`} value={i}>{p.name || p.developer}</option>)}
+              {ranked.map((i) => { const p = g.ports[i]; return <option key={`${p.url}-${i}`} value={i}>{p.name || p.developer}</option>; })}
             </select>
           )}
-          <GlossButton variant="lime" size="lg" icon={Download} className="w-full" disabled={resolving} onClick={onDownload}>
-            {resolving ? "Checking releases…" : resolved ? resolved.label : port.apk ? "Get latest APK" : "Open download source"}
+          <GlossButton variant="lime" size="lg" icon={Download} className="w-full" onClick={() => onDownload()}>
+            {port.apk ? "Get latest APK" : "Open download source"}
           </GlossButton>
-          {resolved && (
-            <div className="mt-2 flex items-center justify-between gap-2 px-1 text-[11px] text-ink-soft">
-              <span className="truncate">{resolved.fileName ?? new URL(resolved.url).hostname}</span>
-              <span className="shrink-0 tabular-nums">{resolved.sizeMb ? `${resolved.sizeMb} MB` : resolved.version ?? resolved.source}</span>
-            </div>
-          )}
-          {error && (
-            <div className="mt-2 flex items-start gap-2 rounded-xl bg-amber-50 p-2.5">
-              <AlertCircle size={15} className="mt-0.5 shrink-0 text-amber-700" />
-              <div className="flex-1 text-[11.5px] text-amber-900">{error}. The source link is still available below.</div>
-              <button onClick={() => { setAttempt((n) => n + 1); resolve(); }} className="press flex shrink-0 items-center gap-1 rounded-full bg-white/80 px-2 py-1 font-semibold text-amber-900"><RefreshCw size={11} /> Retry</button>
-            </div>
-          )}
           <div className="mt-2 flex gap-2">
             <a href={port.url} target="_blank" rel="noreferrer" className="press flex h-10 flex-1 items-center justify-center gap-1 rounded-full bg-black/[0.06] text-[11.5px] font-semibold text-ink-soft">Project page <ExternalLink size={12} /></a>
-            <button onClick={() => void openExternal(port.download).catch(() => showToast("Could not open the link"))} className="press flex h-10 flex-1 items-center justify-center gap-1 rounded-full bg-black/[0.06] text-[11.5px] font-semibold text-ink-soft">Release link <ArrowUpRight size={12} /></button>
+            <button onClick={() => onDownload()} className="press flex h-10 flex-1 items-center justify-center gap-1 rounded-full bg-black/[0.06] text-[11.5px] font-semibold text-ink-soft">Release link <ArrowUpRight size={12} /></button>
           </div>
           <p className="mt-2 px-1 text-[11px] leading-relaxed text-ink-soft">
-            {port.apk ? "The latest Android APK is resolved from the project's release index. Re:Port never hosts game files." : "This project distributes outside GitHub; its real source opens in your browser."}
+            {port.apk ? "Opens the project's release page in your browser. Choose the APK that works for your device; Re:Port does not host or verify it." : "Opens the project's download source in your browser."}
           </p>
         </Glass>
       </section>
@@ -229,7 +198,7 @@ function GameDetailContent({ game: g }: { game: Game }) {
       {tab === "projects" && (
         <div className="relative mt-4 space-y-3 px-4">
           <SectionHeader title={`${g.ports.length} community port${g.ports.length === 1 ? "" : "s"}`} />
-          {g.ports.map((p, i) => (
+          {ranked.map((i) => { const p = g.ports[i]; return (
             <Glass key={`${p.url}-${i}`} className={cn("p-3.5", selected === i && "ring-2 ring-lime-deep")}>
               <TapSurface onTap={() => setSelected(i)} className="w-full">
                 <div className="flex items-start justify-between gap-2"><div className="text-[13.5px] font-bold text-ink">{p.name}</div><span className="shrink-0 rounded-full bg-black/[0.06] px-2 py-0.5 text-[10px] font-semibold text-ink-soft">{kindLabels[p.kind] ?? p.kind}</span></div>
@@ -244,10 +213,10 @@ function GameDetailContent({ game: g }: { game: Game }) {
               </TapSurface>
               <div className="mt-3 flex gap-2">
                 <a href={p.url} target="_blank" rel="noreferrer" className="press flex h-10 flex-1 items-center justify-center gap-1 rounded-full bg-black/[0.06] text-[11.5px] font-semibold text-ink-soft">Source <ExternalLink size={11} /></a>
-                <button onClick={() => void openExternal(p.download).catch(() => showToast("Could not open the link"))} className="press flex h-10 flex-1 items-center justify-center gap-1 rounded-full bg-black/[0.06] text-[11.5px] font-semibold text-ink-soft">Download <ArrowUpRight size={11} /></button>
+                <button onClick={() => onDownload(p)} className="press flex h-10 flex-1 items-center justify-center gap-1 rounded-full bg-black/[0.06] text-[11.5px] font-semibold text-ink-soft">Download <ArrowUpRight size={11} /></button>
               </div>
             </Glass>
-          ))}
+          ); })}
         </div>
       )}
 

@@ -47,7 +47,7 @@ export function AboutPage() {
         <SectionHeader title="How downloads work" />
         <Glass className="divide-y divide-black/[0.06] px-4">
           {[
-            ["GitHub releases", "The release index is read and an arm64-v8a / universal APK is selected, then handed to the system downloader."],
+            ["GitHub releases", "The project’s release page opens in your browser, where you can choose the right APK for your device."],
             ["Other sources", "Telegram, project sites, mirrors and stores open in your browser at their real download page."],
             ["Game files", "Most ports ship the engine only. Bring the original files from a copy you own."],
             ["Offline catalog", `${data.sources.length} community sources merged into one de-duplicated local catalog. No account or key required.`],
