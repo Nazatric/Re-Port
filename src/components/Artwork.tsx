@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import type { Game } from "@/data/ports";
 import { cn } from "@/utils/cn";
+import { findArtwork } from "@/lib/artwork";
 import { t } from "@/lib/i18n";
 
 /** Steam serves 1920×1080 originals; lists and heroes only need its 600×338 thumbnail. */
@@ -21,21 +22,30 @@ export function GameArt({
   priority?: boolean;
   shadow?: boolean;
 }) {
-  const [src, setSrc] = useState<string | undefined>(game.cover || undefined);
-  const [failed, setFailed] = useState(false);
+  const placeholder = !game.cover || game.cover.startsWith("data:") || game.cover.includes("/covers/generated/");
+  // Candidates in order: the bundled cover first, then art found on the device for games without one.
+  const [candidates, setCandidates] = useState<string[]>(() => (placeholder ? [] : [game.cover]));
+  const [index, setIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [measured, setMeasured] = useState<number | null>(null);
 
   useEffect(() => {
-    setSrc(game.cover || undefined);
-    setFailed(false);
-    setLoaded(false);
-    setMeasured(null);
-  }, [game.cover]);
+    let live = true;
+    setIndex(0); setLoaded(false); setMeasured(null);
+    setCandidates(placeholder ? [] : [game.cover]);
+    if (!placeholder) return () => { live = false; };
+    findArtwork(game).then((found) => {
+      if (!live) return;
+      setCandidates(found?.cover ?? []);
+    }).catch(() => { if (live) setCandidates([]); });
+    return () => { live = false; };
+  }, [game, placeholder]);
 
-  const handleError = () => { setFailed(true); };
+  const src = candidates[index];
+  const failed = !src;
+  const handleError = () => { setLoaded(false); setIndex((i) => i + 1); };
 
-  if (failed || !src) {
+  if (failed) {
     return (
       <div className={cn("grid place-items-center overflow-hidden bg-gradient-to-br from-[#3d5a22] to-[#16220e] text-white", className)}
         style={{ borderRadius: radius, aspectRatio: String(game.coverRatio || 0.75), ...style }}>
@@ -48,6 +58,7 @@ export function GameArt({
       style={{ borderRadius: radius, aspectRatio: String(measured || game.coverRatio || 0.75), boxShadow: shadow ? "0 10px 26px -12px rgba(0,0,0,.5)" : undefined, ...style }}>
       {!loaded && <span className="absolute inset-0 grid place-items-center px-3 text-center text-[13px] font-semibold leading-tight text-white/90">{game.title}</span>}
       <img
+        key={src}
         src={src}
         alt={t("{title} cover art", { title: game.title })}
         draggable={false}

@@ -7,9 +7,6 @@ on:
   schedule:
     - cron: '17 3 * * 1'   # weekly, Monday 03:17 UTC
   workflow_dispatch:
-  push:
-    branches: ["arena/dcbf2003-re-port"]
-    paths: ["scripts/build-artwork.mjs", "scripts/artwork/**"]
 
 permissions:
   contents: write
