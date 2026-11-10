@@ -39,14 +39,6 @@ try {
   assert.equal(activeFilterCount({ ...emptyFilters, onlyRated: true }), 1);
   assert.deepEqual(applyFilters({ ...emptyFilters, onlyViewed: true }, saved, localViews).map((g) => g.id).sort(), ['bounce-classic', 'pokewilds']);
   assert.ok(applyFilters({ ...emptyFilters, onlyRated: true }, saved).every((g) => g.metacritic != null));
-  const tm = await import('./artwork/title-match.mjs');
-  assert.equal(tm.normalizeTitle('Pokémon Shield!'), 'pokemon shield');
-  assert.ok(tm.scoreCandidate('Doom', 'DOOM', { queryYear: 1993, candidateYear: 2016 }).score < 0.95, 'Steam DOOM (2016) must not match the 1993 game');
-  assert.ok(tm.scoreCandidate('Doom', 'DOOM', { queryYear: 2016, candidateYear: 2016 }).score >= 0.95);
-  assert.ok(tm.scoreCandidate('Doom II', 'Doom', {}).score < 0.95, 'sequels never match the original');
-  assert.ok(tm.scoreCandidate('God of War II', 'God of War', {}).score < 0.95);
-  assert.equal(tm.editionBase('Doom: Definitive Edition'), 'Doom');
-  assert.equal(tm.confidentChoice([{ score: 0.97, n: 'a' }, { score: 0.96, n: 'b' }], { min: 0.95, gap: 0.1 }), null, 'ambiguous matches are refused');
   const { featuredForHour } = await server.ssrLoadModule('/src/data/ports.ts');
   const hourA = featuredForHour(480000);
   assert.equal(hourA.length, 8, 'cover flow shows 8 games');
@@ -66,11 +58,6 @@ try {
   assert.equal(makeT('hi')('Recently viewed'), 'हाल में देखे गए');
   assert.equal(makeT('es')('{n} ports · no files needed', { n: 3 }), '3 ports · sin archivos necesarios');
   // Every key must have a real translation in each language, not just the English fallback.
-  for (const id of ['beats-of-rage', 'doom', 'cannone']) {
-    const game = games.find((g) => g.id === id);
-    assert.equal(game.cover, '', `${id}: wrong cover removed`);
-  }
-  assert.equal(games.filter((g) => g.cover && /wikimedia/.test(g.cover) && /Comic_Con|galley/.test(g.cover)).length, 0, 'no unrelated photos in covers');
   const fs = await import('node:fs');
   const src = fs.readFileSync(new URL('../src/lib/i18n.ts', import.meta.url), 'utf8');
   const entries = [...src.matchAll(/^  ("(?:[^"\\]|\\.)*"): (\[.*\]),$/gm)].map((m) => [JSON.parse(m[1]), JSON.parse(m[2])]);

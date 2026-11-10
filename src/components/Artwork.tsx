@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import type { Game } from "@/data/ports";
+import { resolveArtwork } from "@/lib/artwork";
 import { cn } from "@/utils/cn";
-import { findArtwork } from "@/lib/artwork";
 import { t } from "@/lib/i18n";
 
 /** Steam serves 1920×1080 originals; lists and heroes only need its 600×338 thumbnail. */
@@ -22,30 +22,30 @@ export function GameArt({
   priority?: boolean;
   shadow?: boolean;
 }) {
-  const placeholder = !game.cover || game.cover.startsWith("data:") || game.cover.includes("/covers/generated/");
-  // Candidates in order: the bundled cover first, then art found on the device for games without one.
-  const [candidates, setCandidates] = useState<string[]>(() => (placeholder ? [] : [game.cover]));
-  const [index, setIndex] = useState(0);
+  const [src, setSrc] = useState(game.cover);
+  const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [measured, setMeasured] = useState<number | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
+  // Games without a bundled cover resolve one from the keyless artwork sources once, then show it.
   useEffect(() => {
+    if (game.cover) return;
     let live = true;
-    setIndex(0); setLoaded(false); setMeasured(null);
-    setCandidates(placeholder ? [] : [game.cover]);
-    if (!placeholder) return () => { live = false; };
-    findArtwork(game).then((found) => {
-      if (!live) return;
-      setCandidates(found?.cover ?? []);
-    }).catch(() => { if (live) setCandidates([]); });
+    resolveArtwork(game).then((url) => { if (!live) return; if (url) setSrc(url); else setFailed(true); }).catch(() => { if (live) setFailed(true); });
     return () => { live = false; };
-  }, [game, placeholder]);
+  }, [game]);
 
-  const src = candidates[index];
-  const failed = !src;
-  const handleError = () => { setLoaded(false); setIndex((i) => i + 1); };
+  const handleError = async () => {
+    if (retrying || failed) return;
+    setRetrying(true);
+    try {
+      const next = await resolveArtwork(game);
+      if (next && next !== src) { setLoaded(false); setSrc(next); }
+      else setFailed(true);
+    } catch { setFailed(true); } finally { setRetrying(false); }
+  };
 
-  if (failed) {
+  if (failed || !src) {
     return (
       <div className={cn("grid place-items-center overflow-hidden bg-gradient-to-br from-[#3d5a22] to-[#16220e] text-white", className)}
         style={{ borderRadius: radius, aspectRatio: String(game.coverRatio || 0.75), ...style }}>
@@ -55,10 +55,9 @@ export function GameArt({
   }
   return (
     <div className={cn("relative overflow-hidden bg-gradient-to-br from-[#6d9f31] to-[#315321]", className)}
-      style={{ borderRadius: radius, aspectRatio: String(measured || game.coverRatio || 0.75), boxShadow: shadow ? "0 10px 26px -12px rgba(0,0,0,.5)" : undefined, ...style }}>
+      style={{ borderRadius: radius, aspectRatio: String(game.coverRatio || 0.75), boxShadow: shadow ? "0 10px 26px -12px rgba(0,0,0,.5)" : undefined, ...style }}>
       {!loaded && <span className="absolute inset-0 grid place-items-center px-3 text-center text-[13px] font-semibold leading-tight text-white/90">{game.title}</span>}
       <img
-        key={src}
         src={src}
         alt={t("{title} cover art", { title: game.title })}
         draggable={false}
@@ -66,7 +65,7 @@ export function GameArt({
         decoding="async"
         fetchPriority={priority ? "high" : "auto"}
         onError={handleError}
-        onLoad={(e) => { setLoaded(true); const im = e.currentTarget; if (im.naturalWidth && im.naturalHeight) setMeasured(im.naturalWidth / im.naturalHeight); }}
+        onLoad={() => setLoaded(true)}
         style={{ opacity: loaded ? 1 : 0 }}
         className="block h-full w-full object-fill"
       />
