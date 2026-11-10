@@ -22,18 +22,26 @@ export function GameArt({
   priority?: boolean;
   shadow?: boolean;
 }) {
-  const [src, setSrc] = useState(game.cover);
+  // A generated placeholder (data: URL) is shown until a verified real cover is found.
+  const placeholder = !game.cover || game.cover.startsWith("data:");
+  const [src, setSrc] = useState<string | undefined>(game.cover || undefined);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [retrying, setRetrying] = useState(false);
 
-  // Games without a bundled cover resolve one from the keyless artwork sources once, then show it.
   useEffect(() => {
-    if (game.cover) return;
+    setSrc(game.cover || undefined);
+    setFailed(false);
+    setLoaded(false);
+    if (!placeholder) return;
     let live = true;
-    resolveArtwork(game).then((url) => { if (!live) return; if (url) setSrc(url); else setFailed(true); }).catch(() => { if (live) setFailed(true); });
+    resolveArtwork(game).then((url) => {
+      if (!live) return;
+      if (url) { setSrc(url); setLoaded(false); }
+      else if (!game.cover) setFailed(true);
+    }).catch(() => { if (live && !game.cover) setFailed(true); });
     return () => { live = false; };
-  }, [game]);
+  }, [game, placeholder]);
 
   const handleError = async () => {
     if (retrying || failed) return;

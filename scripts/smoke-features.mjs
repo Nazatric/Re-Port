@@ -39,6 +39,20 @@ try {
   assert.equal(activeFilterCount({ ...emptyFilters, onlyRated: true }), 1);
   assert.deepEqual(applyFilters({ ...emptyFilters, onlyViewed: true }, saved, localViews).map((g) => g.id).sort(), ['bounce-classic', 'pokewilds']);
   assert.ok(applyFilters({ ...emptyFilters, onlyRated: true }, saved).every((g) => g.metacritic != null));
+  const art = await server.ssrLoadModule('/src/lib/artwork.ts');
+  assert.equal(art.normalizeTitle('Pokémon Shield!'), 'pokemonshield');
+  assert.equal(art.isSteamMatch({ title: 'Doom', year: 1993 }, 'DOOM', 2016), false, 'Steam DOOM (2016) must not stand in for the 1993 game');
+  assert.equal(art.isSteamMatch({ title: 'Doom', year: 2016 }, 'DOOM', 2016), true);
+  assert.equal(art.isSteamMatch({ title: 'Doom', year: 0 }, 'DOOM', 2016), true, 'unknown catalog year does not reject');
+  assert.equal(art.isSteamMatch({ title: 'Doom', year: 1993 }, 'Doom 3', 2004), false);
+  assert.equal(art.isWikiVideoGame({ title: 'Beats of Rage' }, { title: 'Beats of Rage', description: 'Video game', type: 'standard' }), true);
+  assert.equal(art.isWikiVideoGame({ title: 'Hsu' }, { title: 'Hsu', description: 'American comedian and actor' }), false, 'people pages are not game art');
+  assert.equal(art.isWikiVideoGame({ title: 'Doom' }, { title: 'Doom', description: 'Video game series', type: 'disambiguation' }), false);
+  assert.equal(art.isWikiVideoGame({ title: 'Doom' }, { title: 'Doom (1993 video game)', description: '1993 video game' }), true);
+  assert.deepEqual(art.libretroCandidates('PC', 'Doom'), [], 'PC games use Steam, not Libretro');
+  const crash = art.libretroCandidates('PlayStation', 'Crash: Bandicoot');
+  assert.ok(crash[0].includes('Sony_-_PlayStation/Named_Boxarts/Crash_%20Bandicoot%20(USA).png') || crash[0].includes('Crash_%20Bandicoot%20(USA).png'), 'Libretro file name replaces colons');
+  assert.ok(art.libretroCandidates('PlayStation 2', 'Gran Turismo 4')[0].includes('Sony_-_PlayStation_2'));
   const { featuredForHour } = await server.ssrLoadModule('/src/data/ports.ts');
   const hourA = featuredForHour(480000);
   assert.equal(hourA.length, 8, 'cover flow shows 8 games');
@@ -58,6 +72,11 @@ try {
   assert.equal(makeT('hi')('Recently viewed'), 'हाल में देखे गए');
   assert.equal(makeT('es')('{n} ports · no files needed', { n: 3 }), '3 ports · sin archivos necesarios');
   // Every key must have a real translation in each language, not just the English fallback.
+  for (const id of ['beats-of-rage', 'doom', 'cannone']) {
+    const game = games.find((g) => g.id === id);
+    assert.equal(game.cover, '', `${id}: wrong cover removed`);
+  }
+  assert.equal(games.filter((g) => g.cover && /wikimedia/.test(g.cover) && /Comic_Con|galley/.test(g.cover)).length, 0, 'no unrelated photos in covers');
   const fs = await import('node:fs');
   const src = fs.readFileSync(new URL('../src/lib/i18n.ts', import.meta.url), 'utf8');
   const entries = [...src.matchAll(/^  ("(?:[^"\\]|\\.)*"): (\[.*\]),$/gm)].map((m) => [JSON.parse(m[1]), JSON.parse(m[2])]);
