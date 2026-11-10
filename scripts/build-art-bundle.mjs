@@ -145,15 +145,17 @@ const LIBRETRO = {
 };
 const systems = [...new Set(Object.values(LIBRETRO))];
 const listing = new Map();
-await pool(systems, 6, async (system) => {
-  const tree = await get(`https://api.github.com/repos/libretro-thumbnails/${system}/git/trees/master?recursive=1`);
-  listing.set(system, (tree?.tree ?? []).map((f) => f.path).filter((p) => p.startsWith("Named_Boxarts/") && p.endsWith(".png")));
-});
+try {
+  await pool(systems, 6, async (system) => {
+    const tree = await call(`https://api.github.com/repos/libretro-thumbnails/${system}/git/trees/master?recursive=1`);
+    listing.set(system, (tree?.tree ?? []).map((f) => f.path).filter((p) => p.startsWith("Named_Boxarts/") && p.endsWith(".png")));
+  });
+} catch (err) { log(`libretro listing failed, skipping console covers: ${err?.message ?? err}`); }
 const REGIONS = ["(USA)", "(World)", "(Europe)", "(Japan)"];
 const libretro = new Map();
 for (const g of games) {
   const system = LIBRETRO[g.platform];
-  if (!system) continue;
+  if (!system || !listing.get(system)?.length) continue;
   const groups = new Map();
   for (const p of listing.get(system) ?? []) {
     const name = p.slice("Named_Boxarts/".length);
