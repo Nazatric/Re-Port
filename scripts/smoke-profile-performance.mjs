@@ -41,7 +41,8 @@ try {
   await page.locator('nav').getByRole('button', { name: 'Settings' }).click();
   await page.waitForFunction(() => document.querySelector('[aria-label="Change profile picture"] img')?.src.startsWith('blob:'));
   await page.getByRole('button', { name: 'Night · Aero' }).click();
-  assert.equal(await page.locator('.device').getAttribute('data-theme'), 'night');
+  // Theme changes are a non-urgent React update, so wait for the new value instead of reading it at once.
+  await page.waitForFunction(() => document.querySelector('.device')?.getAttribute('data-theme') === 'night');
   await page.locator('nav').getByRole('button', { name: 'Home' }).click();
   await page.getByRole('button', { name: 'Select Ready to play' }).click();
   await page.getByRole('button', { name: 'Ready to play: See them' }).click();
