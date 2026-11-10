@@ -14,7 +14,12 @@ for (const [density, icon, foreground] of [['mdpi', 48, 108], ['hdpi', 72, 162],
   fs.writeFileSync(path.join(dir, 'ic_launcher_foreground.png'), render(image(86, 86, 340), foreground));
 }
 fs.writeFileSync(path.join(root, 'values/ic_launcher_background.xml'), '<?xml version="1.0" encoding="utf-8"?><resources><color name="ic_launcher_background">#075a68</color><color name="report_start_background">#b7e23e</color></resources>');
-const splash = `<rect width="512" height="512" fill="#b7e23e"/>${image(160, 160, 192)}`;
+// Android's splash API falls back to the launcher icon if no icon is supplied.
+// Supply a transparent bitmap instead, so launch stays icon-free on Android 12+.
+const emptySplashDir = path.join(root, 'drawable-nodpi');
+fs.mkdirSync(emptySplashDir, { recursive: true });
+fs.writeFileSync(path.join(emptySplashDir, 'report_splash_empty.png'), render('', 288));
+const splash = `<rect width="512" height="512" fill="#b7e23e"/>`;
 for (const dir of fs.readdirSync(root).filter((name) => name.startsWith('drawable'))) {
   const file = path.join(root, dir, 'splash.png');
   if (fs.existsSync(file)) fs.writeFileSync(file, render(splash, 1080));
@@ -25,8 +30,10 @@ let xml = fs.readFileSync(styles, 'utf8');
 if (!xml.includes('<item name="android:windowBackground">@color/report_start_background</item>')) {
   xml = xml.replace('<item name="android:background">@null</item>', '<item name="android:background">@null</item>\n        <item name="android:windowBackground">@color/report_start_background</item>');
 }
-xml = xml.replace('<item name="android:background">@drawable/splash</item>', '<item name="windowSplashScreenBackground">@color/report_start_background</item>\n        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>\n        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>');
-if (!xml.includes('windowSplashScreenAnimatedIcon') || !xml.includes('android:windowBackground')) throw new Error('Unexpected Capacitor Android styles; could not configure launch theme.');
+xml = xml.replace('<item name="android:background">@drawable/splash</item>', '<item name="windowSplashScreenBackground">@color/report_start_background</item>\n        <item name="windowSplashScreenAnimatedIcon">@drawable/report_splash_empty</item>\n        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>');
+// Also update an already-prepared Android project when the script is rerun.
+xml = xml.replace('<item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>', '<item name="windowSplashScreenAnimatedIcon">@drawable/report_splash_empty</item>');
+if (!xml.includes('<item name="windowSplashScreenAnimatedIcon">@drawable/report_splash_empty</item>') || !xml.includes('android:windowBackground')) throw new Error('Unexpected Capacitor Android styles; could not configure launch theme.');
 fs.writeFileSync(styles, xml);
 const activity = 'android/app/src/main/java/dev/dandelion/store/MainActivity.java';
 fs.writeFileSync(activity, `package dev.dandelion.store;
