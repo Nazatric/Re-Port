@@ -57,7 +57,7 @@ Somewhere between a project README and a release page, there's usually a great g
 3. Open Re:Port, pick a profile and start exploring.
 
 > [!WARNING]
-> This preview APK uses a **debug signing certificate**, not a private production signing key. It is for testing and is not suitable for Google Play or trusted production distribution. Different builds may have different certificates: Android may require you to uninstall an older version first, which can erase its local data.
+> This APK uses a **debug signing certificate**, not a private production signing key. It is for testing and is not suitable for Google Play or trusted production distribution. Different builds may have different certificates: Android may require you to uninstall an older version first, which can erase its local data.
 
 The catalog is bundled for offline browsing. Artwork and external project pages require a connection. Releases are hosted by their respective projects; choose an APK appropriate for your device and review the source yourself. Re:Port does not host those files, verify their signatures or install them for you.
 
@@ -86,7 +86,6 @@ For a browser preview, run `npm run dev`. To run the automated checks, build fir
 - Port ordering uses the bundled catalog's download counts. They can be outdated or unavailable.
 - Known GitHub prereleases open the releases list; other GitHub APK projects open the latest stable release page. Other sources retain their own links.
 - Game titles, artwork and project names belong to their respective owners. Re:Port is an unofficial directory, not an endorsement by those projects.
-- This source and README are on the active development branch. The repository's default branch is separate.
 
 </details>
 

@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: ["arena/c57b7306-re-port"]
+    branches: ["arena/c57b7306-re-port", "main"]
   workflow_dispatch:
     inputs:
       release_tag:
@@ -57,7 +57,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    if: (github.event_name == 'workflow_dispatch' && inputs.release_tag != '') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[release-v1.0.0]'))
+    if: (github.event_name == 'workflow_dispatch' && inputs.release_tag != '') || (github.event_name == 'push' && github.ref == 'refs/heads/arena/c57b7306-re-port' && contains(github.event.head_commit.message, '[release-v1.0.0]'))
     needs: android
     runs-on: ubuntu-latest
     permissions:
@@ -77,4 +77,5 @@ jobs:
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Invalid release tag'; exit 1; }
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then echo 'Release already exists'; exit 1; fi
           mv release-apk/app-debug.apk release-apk/Re-Port.apk
-          gh release create "$RELEASE_TAG" release-apk/Re-Port.apk --target "$GITHUB_SHA" --title "Re:Port $RELEASE_TAG" --notes-file scripts/release-notes.md --prerelease
+          sed "s/v1.0.0/$RELEASE_TAG/g" scripts/release-notes.md > "$RUNNER_TEMP/release-notes.md"
+          gh release create "$RELEASE_TAG" release-apk/Re-Port.apk --target "$GITHUB_SHA" --title "Re:Port $RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md" --prerelease
