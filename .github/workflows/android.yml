@@ -34,9 +34,9 @@ jobs:
           npm run typecheck
           node scripts/test-release-links.mjs
           npm run build
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
       - name: Check web and Android bridge flows
-        env:
-          CHROMIUM_PATH: /usr/bin/google-chrome
         run: |
           node scripts/smoke-web.mjs
           node scripts/smoke-profile-performance.mjs
