@@ -1,24 +1,25 @@
-name: Refresh catalog artwork
+name: Build catalog artwork
 
-# Refreshes src/data/enrichment.json from keyless public sources (Steam, Wikidata, Wikipedia, Libretro).
-# No API keys are used or needed. The result is committed to this branch and bundled into the next APK.
+# Builds src/data/enrichment.json from keyless public sources (Steam store and CDN, Wikidata,
+# libretro-thumbnails, Wikipedia). No API keys are used or needed. The result is committed to this
+# branch and bundled into the next APK.
 on:
   schedule:
     - cron: '17 3 * * 1'   # weekly, Monday 03:17 UTC
   workflow_dispatch:
   push:
     branches: ["arena/dcbf2003-re-port"]
-    paths: ["scripts/enrich-artwork.mjs"]
+    paths: ["scripts/build-artwork.mjs", "scripts/artwork/**"]
 
 permissions:
   contents: write
 
 concurrency:
   group: artwork-${{ github.ref }}
-  cancel-in-progress: true   # a newer run replaces a stale one instead of queueing behind it
+  cancel-in-progress: true   # a newer run replaces a stale one
 
 jobs:
-  enrich:
+  artwork:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -28,9 +29,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Enrich catalog artwork and details
-        run: node scripts/enrich-artwork.mjs --workers 8
-      - name: Commit refreshed enrichment
+      - name: Build artwork and details
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/build-artwork.mjs --workers 8
+      - name: Commit refreshed artwork
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -38,6 +41,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No artwork changes."
           else
-            git commit -m "Refresh catalog artwork and details (keyless sources)"
+            git commit -m "Build catalog artwork and details (keyless sources)"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi

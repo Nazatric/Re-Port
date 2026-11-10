@@ -51,8 +51,8 @@ function GameDetailContent({ game: g }: { game: Game }) {
       {/* Quiet hero: real screenshot at natural ratio, no filters, no bubbles. */}
       <div className="detail-hero pointer-events-none absolute inset-x-0 top-0 h-[300px] overflow-hidden bg-[#e8f1d6]">
         <div className="absolute inset-0 opacity-[0.32]">
-          {mediaReady && g.shots[0]
-            ? <img src={thumbShot(g.shots[0])} alt="" draggable={false} className="block h-auto w-full" />
+          {mediaReady && (g.hero || g.shots[0])
+            ? <img src={g.hero ?? thumbShot(g.shots[0])} alt="" draggable={false} className="block h-auto w-full" />
             : <GameArt game={g} radius={0} className="w-full" />}
         </div>
         <div className="detail-hero-wash absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.78) 62%, #fff)" }} />

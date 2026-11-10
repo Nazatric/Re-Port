@@ -1,6 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import type { Game } from "@/data/ports";
-import { resolveArtwork } from "@/lib/artwork";
 import { cn } from "@/utils/cn";
 import { t } from "@/lib/i18n";
 
@@ -22,38 +21,19 @@ export function GameArt({
   priority?: boolean;
   shadow?: boolean;
 }) {
-  // A generated placeholder (data: URL) is shown until a verified real cover is found.
-  const placeholder = !game.cover || game.cover.startsWith("data:") || game.cover.includes("/covers/generated/");
   const [src, setSrc] = useState<string | undefined>(game.cover || undefined);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [retrying, setRetrying] = useState(false);
-  // Replacement art (found by the resolver) keeps its own measured shape; catalog covers keep the stored ratio.
   const [measured, setMeasured] = useState<number | null>(null);
 
   useEffect(() => {
     setSrc(game.cover || undefined);
     setFailed(false);
     setLoaded(false);
-    if (!placeholder) return;
-    let live = true;
-    resolveArtwork(game).then((url) => {
-      if (!live) return;
-      if (url) { setSrc(url); setLoaded(false); setMeasured(null); }
-      else if (!game.cover) setFailed(true);
-    }).catch(() => { if (live && !game.cover) setFailed(true); });
-    return () => { live = false; };
-  }, [game, placeholder]);
+    setMeasured(null);
+  }, [game.cover]);
 
-  const handleError = async () => {
-    if (retrying || failed) return;
-    setRetrying(true);
-    try {
-      const next = await resolveArtwork(game);
-      if (next && next !== src) { setLoaded(false); setMeasured(null); setSrc(next); }
-      else setFailed(true);
-    } catch { setFailed(true); } finally { setRetrying(false); }
-  };
+  const handleError = () => { setFailed(true); };
 
   if (failed || !src) {
     return (
@@ -65,7 +45,7 @@ export function GameArt({
   }
   return (
     <div className={cn("relative overflow-hidden bg-gradient-to-br from-[#6d9f31] to-[#315321]", className)}
-      style={{ borderRadius: radius, aspectRatio: String(src !== game.cover && measured ? measured : game.coverRatio || 0.75), boxShadow: shadow ? "0 10px 26px -12px rgba(0,0,0,.5)" : undefined, ...style }}>
+      style={{ borderRadius: radius, aspectRatio: String(measured || game.coverRatio || 0.75), boxShadow: shadow ? "0 10px 26px -12px rgba(0,0,0,.5)" : undefined, ...style }}>
       {!loaded && <span className="absolute inset-0 grid place-items-center px-3 text-center text-[13px] font-semibold leading-tight text-white/90">{game.title}</span>}
       <img
         src={src}
