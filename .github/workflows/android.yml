@@ -36,6 +36,13 @@ jobs:
       - name: Install and check web app
         run: |
           npm ci
+      - name: Build artwork bundle (keyless sources, a few minutes)
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/build-art-bundle.mjs
+      - name: Check web app
+        run: |
           npm run typecheck
           node scripts/test-release-links.mjs
           npm run build
