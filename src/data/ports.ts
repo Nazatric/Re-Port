@@ -16,6 +16,8 @@ export interface PortProject {
   evidence: string;
   stars: number;
   downloads: number;
+  /** Shown first regardless of download counts (for example, a maintained port replacing a discontinued one). */
+  pinned?: boolean;
 }
 
 export interface Game {
@@ -199,12 +201,14 @@ export const currentHourIndex = () => Math.floor(Date.now() / HOUR_MS);
 
 /** Highest known catalog download count first; unknown counts use a quality-based fallback. */
 export function rankedPortIndices(g: Game): number[] {
+  // Pinned ports come first; then download counts and quality.
   const fallbackScore = (p: PortProject) =>
     (p.apk ? 1000 : 0) + (p.evidence === "github-apk" ? 600 : 0) +
     (p.kind === "github" ? 300 : 0) + Math.min(p.stars || 0, 100) +
     (p.version ? 20 : 0) + (/android|apk|mobile/i.test(p.name) ? 150 : 0) -
     (/launcher|tool|manager|patcher|builder|art/i.test(p.name) ? 500 : 0);
   return g.ports.map((_, i) => i).sort((a, b) =>
+    Number(!!g.ports[b].pinned) - Number(!!g.ports[a].pinned) ||
     Math.max(0, g.ports[b].downloads || 0) - Math.max(0, g.ports[a].downloads || 0) ||
     fallbackScore(g.ports[b]) - fallbackScore(g.ports[a]) || a - b);
 }

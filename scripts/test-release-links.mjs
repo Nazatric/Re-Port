@@ -10,10 +10,16 @@ try {
     assert.equal(indices.length, game.ports.length, `${game.title}: no ports lost`);
     assert.equal(new Set(indices).size, game.ports.length, `${game.title}: no duplicates`);
     for (let i = 1; i < indices.length; i++) {
-      assert.ok((game.ports[indices[i - 1]].downloads || 0) >= (game.ports[indices[i]].downloads || 0), `${game.title}: descending downloads`);
+      const prev = game.ports[indices[i - 1]];
+      const cur = game.ports[indices[i]];
+      assert.ok(!cur.pinned || prev.pinned, `${game.title}: pinned ports come first`);
+      if (!!prev.pinned === !!cur.pinned) assert.ok((prev.downloads || 0) >= (cur.downloads || 0), `${game.title}: descending downloads`);
     }
     if (indices.length) assert.equal(primaryPort(game), game.ports[indices[0]]);
   }
+  const prototype = games.find((g) => g.id === 'prototype');
+  assert.equal(primaryPort(prototype).name, 'ProtoDroid', 'ProtoDroid is the main Prototype port');
+  assert.equal(primaryPort(prototype).url, 'https://github.com/Nazatric/ProtoDroid');
   const morrowind = games.find((g) => g.id === 'the-elder-scrolls-iii-morrowind');
   assert.equal(primaryPort(morrowind).name, 'Morrowind (OpenMW)');
   assert.equal(downloadDestination(primaryPort(morrowind)), 'https://github.com/xyzz/openmw-android/releases');
