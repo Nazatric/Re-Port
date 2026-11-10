@@ -1,4 +1,5 @@
 import catalog from "./catalog.json";
+import enrichment from "./enrichment.json";
 
 export interface PortProject {
   name: string;
@@ -53,7 +54,29 @@ export interface Catalog {
 }
 
 export const data = catalog as unknown as Catalog;
-export const games: Game[] = data.games;
+/** Keyless metadata bundled at build time by scripts/enrich-artwork.mjs (Steam, Wikidata, Wikipedia, Libretro). */
+interface Enriched { hit: boolean; cover?: string; shots?: string[]; description?: string; developer?: string; genres?: string[]; year?: number; steamAppId?: number }
+const enriched = (enrichment as { games: Record<string, Enriched> }).games;
+const isPlaceholderCover = (c: string) => !c || c.startsWith("data:") || c.includes("/covers/generated/");
+
+/** Catalog values win; enrichment only fills gaps, and replaces placeholder covers. */
+function withEnrichment(g: Game): Game {
+  const e = enriched[g.id];
+  if (!e?.hit) return g;
+  return {
+    ...g,
+    cover: isPlaceholderCover(g.cover) && e.cover ? e.cover : g.cover,
+    shots: g.shots.length ? g.shots : e.shots ?? [],
+    description: g.description || e.description || "",
+    summary: g.summary || e.description || "",
+    year: g.year || e.year || 0,
+    genres: g.genres.length ? g.genres : e.genres ?? [],
+    steamDeveloper: g.steamDeveloper ?? e.developer ?? null,
+    steamAppId: g.steamAppId ?? e.steamAppId ?? null,
+  };
+}
+
+export const games: Game[] = data.games.map(withEnrichment);
 export const gameById = (id: string): Game | undefined => games.find((g) => g.id === id);
 export const collections = data.collections;
 export const catalogSources: string[] = data.sources;

@@ -28,6 +28,8 @@ export function GameArt({
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  // Replacement art (found by the resolver) keeps its own measured shape; catalog covers keep the stored ratio.
+  const [measured, setMeasured] = useState<number | null>(null);
 
   useEffect(() => {
     setSrc(game.cover || undefined);
@@ -37,7 +39,7 @@ export function GameArt({
     let live = true;
     resolveArtwork(game).then((url) => {
       if (!live) return;
-      if (url) { setSrc(url); setLoaded(false); }
+      if (url) { setSrc(url); setLoaded(false); setMeasured(null); }
       else if (!game.cover) setFailed(true);
     }).catch(() => { if (live && !game.cover) setFailed(true); });
     return () => { live = false; };
@@ -48,7 +50,7 @@ export function GameArt({
     setRetrying(true);
     try {
       const next = await resolveArtwork(game);
-      if (next && next !== src) { setLoaded(false); setSrc(next); }
+      if (next && next !== src) { setLoaded(false); setMeasured(null); setSrc(next); }
       else setFailed(true);
     } catch { setFailed(true); } finally { setRetrying(false); }
   };
@@ -63,7 +65,7 @@ export function GameArt({
   }
   return (
     <div className={cn("relative overflow-hidden bg-gradient-to-br from-[#6d9f31] to-[#315321]", className)}
-      style={{ borderRadius: radius, aspectRatio: String(game.coverRatio || 0.75), boxShadow: shadow ? "0 10px 26px -12px rgba(0,0,0,.5)" : undefined, ...style }}>
+      style={{ borderRadius: radius, aspectRatio: String(src !== game.cover && measured ? measured : game.coverRatio || 0.75), boxShadow: shadow ? "0 10px 26px -12px rgba(0,0,0,.5)" : undefined, ...style }}>
       {!loaded && <span className="absolute inset-0 grid place-items-center px-3 text-center text-[13px] font-semibold leading-tight text-white/90">{game.title}</span>}
       <img
         src={src}
@@ -73,7 +75,7 @@ export function GameArt({
         decoding="async"
         fetchPriority={priority ? "high" : "auto"}
         onError={handleError}
-        onLoad={() => setLoaded(true)}
+        onLoad={(e) => { setLoaded(true); const im = e.currentTarget; if (im.naturalWidth && im.naturalHeight) setMeasured(im.naturalWidth / im.naturalHeight); }}
         style={{ opacity: loaded ? 1 : 0 }}
         className="block h-full w-full object-fill"
       />
