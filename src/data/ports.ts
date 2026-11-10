@@ -32,6 +32,8 @@ export interface Game {
   cover: string;
   coverRatio: number;
   shots: string[];
+  /** Wide hero image (SteamGridDB or Steam), when one was bundled. */
+  hero?: string;
   metacritic: number | null;
   reviewCount: number | null;
   releaseDate: string;

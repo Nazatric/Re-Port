@@ -36,6 +36,13 @@ jobs:
       - name: Install and check web app
         run: |
           npm ci
+      - name: Build artwork bundle (IGDB, SteamGridDB, Steam CDN)
+        continue-on-error: true
+        env:
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+          STEAMGRIDDB_KEY: ${{ secrets.STEAMGRIDDB_KEY }}
+        run: node scripts/build-art-bundle.mjs
       - name: Check web app
         run: |
           npm run typecheck
