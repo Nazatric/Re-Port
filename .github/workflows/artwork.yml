@@ -15,12 +15,12 @@ permissions:
 
 concurrency:
   group: artwork-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true   # a newer run replaces a stale one instead of queueing behind it
 
 jobs:
   enrich:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,7 +29,7 @@ jobs:
         with:
           node-version: '22'
       - name: Enrich catalog artwork and details
-        run: node scripts/enrich-artwork.mjs
+        run: node scripts/enrich-artwork.mjs --workers 8
       - name: Commit refreshed enrichment
         run: |
           git config user.name "github-actions[bot]"

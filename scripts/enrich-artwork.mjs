@@ -32,15 +32,28 @@ const ONLY = arg("--ids")?.split(",").filter(Boolean);
 const FORCE = args.includes("--force");
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const WORKERS = Number(arg("--workers") ?? 8);
+
+/** One shared pacing queue per host: keeps the total request rate under each site's limit
+ *  while games are processed in parallel. */
+const pacing = new Map();
+function paced(host, gapMs) {
+  const last = pacing.get(host) ?? 0;
+  const at = Math.max(Date.now(), last + gapMs);
+  pacing.set(host, at);
+  return sleep(at - Date.now());
+}
+const hostOf = (url) => new URL(url).host;
+const GAP = { "store.steampowered.com": 1500, "www.wikidata.org": 60, "en.wikipedia.org": 60, "api.github.com": 200 };
 
 /** GET JSON with polite throttling and backoff for 429/5xx. Returns null on 404 or failure. */
-async function getJson(url, { delay = 400, retries = 3 } = {}) {
+async function getJson(url, { retries = 3 } = {}) {
   for (let attempt = 0; attempt <= retries; attempt++) {
-    await sleep(delay);
+    await paced(hostOf(url), GAP[hostOf(url)] ?? 60);
     try {
       const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(20000) });
       if (res.status === 404) return null;
-      if (res.status === 429 || res.status >= 500) { await sleep(20000 * (attempt + 1)); continue; }
+      if (res.status === 429 || res.status >= 500) { await sleep(30000 * (attempt + 1)); continue; }
       if (!res.ok) return null;
       return await res.json();
     } catch { await sleep(2000 * (attempt + 1)); }
@@ -88,7 +101,7 @@ async function fromSteam(game) {
     for (const item of (search?.items ?? []).filter((i) => i.type === "app" && titleMatches(game, i.name)).slice(0, 3)) ids.add(item.id);
   }
   for (const id of ids) {
-    const detail = await getJson(`https://store.steampowered.com/api/appdetails?appids=${id}&l=english&cc=us`, { delay: 1500 });
+    const detail = await getJson(`https://store.steampowered.com/api/appdetails?appids=${id}&l=english&cc=us`);
     const data = detail?.[String(id)]?.success ? detail[String(id)].data : null;
     if (!data) continue;
     if (!titleMatches(game, data.name ?? "")) continue;
@@ -112,11 +125,11 @@ async function fromSteam(game) {
 }
 
 async function fromWikidata(game) {
-  const search = await getJson(`https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&language=en&type=item&limit=6&search=${encodeURIComponent(baseTitle(game.title))}`, { delay: 300 });
+  const search = await getJson(`https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&language=en&type=item&limit=6&search=${encodeURIComponent(baseTitle(game.title))}`);
   const hits = (search?.search ?? []).filter((h) => titleMatches(game, h.label ?? "") || titleMatches(game, h.match?.text ?? ""));
   if (!hits.length) return null;
   const ids = hits.map((h) => h.id).join("|");
-  const entities = await getJson(`https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=claims|sitelinks&sitefilter=enwiki&ids=${ids}`, { delay: 300 });
+  const entities = await getJson(`https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=claims|sitelinks&sitefilter=enwiki&ids=${ids}`);
   for (const hit of hits) {
     const e = entities?.entities?.[hit.id];
     if (!e) continue;
@@ -133,7 +146,7 @@ async function fromWikipedia(game, wikiTitle) {
   const base = baseTitle(game.title);
   const candidates = [wikiTitle, game.year ? `${base} (${game.year} video game)` : null, `${base} (video game)`].filter(Boolean);
   for (const t of candidates) {
-    const s = await getJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t.replace(/ /g, "_"))}`, { delay: 300 });
+    const s = await getJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t.replace(/ /g, "_"))}`);
     if (!s || s.type === "disambiguation") continue;
     if (!/video game/i.test(s.description ?? "")) continue;
     if (!titleMatches(game, (s.title ?? "").replace(/\s*\(.*\)$/, "")) && !titleMatches(game, s.title ?? "")) continue;
@@ -147,14 +160,28 @@ async function fromWikipedia(game, wikiTitle) {
   return null;
 }
 
+/** Each Libretro system's box-art file list, fetched once per run (one GitHub API call per system). */
+const libretroIndex = new Map();
+async function libretroFiles(system) {
+  if (!libretroIndex.has(system)) {
+    libretroIndex.set(system, (async () => {
+      const tree = await getJson(`https://api.github.com/repos/libretro-thumbnails/${system}/git/trees/master?recursive=1`);
+      return new Set((tree?.tree ?? []).filter((f) => f.path.startsWith("Named_Boxarts/")).map((f) => f.path.slice("Named_Boxarts/".length)));
+    })());
+  }
+  return libretroIndex.get(system);
+}
+
 async function fromLibretro(game) {
   const system = LIBRETRO[game.platform];
   if (!system) return null;
+  const files = await libretroFiles(system);
   const base = game.title.replace(/[&*/:`<>?\\|"]/g, "_");
   for (const region of ["(USA)", "(Europe)", "(World)", "(Japan)", ""]) {
     const name = region ? `${base} ${region}.png` : `${base}.png`;
-    const url = `https://thumbnails.libretro.com/${system}/Named_Boxarts/${encodeURIComponent(name)}`;
-    if (await urlOk(url)) return { source: "libretro", cover: url };
+    if (files.has(name)) {
+      return { source: "libretro", cover: `https://thumbnails.libretro.com/${system}/Named_Boxarts/${encodeURIComponent(name)}` };
+    }
   }
   return null;
 }
@@ -180,26 +207,32 @@ async function main() {
   let store = { version: 1, generatedAt: null, games: {} };
   try { store = JSON.parse(await readFile(OUT, "utf8")); } catch { /* first run */ }
   const now = Date.now();
-  let done = 0;
-  for (const game of catalog.games) {
-    if (done >= LIMIT) break;
-    if (ONLY && !ONLY.includes(game.id)) continue;
+  const todo = catalog.games.filter((game) => {
+    if (ONLY && !ONLY.includes(game.id)) return false;
     const prev = store.games[game.id];
-    const age = prev ? now - Date.parse(prev.checkedAt) : Infinity;
-    const ttl = prev?.hit ? 30 * DAY : 7 * DAY;
-    if (!FORCE && prev && age < ttl) continue;
-    done++;
-    let result = null;
-    try { result = await enrichOne(game); } catch (err) { console.warn(`${game.id}: ${err.message}`); }
-    store.games[game.id] = result
-      ? { hit: true, checkedAt: new Date().toISOString(), ...result }
-      : { hit: false, checkedAt: new Date().toISOString() };
-    console.log(`${result ? "ok  " : "miss"} ${game.title} [${result?.sources?.join(",") ?? ""}]`);
-    if (done % 25 === 0) await save(store);
-  }
+    if (FORCE || !prev) return true;
+    return now - Date.parse(prev.checkedAt) >= (prev.hit ? 30 * DAY : 7 * DAY);
+  }).slice(0, LIMIT);
+  console.log(`checking ${todo.length} games with ${WORKERS} workers`);
+
+  let next = 0, done = 0, hits = 0;
+  const worker = async () => {
+    while (next < todo.length) {
+      const game = todo[next++];
+      let result = null;
+      try { result = await enrichOne(game); } catch (err) { console.warn(`${game.id}: ${err.message}`); }
+      store.games[game.id] = result
+        ? { hit: true, checkedAt: new Date().toISOString(), ...result }
+        : { hit: false, checkedAt: new Date().toISOString() };
+      if (result) hits++;
+      done++;
+      if (done % 50 === 0) { await save(store); console.log(`${done}/${todo.length} checked, ${hits} with metadata`); }
+    }
+  };
+  await Promise.all(Array.from({ length: WORKERS }, worker));
   await save(store);
-  const hits = Object.values(store.games).filter((g) => g.hit).length;
-  console.log(`enriched ${hits}/${catalog.games.length} games (checked this run: ${done})`);
+  const total = Object.values(store.games).filter((g) => g.hit).length;
+  console.log(`enriched ${total}/${catalog.games.length} games (checked this run: ${done})`);
 }
 
 async function save(store) {
