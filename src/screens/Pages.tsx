@@ -29,7 +29,7 @@ export function AboutPage() {
     <div className="v-scroll h-full overflow-y-auto pb-12">
       <BackHeader title="About" />
       <div className="flex flex-col items-center px-6 pt-6 text-center">
-        <span className="icon-gloss grid h-24 w-24 place-items-center rounded-[26px]" style={{ background: "linear-gradient(180deg,#c9ee6a,#5f9f22)" }}><RePortLogo size={60} /></span>
+        <RePortLogo size={96} />
         <div className="t-light t-white-shadow mt-4 text-[32px] font-bold leading-none text-ink">Re:Port</div>
         <div className="mt-1 text-[12.5px] text-ink-soft">Unofficial Android game port directory</div>
         <div className="t-light mt-3 text-[14px] italic text-ink">A directory, not an emulator.</div>

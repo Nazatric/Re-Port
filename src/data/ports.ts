@@ -82,14 +82,15 @@ export const allDecades = [1980, 1990, 2000, 2010, 2020];
 export const allEvidence = Array.from(new Set(games.flatMap((g) => g.ports.map((p) => p.evidence)).filter(Boolean))).sort();
 
 /** Precomputed lowercase haystack — search never walks the raw catalog twice. */
-const searchIndex = new Map<string, string>();
-for (const g of games) {
-  searchIndex.set(
-    g.id,
-    [g.title, g.platform, g.year, ...g.genres, ...g.ports.map((p) => `${p.name} ${p.developer} ${p.engine} ${p.url}`)]
-      .join(" ")
-      .toLowerCase(),
-  );
+let searchIndex: Map<string, string> | null = null;
+function getSearchIndex(): Map<string, string> {
+  if (!searchIndex) {
+    searchIndex = new Map(games.map((g) => [g.id,
+      [g.title, g.platform, g.year, ...g.genres, ...g.ports.map((p) => `${p.name} ${p.developer} ${p.engine} ${p.url}`)]
+        .join(" ").toLowerCase(),
+    ]));
+  }
+  return searchIndex;
 }
 
 export type SortMode = "relevance" | "name" | "newest" | "oldest" | "popular" | "ports" | "rating";
@@ -124,10 +125,11 @@ export function activeFilterCount(f: Filters): number {
 export function applyFilters(f: Filters, saved: Set<string>): Game[] {
   const q = f.query.trim().toLowerCase();
   const terms = q ? q.split(/\s+/).filter(Boolean) : [];
+  const index = terms.length ? getSearchIndex() : null;
   const out: Game[] = [];
   for (const g of games) {
     if (terms.length) {
-      const hay = searchIndex.get(g.id) ?? "";
+      const hay = index?.get(g.id) ?? "";
       if (!terms.every((t) => hay.includes(t))) continue;
     }
     if (f.genres.length && !f.genres.some((x) => g.genres.includes(x))) continue;

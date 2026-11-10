@@ -8,6 +8,12 @@ import { GameArt } from "@/components/Artwork";
 import { TapSurface } from "@/components/TapSurface";
 import { Glass, IconButton, InitialAvatar, RePortLogo, SectionHeader } from "@/components/ui";
 
+// Catalog-derived sections do not depend on user state or the clock.
+const readyCount = games.filter((g) => g.ports.some((p) => p.files === "none")).length;
+const apkCount = games.filter((g) => g.ports.some((p) => p.apk)).length;
+const needFilesCount = games.filter((g) => g.ports.some((p) => p.files === "files" || p.files === "rom")).length;
+const latest = [...games].filter((g) => g.added).sort((a, b) => b.added.localeCompare(a.added)).slice(0, 6);
+
 function useClock() {
   const [d, setD] = useState(() => new Date());
   useEffect(() => { const t = setInterval(() => setD(new Date()), 20000); return () => clearInterval(t); }, []);
@@ -20,17 +26,13 @@ export function Home() {
   const h24 = now.getHours();
   const date = now.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
   const greeting = h24 < 12 ? "Good morning" : h24 < 18 ? "Good afternoon" : "Good evening";
-  const ready = games.filter((g) => g.ports.some((p) => p.files === "none"));
-  const apkCount = games.filter((g) => g.ports.some((p) => p.apk)).length;
-  const needFiles = games.filter((g) => g.ports.some((p) => p.files === "files" || p.files === "rom")).length;
-  const latest = [...games].filter((g) => g.added).sort((a, b) => b.added.localeCompare(a.added)).slice(0, 6);
   const recentGames = recent.map((id) => games.find((g) => g.id === id)).filter((g): g is Game => !!g).slice(0, 6);
 
   const blades: Blade[] = [
     { id: "library", title: "My Library", subtitle: `${saved.size} saved · ${recent.length} viewed`, icon: Bookmark, action: "Open Library", onOpen: () => setTab("library") },
-    { id: "ready", title: "Ready to play", subtitle: `${ready.length} ports · no files needed`, icon: CheckCircle2, action: "See them", onOpen: () => goBrowse({ fileNeeds: ["none"] }) },
+    { id: "ready", title: "Ready to play", subtitle: `${readyCount} ports · no files needed`, icon: CheckCircle2, action: "See them", onOpen: () => goBrowse({ fileNeeds: ["none"] }) },
     { id: "apk", title: "APK releases", subtitle: `${apkCount} with Android builds`, icon: Sparkles, action: "Browse catalog", onOpen: () => goBrowse({ onlyApk: true }) },
-    { id: "files", title: "Bring your own files", subtitle: `${needFiles} need a legal copy`, icon: FolderOpen, action: "View requirements", onOpen: () => goBrowse({ fileNeeds: ["files", "rom"] }) },
+    { id: "files", title: "Bring your own files", subtitle: `${needFilesCount} need a legal copy`, icon: FolderOpen, action: "View requirements", onOpen: () => goBrowse({ fileNeeds: ["files", "rom"] }) },
   ];
 
   const open = (g: Game) => push({ type: "game", id: g.id });
@@ -39,7 +41,7 @@ export function Home() {
     <div className="v-scroll h-full overflow-y-auto pb-[116px]">
       <header className="flex items-center justify-between px-5 pt-[calc(var(--sat)+14px)]">
         <div className="flex items-center gap-2.5">
-          <span className="icon-gloss grid h-10 w-10 place-items-center rounded-full" style={{ background: "linear-gradient(180deg,#c9ee6a,#5f9f22)" }}><RePortLogo size={25} className="relative z-[1]" /></span>
+          <RePortLogo size={40} />
           <span className="t-light t-white-shadow text-[24px] font-semibold text-ink">Re:Port</span>
         </div>
         <div className="flex items-center gap-2">

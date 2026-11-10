@@ -59,7 +59,7 @@ export function CoverFlow({ games, onOpen }: { games: Game[]; onOpen: (g: Game) 
 
   return (
     <div className="select-none">
-      <div className="relative mx-auto w-full" style={{ height: HEIGHT + (settings.reflections ? 90 : 20), perspective: 1000, perspectiveOrigin: "50% 40%", touchAction: "pan-y" }}
+      <div className="relative mx-auto w-full overflow-hidden" style={{ height: HEIGHT + (settings.reflections ? 90 : 20), perspective: 1000, perspectiveOrigin: "50% 40%", touchAction: "pan-y" }}
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { drag.current = null; setDragging(false); }}>
         {games.map((g, i) => {
           const o = i - pos, ao = Math.abs(o);

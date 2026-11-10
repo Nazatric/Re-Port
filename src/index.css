@@ -463,7 +463,7 @@ input[type="range"] {
 .reduce-motion .anim-fade-in { animation-duration: 0.01s !important; }
 
 /* Native-feeling scroll: momentum + overscroll containment */
-.v-scroll { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.v-scroll { overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 img { image-rendering: auto; }
 
 /* ---------------- Re:Port production refinements ------------------ */

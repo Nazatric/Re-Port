@@ -18,6 +18,7 @@ export function GameArt({
 }) {
   const [src, setSrc] = useState(game.cover);
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [retrying, setRetrying] = useState(false);
 
   const handleError = async () => {
@@ -25,7 +26,7 @@ export function GameArt({
     setRetrying(true);
     try {
       const next = await resolveArtwork(game);
-      if (next && next !== src) setSrc(next);
+      if (next && next !== src) { setLoaded(false); setSrc(next); }
       else setFailed(true);
     } catch { setFailed(true); } finally { setRetrying(false); }
   };
@@ -39,8 +40,9 @@ export function GameArt({
     );
   }
   return (
-    <div className={cn("relative overflow-hidden bg-[#0f1410]", className)}
+    <div className={cn("relative overflow-hidden bg-gradient-to-br from-[#6d9f31] to-[#315321]", className)}
       style={{ borderRadius: radius, aspectRatio: String(game.coverRatio || 0.75), boxShadow: shadow ? "0 10px 26px -12px rgba(0,0,0,.5)" : undefined, ...style }}>
+      {!loaded && <span className="absolute inset-0 grid place-items-center px-3 text-center text-[13px] font-semibold leading-tight text-white/90">{game.title}</span>}
       <img
         src={src}
         alt={`${game.title} cover art`}
@@ -49,7 +51,9 @@ export function GameArt({
         decoding="async"
         fetchPriority={priority ? "high" : "auto"}
         onError={handleError}
-        className="anim-image-in block h-full w-full object-fill"
+        onLoad={() => setLoaded(true)}
+        style={{ opacity: loaded ? 1 : 0 }}
+        className="block h-full w-full object-fill"
       />
       <span className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-inset ring-black/10" />
       <span className="pointer-events-none absolute inset-x-0 top-0 h-1/3 rounded-t-[inherit] bg-gradient-to-b from-white/10 to-transparent" />

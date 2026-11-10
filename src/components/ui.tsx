@@ -76,13 +76,13 @@ function shade(hex: string) { const n = parseInt(hex.slice(1), 16); return `rgb(
 export function RePortLogo({ size = 28, className }: { size?: number; color?: string; className?: string }) {
   return (
     <img
-      src="/icon.svg"
+      src="/icon.png"
       alt="Re:Port app icon"
       width={size}
       height={size}
       draggable={false}
       className={className}
-      style={{ width: size, height: size, borderRadius: "50%", display: "block" }}
+      style={{ width: size, height: size, borderRadius: "20%", display: "block" }}
     />
   );
 }
