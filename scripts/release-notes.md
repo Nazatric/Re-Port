@@ -2,7 +2,7 @@
   <h2>A little home for a big world of Android game ports.</h2>
   <p>Discover community projects, explore their requirements, and find your next game — all in one pocket-sized directory.</p>
   <p><a href="https://github.com/Nazatric/Re-Port/releases/download/v1.0.0/Re-Port.apk"><strong>⬇ Download Re-Port.apk</strong></a></p>
-  <p><sub>Android 7.0+ &nbsp;✦&nbsp; 869 games in the bundled catalog &nbsp;✦&nbsp; 15 collections</sub></p>
+  <p><sub>Android 7.0+ &nbsp;✦&nbsp; 907 games in the bundled catalog &nbsp;✦&nbsp; 15 collections</sub></p>
   <img src="https://raw.githubusercontent.com/Nazatric/Re-Port/v1.0.0/docs/screenshots/home.jpg" width="700" alt="Re:Port home screen on a phone, showing the cover flow and quick-access blades" />
 </div>
 
