@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Search, SlidersHorizontal, X, Check, Heart } from "lucide-react";
 import {
   activeFilterCount, allDecades, allEngines, allEvidence, allFileNeeds, allGenres, allKinds,
@@ -33,20 +34,21 @@ function Group({ title, options, selected, onToggle, label }: {
 }
 
 function FilterSheet({ filters, setFilters, onClose }: { filters: Filters; setFilters: (f: Filters) => void; onClose: () => void }) {
-  const count = applyFilters(filters, new Set()).length;
+  const { saved } = useApp();
+  const count = applyFilters(filters, saved).length;
   const toggle = (key: keyof Filters, v: string) => {
     const list = filters[key] as string[];
     setFilters({ ...filters, [key]: list.includes(v) ? list.filter((x) => x !== v) : [...list, v] });
   };
-  return <div className="absolute inset-0 z-[70] flex flex-col justify-end">
-    <button className="anim-fade-in absolute inset-0 bg-black/40" onClick={onClose} aria-label="Close filters" />
-    <div className="anim-sheet-in glass relative z-[2] flex max-h-[88%] flex-col rounded-t-[26px] p-4">
+  return <div className="absolute inset-0 z-[80] flex flex-col justify-end">
+    <button className="anim-fade-in absolute inset-0 bg-black/40" onClick={onClose} aria-label="Dismiss filters" />
+    <div role="dialog" aria-modal="true" aria-labelledby="filter-title" className="anim-sheet-in glass relative z-[2] flex max-h-[88%] min-h-0 flex-col rounded-t-[26px] px-4 pt-4 pb-[calc(var(--sab)+16px)]">
       <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-black/15" />
       <div className="mb-3 flex items-center justify-between">
-        <div><div className="text-[18px] font-bold text-ink">Filters</div><div className="text-[11.5px] text-ink-soft tabular-nums">{count} of {games.length} ports match</div></div>
-        <button onClick={onClose} className="press grid h-10 w-10 place-items-center rounded-full bg-black/[0.06]"><X size={18} /></button>
+        <div><div id="filter-title" className="text-[18px] font-bold text-ink">Filters</div><div className="text-[11.5px] text-ink-soft tabular-nums">{count} of {games.length} ports match</div></div>
+        <button onClick={onClose} aria-label="Close filters" className="press grid h-10 w-10 place-items-center rounded-full bg-black/[0.06]"><X size={18} /></button>
       </div>
-      <div className="v-scroll -mx-1 flex-1 overflow-y-auto px-1 pb-2">
+      <div className="v-scroll -mx-1 min-h-0 flex-1 overflow-y-auto px-1 pb-2">
         <Group title="Collections" options={collections.map((c) => c.id)} selected={filters.collections} onToggle={(v) => toggle("collections", v)} label={(v) => collections.find((c) => c.id === v)?.name ?? v} />
         <Group title="Genre" options={allGenres} selected={filters.genres} onToggle={(v) => toggle("genres", v)} />
         <Group title="Original platform" options={allPlatforms} selected={filters.platforms} onToggle={(v) => toggle("platforms", v)} />
@@ -105,6 +107,14 @@ export function Browse() {
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [sheet, setSheet] = useState(false);
   const [limit, setLimit] = useState(PAGE);
+  useEffect(() => {
+    if (!sheet) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.stopPropagation(); setSheet(false); }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [sheet]);
   useEffect(() => {
     if (!browsePreset) return;
     setFilters((f) => ({ ...emptyFilters, query: f.query, fileNeeds: browsePreset.fileNeeds ?? [], onlyApk: browsePreset.onlyApk ?? false }));
@@ -182,7 +192,10 @@ export function Browse() {
           )}
         </>
       )}
-      {sheet && <FilterSheet filters={filters} setFilters={setFilters} onClose={() => setSheet(false)} />}
+      {sheet && document.querySelector(".device") && createPortal(
+        <FilterSheet filters={filters} setFilters={setFilters} onClose={() => setSheet(false)} />,
+        document.querySelector(".device")!,
+      )}
     </div>
   );
 }

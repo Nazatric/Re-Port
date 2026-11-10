@@ -4,6 +4,11 @@ on:
   push:
     branches: ["arena/c57b7306-re-port"]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Optional release tag (for example v1.0.0)'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -35,6 +40,7 @@ jobs:
         run: |
           node scripts/smoke-web.mjs
           node scripts/smoke-profile-performance.mjs
+          node scripts/smoke-overlays.mjs
       - name: Prepare Capacitor Android project
         run: |
           npx cap add android
@@ -49,3 +55,26 @@ jobs:
           name: RePort-Capacitor-Android-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+  release:
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    needs: android
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: RePort-Capacitor-Android-debug
+          path: release-apk
+      - name: Publish Android preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Invalid release tag'; exit 1; }
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then echo 'Release already exists'; exit 1; fi
+          mv release-apk/app-debug.apk release-apk/Re-Port.apk
+          gh release create "$RELEASE_TAG" release-apk/Re-Port.apk --target "$GITHUB_SHA" --title "Re:Port $RELEASE_TAG" --notes-file scripts/release-notes.md --prerelease

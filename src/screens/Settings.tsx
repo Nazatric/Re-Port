@@ -297,7 +297,7 @@ export function NamePrompt({
           const finalName = value.trim() || name.trim() || "Player";
           onDone(finalName, draftAvatar);
         }}
-        className="anim-sheet-in glass flex max-h-[90%] w-full max-w-[368px] flex-col rounded-[26px] p-4"
+        className="anim-sheet-in glass flex max-h-[90%] w-full max-w-[368px] flex-col overflow-y-auto rounded-[26px] p-4"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-1">
@@ -386,7 +386,7 @@ export function NamePrompt({
         </div>
 
         {/* Tab Body */}
-        <div className="v-scroll mt-3 min-h-[190px] flex-1 overflow-y-auto pr-0.5">
+        <div className="v-scroll mt-3 min-h-0 flex-1 overflow-y-auto pr-0.5">
           {tab === "presets" && (
             <div>
               <div className="text-[11px] font-bold uppercase tracking-wider text-ink-soft">
