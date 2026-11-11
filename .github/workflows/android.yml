@@ -21,7 +21,9 @@ concurrency:
 jobs:
   android:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,7 +43,7 @@ jobs:
         with:
           path: |
             .art-cache
-            public/art
+            .art-out
           key: artwork-${{ github.run_id }}
           restore-keys: |
             artwork-
@@ -53,6 +55,11 @@ jobs:
           STEAMGRIDDB_KEY: ${{ secrets.STEAMGRIDDB_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/build-art-bundle.mjs --if-stale
+      - name: Publish artwork to release assets (kept out of the APK)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/publish-art.mjs
       - name: Check web app
         run: |
           npm run typecheck
