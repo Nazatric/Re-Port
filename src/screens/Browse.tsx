@@ -1,5 +1,5 @@
 import { t } from "@/lib/i18n";
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Search, SlidersHorizontal, X, Check, Heart } from "lucide-react";
 import {
@@ -79,18 +79,18 @@ function FilterSheet({ filters, setFilters, onClose }: { filters: Filters; setFi
   </div>;
 }
 
-export function GameCard({ game, onOpen }: { game: Game; onOpen: () => void }) {
-  const { saved, toggleSaved } = useApp();
-  const wished = saved.has(game.id);
+/** Memoised so a tab change, toast or other app-wide update does not re-render every card.
+ *  Handlers are stable (ids in, parent callbacks out) so the memo holds. */
+export const GameCard = memo(function GameCard({ game, wished, onOpen, onToggle }: { game: Game; wished: boolean; onOpen: (id: string) => void; onToggle: (id: string) => void }) {
   return <div className="masonry-item glass relative mb-3 p-2">
-    <TapSurface onTap={onOpen} ariaLabel={`Open ${game.title}`} className="relative w-full">
+    <TapSurface onTap={() => onOpen(game.id)} ariaLabel={`Open ${game.title}`} className="relative w-full">
       <GameArt game={game} radius={12} className="w-full" />
       {game.metacritic != null && <span className="absolute right-2 bottom-2 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-bold text-white tabular-nums">{game.metacritic}</span>}
     </TapSurface>
-    <button onClick={() => toggleSaved(game.id)} className="press absolute right-4 top-4 z-[3] grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow" aria-label={t("Save port")}>
+    <button onClick={() => onToggle(game.id)} className="press absolute right-4 top-4 z-[3] grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow" aria-label={t("Save port")}>
       <Heart size={16} className={cn(wished ? "text-[#e0452f]" : "text-ink-soft")} fill={wished ? "currentColor" : "none"} strokeWidth={2.4} />
     </button>
-    <TapSurface onTap={onOpen} className="px-1 pb-1 pt-2 text-left">
+    <TapSurface onTap={() => onOpen(game.id)} className="px-1 pb-1 pt-2 text-left">
       <div className="line-clamp-2 text-[13.5px] font-semibold leading-tight text-ink">{game.title}</div>
       <div className="mt-0.5 truncate text-[11px] text-ink-soft">{game.steamDeveloper || game.ports[0]?.developer || game.ports[0]?.name}</div>
       <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-ink-soft tabular-nums">
@@ -99,10 +99,11 @@ export function GameCard({ game, onOpen }: { game: Game; onOpen: () => void }) {
       </div>
     </TapSurface>
   </div>;
-}
+});
 
 export function Browse() {
-  const { push, saved, browsePreset, localViews } = useApp();
+  const { push, saved, browsePreset, localViews, toggleSaved } = useApp();
+  const openGame = useCallback((id: string) => push({ type: "game", id }), [push]);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [sheet, setSheet] = useState(false);
   const [limit, setLimit] = useState(PAGE);
@@ -189,7 +190,7 @@ export function Browse() {
         </EmptyState>
       ) : (
         <>
-          <div className="masonry mt-4 px-4">{visible.map((g) => <GameCard key={g.id} game={g} onOpen={() => push({ type: "game", id: g.id })} />)}</div>
+          <div className="masonry mt-4 px-4">{visible.map((g) => <GameCard key={g.id} game={g} wished={saved.has(g.id)} onOpen={openGame} onToggle={toggleSaved} />)}</div>
           <div className="h-10" />
           {limit < results.length && (
             <div className="px-4 pb-4 text-center">

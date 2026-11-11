@@ -25,7 +25,6 @@ export function GameArt({
   const [src, setSrc] = useState(game.cover);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [ratio, setRatio] = useState<number | null>(null);
   const [retrying, setRetrying] = useState(false);
 
   // Games without a bundled cover resolve one from the keyless artwork sources once, then show it.
@@ -46,7 +45,9 @@ export function GameArt({
     } catch { setFailed(true); } finally { setRetrying(false); }
   };
 
-  const shape = ratio ?? (game.coverRatio || 0.75);
+  // The frame uses the catalog's ratio from the first paint and never changes after an image loads.
+  // Changing it on load reflowed the whole masonry grid while scrolling. object-cover still fills the frame.
+  const shape = Math.min(MAX_RATIO, Math.max(MIN_RATIO, game.coverRatio || 0.75));
   if (failed || !src) {
     return (
       <div className={cn("grid place-items-center overflow-hidden bg-gradient-to-br from-[#3d5a22] to-[#16220e] text-white", className)}
@@ -67,9 +68,7 @@ export function GameArt({
         decoding="async"
         fetchPriority={priority ? "high" : "auto"}
         onError={handleError}
-        onLoad={(e) => {
-          const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
-          if (w && h) setRatio(Math.min(MAX_RATIO, Math.max(MIN_RATIO, w / h)));
+        onLoad={() => {
           setLoaded(true);
         }}
         style={{ opacity: loaded ? 1 : 0 }}

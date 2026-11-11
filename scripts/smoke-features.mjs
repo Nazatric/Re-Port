@@ -13,7 +13,7 @@ try {
   assert.equal(compareVersions('1.0.0-beta.1', '1.0.0'), null);
   assert.equal(compareVersions('latest', '1.0.0'), null);
   assert.equal(compareVersions('1.10.0', '1.9.0'), 1);
-  assert.equal(APP_VERSION, '1.1.0');
+  assert.equal(APP_VERSION, '1.2.0');
   assert.equal(RELEASES_URL, 'https://github.com/Nazatric/Re-Port/releases/latest');
 
   const respond = (body, status = 200) => async () => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });

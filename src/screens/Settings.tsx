@@ -174,7 +174,7 @@ export function SettingsScreen() {
             </div>
 
             {/* 12 Vector Presets */}
-            <div className="no-scrollbar mt-2.5 flex gap-2 overflow-x-auto pb-1">
+            <div className="no-scrollbar -mx-1.5 mt-1 flex gap-2 overflow-x-auto px-1.5 pb-1 pt-2.5">
               {AVATAR_PRESETS.map((p) => {
                 const selected = avatar.mode === "preset" && avatar.preset === p.id;
                 return (

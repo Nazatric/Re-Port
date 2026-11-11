@@ -46,6 +46,9 @@ function useMedia(q: string) {
 function TabLayers({ pushed }: { pushed: boolean }) {
   const { tab } = useApp();
   const [visited, setVisited] = useState<Set<Tab>>(() => new Set([tab]));
+  // The tab being pre-painted while idle. Hidden tabs skip painting, so the first visit used to pay for
+  // the whole screen's raster. Painting the warmed tab at near-zero opacity for a moment fills that cache early.
+  const [preTab, setPreTab] = useState<Tab | null>(null);
   useEffect(() => {
     setVisited((previous) => previous.has(tab) ? previous : new Set([...previous, tab]));
   }, [tab]);
@@ -60,22 +63,28 @@ function TabLayers({ pushed }: { pushed: boolean }) {
     };
     const warm = () => {
       if (cancelled) return;
+      let next: Tab | undefined;
       setVisited((previous) => {
-        const next = TABS.find((t) => !previous.has(t));
+        next = TABS.find((t) => !previous.has(t));
         return next ? new Set([...previous, next]) : previous;
       });
-      setTimeout(() => { if (!cancelled) idle(warm); }, 250);
+      setTimeout(() => {
+        if (cancelled) return;
+        if (next) { setPreTab(next); setTimeout(() => { if (!cancelled) setPreTab(null); }, 350); }
+        setTimeout(() => { if (!cancelled) idle(warm); }, 250);
+      }, 0);
     };
     const start = window.setTimeout(() => idle(warm), 1200);
     return () => { cancelled = true; window.clearTimeout(start); };
   }, []);
-  return <div className="absolute inset-0 transition-transform duration-[520ms]" style={{ transform: pushed ? "translate3d(-5%,0,0) scale(.97)" : "translate3d(0,0,0) scale(1)", transitionTimingFunction: "var(--ease-out-expo)" }}>
+  return <div className="absolute inset-0 transition-transform duration-[520ms]" style={{ transform: pushed ? "translate(-5%,0) scale(.97)" : "none", transitionTimingFunction: "var(--ease-out-expo)" }}>
     <div className="pointer-events-none absolute inset-0 z-10 bg-black transition-opacity duration-[520ms]" style={{ opacity: pushed ? 0.14 : 0 }} />
     {TABS.map((t) => {
       const active = t === tab;
       if (!active && !visited.has(t)) return null;
-      return <div key={t} aria-hidden={!active} className={cn("absolute inset-0 transition-[opacity,transform] duration-[420ms]", active ? "opacity-100" : "tab-hidden pointer-events-none opacity-0")}
-        style={{ transform: active ? "translate3d(0,0,0) scale(1)" : "translate3d(0,12px,0) scale(.985)", transitionTimingFunction: "var(--ease-out-expo)" }}>
+      const pretty = !active && preTab === t;
+      return <div key={t} aria-hidden={!active} className={cn("absolute inset-0 transition-[opacity,transform] duration-[420ms]", active ? "opacity-100" : pretty ? "pointer-events-none opacity-[0.01]" : "tab-hidden pointer-events-none opacity-0")}
+        style={{ transform: active ? "none" : "translate(0,12px) scale(.985)", transitionTimingFunction: "var(--ease-out-expo)" }}>
         {renderTab(t)}
       </div>;
     })}

@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { t } from "@/lib/i18n";
 import { Info } from "lucide-react";
 import { collections, data, games, type Game } from "@/data/ports";
@@ -6,7 +7,8 @@ import { GameCard } from "./Browse";
 import { BackHeader, Glass, RePortLogo, SectionHeader } from "@/components/ui";
 
 export function CollectionPage({ name }: { name: string }) {
-  const { push } = useApp();
+  const { push, saved, toggleSaved } = useApp();
+  const openGame = useCallback((id: string) => push({ type: "game", id }), [push]);
   const col = collections.find((c) => c.name === name);
   const list: Game[] = col ? games.filter((g) => g.collections.includes(col.id)) : games.filter((g) => g.genres.includes(name));
   return (
@@ -17,7 +19,7 @@ export function CollectionPage({ name }: { name: string }) {
         <div className="text-[12px] text-ink-soft tabular-nums">{list.length} community ports{col?.blurb ? ` · ${col.blurb}` : ""}</div>
       </Glass></div>
       <div className="masonry mt-4 px-4">
-        {list.slice(0, 60).map((g) => <GameCard key={g.id} game={g} onOpen={() => push({ type: "game", id: g.id })} />)}
+        {list.slice(0, 60).map((g) => <GameCard key={g.id} game={g} wished={saved.has(g.id)} onOpen={openGame} onToggle={toggleSaved} />)}
       </div>
       {list.length > 60 && <div className="px-4 py-4 text-center text-[11.5px] text-ink-soft">{t("Showing {n} of {total}. Use Browse filters for more.", { n: 60, total: list.length })}</div>}
     </div>

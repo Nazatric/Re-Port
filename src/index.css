@@ -491,7 +491,7 @@ body { font-variant-numeric: tabular-nums; }
 .h-scroll::-webkit-scrollbar { display: none; }
 .masonry { columns: 2; column-gap: 12px; }
 /* Portrait box art gets a taller slot: covers stay legible at a glance. */
-.masonry-item { break-inside: avoid; position: relative; content-visibility: auto; contain-intrinsic-size: auto 320px; }
+.masonry-item { break-inside: avoid; position: relative; content-visibility: auto; contain-intrinsic-size: auto 320px; will-change: transform; }
 .masonry-item:has(img[style*="aspect-ratio: 1.7"]), .masonry-item:has(img[style*="aspect-ratio: 1.6"]) { }
 @media (min-width: 620px) { .masonry { columns: 3; } }
 .press { will-change: auto; }
