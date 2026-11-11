@@ -77,7 +77,12 @@ jobs:
           if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
             npx playwright install-deps chromium
           else
-            npx playwright install --with-deps chromium
+            # The browser download comes from Playwright's CDN and can fail transiently; retry before giving up.
+            for attempt in 1 2 3; do
+              npx playwright install --with-deps chromium && break
+              if [ "$attempt" = "3" ]; then exit 1; fi
+              sleep 20
+            done
           fi
       - name: Check web and Android bridge flows
         run: |
