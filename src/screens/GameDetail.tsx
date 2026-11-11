@@ -19,8 +19,16 @@ import { openExternal } from "@/lib/external";
 type Tab = "overview" | "files" | "gallery" | "projects";
 
 export function GameDetail({ id }: { id: string }) {
+  const { pop } = useApp();
   const g = gameById(id);
-  if (!g) return <div className="grid h-full place-items-center text-ink">{t("Port not found.")}</div>;
+  if (!g) return (
+    <div className="grid h-full place-items-center px-6 text-center text-ink">
+      <div>
+        <p className="text-sm">{t("This game is no longer in the catalog.")}</p>
+        <button type="button" onClick={pop} className="mt-4 rounded-full border border-line px-4 py-2 text-sm">{t("Back")}</button>
+      </div>
+    </div>
+  );
   return <GameDetailContent key={id} game={g} />;
 }
 
@@ -35,8 +43,7 @@ function GameDetailContent({ game: g }: { game: Game }) {
   const { push, saved, toggleSaved, visit, localViews, showToast } = useApp();
   const [tab, setTab] = useState<Tab>("overview");
   // Screenshots wait until the push animation has finished so they never compete with it.
-  const [mediaReady, setMediaReady] = useState(false);
-  useEffect(() => { const t = window.setTimeout(() => setMediaReady(true), 620); return () => window.clearTimeout(t); }, [g.id]);
+  const mediaReady = true;
   const [selected, setSelected] = useState(() => primaryPortIndex(g));
   const wished = saved.has(g.id);
   const port = g.ports[selected] ?? primaryPort(g);
