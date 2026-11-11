@@ -1,4 +1,5 @@
 import catalog from "./catalog.json";
+import enrichment from "./enrichment.json";
 
 export interface PortProject {
   name: string;
@@ -34,6 +35,8 @@ export interface Game {
   shots: string[];
   /** Wide hero image (SteamGridDB or Steam), when one was bundled. */
   hero?: string;
+  /** Images from the port developer's GitHub README, when the build found any. */
+  readmeShots?: string[];
   metacritic: number | null;
   reviewCount: number | null;
   releaseDate: string;
@@ -55,7 +58,27 @@ export interface Catalog {
 }
 
 export const data = catalog as unknown as Catalog;
-export const games: Game[] = data.games;
+interface Enrichment {
+  games: Record<string, { cover?: string; coverSource?: string; hero?: string; shots?: string[]; readmeShots?: string[]; description?: string; developer?: string; year?: number }>;
+}
+
+/** Merge the build-time bundle (verified matches only) into each catalog game. */
+function withEnrichment(g: Game): Game {
+  const e = (enrichment as Enrichment).games?.[g.id];
+  if (!e) return g;
+  const shots = [...new Set([...(e.shots ?? []), ...(e.readmeShots ?? []), ...g.shots])].slice(0, 8);
+  return {
+    ...g,
+    cover: e.cover || g.cover,
+    hero: e.hero || g.hero,
+    description: e.description || g.description,
+    steamDeveloper: g.steamDeveloper || e.developer || null,
+    year: g.year || e.year || g.year,
+    shots,
+  };
+}
+
+export const games: Game[] = data.games.map(withEnrichment);
 export const gameById = (id: string): Game | undefined => games.find((g) => g.id === id);
 export const collections = data.collections;
 export const catalogSources: string[] = data.sources;

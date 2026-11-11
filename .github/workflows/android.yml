@@ -42,6 +42,7 @@ jobs:
           TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
           STEAMGRIDDB_KEY: ${{ secrets.STEAMGRIDDB_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/build-art-bundle.mjs
       - name: Check web app
         run: |

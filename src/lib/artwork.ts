@@ -3,13 +3,11 @@ import { swrJson } from "./cache";
 
 /** Keyless artwork waterfall. Only used when a bundled cover URL fails to load.
  *  Order: Libretro console art -> Steam Store public search -> Wikipedia REST ->
- *  Wikimedia Commons -> Openverse. Every result is cached with SWR. */
+ *  Steam (year-checked) -> Wikipedia exact article. Unfiltered image searches were removed (unrelated and NSFW results). Every result is cached with SWR. */
 
 interface SteamSearch { items?: { type: string; name: string; id: number; tiny_image?: string }[] }
 interface SteamDetail { [key: string]: { data?: { header_image?: string; release_date?: { date?: string } } } }
 interface WikiSummary { thumbnail?: { source: string }; originalimage?: { source: string } }
-interface CommonsQuery { query?: { pages?: Record<string, { imageinfo?: { thumburl: string }[] }> } }
-interface Openverse { results?: { thumbnail?: string; url?: string }[] }
 
 const clean = (s: string) => s.split(/[:+,]/)[0].replace(/\([^)]*\)/g, "").trim();
 const enc = encodeURIComponent;
@@ -30,19 +28,6 @@ const providers: ((title: string, year: number) => Promise<string | null>)[] = [
   async (t) => {
     const d = await swrJson<WikiSummary>(`wiki:${t}`, `https://en.wikipedia.org/api/rest_v1/page/summary/${enc(t.replace(/ /g, "_"))}`);
     return d.thumbnail?.source ?? d.originalimage?.source ?? null;
-  },
-  async (t) => {
-    const q = new URLSearchParams({ action: "query", generator: "search", gsrsearch: `"${t}" video game cover`, gsrnamespace: "6", gsrlimit: "3", prop: "imageinfo", iiprop: "url", iiurlwidth: "640", format: "json" });
-    const d = await swrJson<CommonsQuery>(`commons:${t}`, `https://commons.wikimedia.org/w/api.php?${q}`);
-    for (const page of Object.values(d.query?.pages ?? {})) {
-      const u = page.imageinfo?.[0]?.thumburl;
-      if (u) return u;
-    }
-    return null;
-  },
-  async (t) => {
-    const d = await swrJson<Openverse>(`openverse:${t}`, `https://api.openverse.org/v1/images/?q=${enc(t + " video game")}&page_size=3`);
-    return d.results?.[0]?.thumbnail ?? d.results?.[0]?.url ?? null;
   },
 ];
 

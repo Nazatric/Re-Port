@@ -123,7 +123,15 @@ export function Browse() {
     setLimit(PAGE);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [browsePreset]);
-  const results = useMemo(() => applyFilters(filters, saved, localViews), [filters, saved, localViews]);
+  // A new seed on every visit: default ordering keeps the APK tier first, then shuffles within it.
+  const [seed] = useState(() => Math.floor(Math.random() * 2 ** 31));
+  const results = useMemo(() => {
+    const r = applyFilters(filters, saved, localViews);
+    if (filters.sort !== "relevance") return r;
+    const key = (id: string) => { let h = seed ^ 2166136261; for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619); return h >>> 0; };
+    const tier = (g: Game) => (g.ports.some((p) => p.apk) ? 0 : 1);
+    return [...r].sort((a, b) => tier(a) - tier(b) || key(a.id) - key(b.id));
+  }, [filters, saved, localViews, seed]);
   const visible = results.slice(0, limit);
   const count = activeFilterCount(filters);
   const activeChips: { label: string; clear: () => void }[] = [

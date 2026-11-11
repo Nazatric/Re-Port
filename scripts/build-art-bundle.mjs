@@ -17,7 +17,7 @@ import { normalizeTitle, scoreCandidate, confidentChoice, editionBase, yearOf } 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CATALOG = resolve(ROOT, "src/data/catalog.json");
 const OUT = resolve(ROOT, "src/data/enrichment.json");
-const { TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET, STEAMGRIDDB_KEY } = process.env;
+const { TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET, STEAMGRIDDB_KEY, GITHUB_TOKEN } = process.env;
 const UA = "Re-Port/1.2 (https://github.com/Nazatric/Re-Port; build-time catalog artwork)";
 const t0 = Date.now();
 const log = (m) => console.log(`[${((Date.now() - t0) / 1000).toFixed(0)}s] ${m}`);
@@ -132,6 +132,32 @@ const steamIds = games.filter((g) => g.steamAppId).map((g) => g.steamAppId);
 const steamArt = new Map();
 await pool(steamIds, 8, async (id) => steamArt.set(id, await steamCdn(id)));
 
+// ---------- GitHub README images (port developers' own screenshots) ----------
+const IMG_EXT = /\.(png|jpe?g|gif|webp)(\?|#|$)/i;
+const NOT_ART = /badge|shields\.io|travis|codecov|coveralls|sponsor|workflows|logo|icon|discord|patreon|buymeacoffee|\.svg(\?|#|$)/i;
+const repoOf = (url) => { const m = String(url).match(/github\.com\/([^/]+)\/([^/#?]+)/i); return m ? { owner: m[1], repo: m[2].replace(/\.git$/, "") } : null; };
+const ghHeaders = GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: "application/vnd.github+json" } : { Accept: "application/vnd.github+json" };
+async function readmeImages(owner, repo) {
+  const r = await call(`https://api.github.com/repos/${owner}/${repo}/readme`, { headers: ghHeaders });
+  if (!r?.content) return [];
+  const text = Buffer.from(r.content, "base64").toString("utf8");
+  const dir = r.path?.includes("/") ? r.path.slice(0, r.path.lastIndexOf("/") + 1) : "";
+  const base = `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${dir}`;
+  const refs = [...text.matchAll(/!\[[^\]]*\]\(\s*<?([^\s)>]+)/g), ...text.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)].map((m) => m[1]);
+  const out = [];
+  for (const ref of refs) {
+    let url;
+    try { url = new URL(ref.startsWith("//") ? `https:${ref}` : ref, base).href; } catch { continue; }
+    url = url.replace(/^http:\/\//, "https://");
+    const host = new URL(url).host;
+    const ok = IMG_EXT.test(url) || host === "github.com" && url.includes("/user-attachments/assets/") || host === "user-images.githubusercontent.com";
+    if (!ok || NOT_ART.test(url)) continue;
+    if (!out.includes(url)) out.push(url);
+    if (out.length >= 6) break;
+  }
+  return out;
+}
+
 // ---------- libretro-thumbnails (keyless, console box art matched by title score) ----------
 const LIBRETRO = {
   "PlayStation": "Sony_-_PlayStation", "PlayStation 2": "Sony_-_PlayStation_2", "PSP": "Sony_-_PlayStation_Portable",
@@ -170,6 +196,20 @@ for (const g of games) {
 }
 log(`libretro: ${libretro.size} console covers matched`);
 
+// README images for each game's GitHub port (first two repos). Verified: they come from the developer's own repository.
+const readmeOut = new Map();
+{
+  const jobs = games.map((g) => ({ g, repos: [...new Map(g.ports.filter((p) => p.kind === "github").map((p) => [repoOf(p.url)?.owner + "/" + repoOf(p.url)?.repo, repoOf(p.url)])).values()].filter(Boolean).slice(0, 2) })).filter((j) => j.repos.length);
+  try {
+    await pool(jobs, 4, async ({ g, repos }) => {
+      const imgs = [];
+      for (const r of repos) { try { imgs.push(...(await readmeImages(r.owner, r.repo))); } catch { /* skip this repo */ } }
+      if (imgs.length) readmeOut.set(g.id, [...new Set(imgs)].slice(0, 6));
+    });
+  } catch (err) { log(`README pass stopped early: ${err?.message ?? err}`); }
+  log(`README images: ${readmeOut.size} games`);
+}
+
 // Assemble. Only verified data goes in; the app falls back to the 1.1 lookup for anything missing.
 const out = { version: 4, generatedAt: new Date().toISOString(), games: {} };
 for (const g of games) {
@@ -191,6 +231,7 @@ for (const g of games) {
   if (st?.hero) e.hero = st.hero;
   else if (sg?.hero) e.hero = sg.hero;
   if (g.steamAppId) e.steamAppId = g.steamAppId;
+  if (readmeOut.get(g.id)) e.readmeShots = readmeOut.get(g.id);
   e.hit = !!(e.cover || e.description);
   if (!e.cover && libretro.get(g.id)) { e.cover = libretro.get(g.id); e.coverSource = "libretro"; }
   e.hit = !!(e.cover || e.description);

@@ -9,9 +9,7 @@ export function thumbShot(url: string): string {
   return url.replace(/\.1920x1080\.jpg/, ".600x338.jpg");
 }
 
-/** Renders artwork at its real measured aspect ratio — no crops, no letterboxing.
- *  The URL is never upscaled by the browser: the element is constrained by the
- *  container width and the intrinsic ratio, so the CDN serves its native size. */
+/** Shows the whole artwork: never stretched or cropped. Odd ratios get a blurred backdrop of the same image. */
 export function GameArt({
   game, className, style, radius = 14, priority = false, shadow = false,
 }: {
@@ -57,6 +55,7 @@ export function GameArt({
     <div className={cn("relative overflow-hidden bg-gradient-to-br from-[#6d9f31] to-[#315321]", className)}
       style={{ borderRadius: radius, aspectRatio: String(game.coverRatio || 0.75), boxShadow: shadow ? "0 10px 26px -12px rgba(0,0,0,.5)" : undefined, ...style }}>
       {!loaded && <span className="absolute inset-0 grid place-items-center px-3 text-center text-[13px] font-semibold leading-tight text-white/90">{game.title}</span>}
+      {loaded && <img src={src} alt="" aria-hidden="true" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover opacity-50 blur-xl" />}
       <img
         src={src}
         alt={t("{title} cover art", { title: game.title })}
@@ -67,7 +66,7 @@ export function GameArt({
         onError={handleError}
         onLoad={() => setLoaded(true)}
         style={{ opacity: loaded ? 1 : 0 }}
-        className="block h-full w-full object-fill"
+        className="relative block h-full w-full object-contain"
       />
       <span className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-inset ring-black/10" />
       <span className="pointer-events-none absolute inset-x-0 top-0 h-1/3 rounded-t-[inherit] bg-gradient-to-b from-white/10 to-transparent" />
