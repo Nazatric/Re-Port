@@ -295,3 +295,10 @@ Games left with no port after removal (removed from catalog): Infinite Blade II,
 
 Not removed, but unverified: Rotating Art Launcher repo is listed for Celeste, Stardew Valley and Terraria. It has no description, so it could not be confirmed.
 
+
+## Second pass
+
+- Removed 4 archived ports where the same game has an active port: PojavLauncher (Minecraft), Zomdroid (Project Zomboid), Super Metroid (Dual Screen), openmw-android (Morrowind; the OpenMW-DS and Andiweli ports remain).
+- Still archived, no active alternative found, kept and listed above: UQM MegaMod (Star Control II), pq-android (Persona Q), pq2-android (Persona Q2), YanSimAndroid (Yandere Simulator).
+- Hollow Knight: no verified Android port found. A search returned one zero-star repo with no description, which was not added. The entry now has no port.
+- Non-GitHub links (Telegram, Discord, itch, 4PDA, mirrors) still cannot be checked from the audit environment and are unchanged.

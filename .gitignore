@@ -8,3 +8,7 @@ local.properties
 node_modules/
 dist/
 android/
+
+# Build-time artwork (generated in CI, cached between runs)
+public/art/
+.art-cache/

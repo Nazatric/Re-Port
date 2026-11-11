@@ -85,9 +85,6 @@ export function GameCard({ game, onOpen }: { game: Game; onOpen: () => void }) {
   return <div className="masonry-item glass relative mb-3 p-2">
     <TapSurface onTap={onOpen} ariaLabel={`Open ${game.title}`} className="relative w-full">
       <GameArt game={game} radius={12} className="w-full" />
-      <span className={cn("absolute bottom-2 left-2 rounded-full px-2 py-0.5 text-[9.5px] font-bold text-white", game.ports.some((p) => p.apk) ? "bg-[#5f9f22]" : "bg-amber-600")}>
-        {game.ports.some((p) => p.apk) ? t("APK release") : t("Project source")}
-      </span>
       {game.metacritic != null && <span className="absolute right-2 bottom-2 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-bold text-white tabular-nums">{game.metacritic}</span>}
     </TapSurface>
     <button onClick={() => toggleSaved(game.id)} className="press absolute right-4 top-4 z-[3] grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow" aria-label={t("Save port")}>

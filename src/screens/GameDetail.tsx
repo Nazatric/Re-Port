@@ -24,6 +24,13 @@ export function GameDetail({ id }: { id: string }) {
   return <GameDetailContent key={id} game={g} />;
 }
 
+function HeroImage({ src, fallback }: { src: string; fallback: string }) {
+  const [current, setCurrent] = useState(src);
+  useEffect(() => setCurrent(src), [src]);
+  return <img src={current} alt="" draggable={false} className="block h-auto w-full"
+    onError={() => { if (current !== fallback) setCurrent(fallback); }} />;
+}
+
 function GameDetailContent({ game: g }: { game: Game }) {
   const { push, saved, toggleSaved, visit, localViews, showToast } = useApp();
   const [tab, setTab] = useState<Tab>("overview");
@@ -51,7 +58,7 @@ function GameDetailContent({ game: g }: { game: Game }) {
       {/* Quiet hero: real screenshot at natural ratio, no filters, no bubbles. */}
       <div className="detail-hero pointer-events-none absolute inset-x-0 top-0 h-[300px] overflow-hidden bg-[#e8f1d6]">
         <div className="absolute inset-0 opacity-[0.32]">
-          <img src={mediaReady && (g.hero || g.shots[0]) ? (g.hero ?? thumbShot(g.shots[0])) : g.cover} alt="" draggable={false} className="block h-auto w-full" />
+          <HeroImage src={mediaReady && (g.hero || g.shots[0]) ? (g.hero ?? thumbShot(g.shots[0])) : g.cover} fallback={g.cover} />
         </div>
         <div className="detail-hero-wash absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.78) 62%, #fff)" }} />
       </div>
@@ -66,7 +73,6 @@ function GameDetailContent({ game: g }: { game: Game }) {
         <div className="min-w-0 pb-1">
           <div className="flex flex-wrap gap-1.5">
             <span className="rounded-full bg-black/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink-soft">{g.platform}</span>
-            <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", g.ports.some((p) => p.apk) ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800")}>{g.ports.some((p) => p.apk) ? t("APK release") : "Source project"}</span>
           </div>
           <h1 className="t-white-shadow mt-1.5 text-[22px] font-bold leading-tight tracking-tight text-ink">{g.title}</h1>
           <div className="mt-0.5 text-[12.5px] font-semibold text-azure tabular-nums">{g.releaseDate || g.year || ""}</div>

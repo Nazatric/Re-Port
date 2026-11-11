@@ -9,7 +9,9 @@ export function thumbShot(url: string): string {
   return url.replace(/\.1920x1080\.jpg/, ".600x338.jpg");
 }
 
-/** Shows the whole artwork: never stretched or cropped. Odd ratios get a blurred backdrop of the same image. */
+/** Artwork fills its frame with no borders. The frame adopts the artwork's own shape once it loads
+ *  (clamped so extreme posters and banners stay a sensible size), so nothing is stretched or padded. */
+const MIN_RATIO = 0.62, MAX_RATIO = 1.6;
 export function GameArt({
   game, className, style, radius = 14, priority = false, shadow = false,
 }: {
@@ -23,6 +25,7 @@ export function GameArt({
   const [src, setSrc] = useState(game.cover);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [ratio, setRatio] = useState<number | null>(null);
   const [retrying, setRetrying] = useState(false);
 
   // Games without a bundled cover resolve one from the keyless artwork sources once, then show it.
@@ -43,19 +46,19 @@ export function GameArt({
     } catch { setFailed(true); } finally { setRetrying(false); }
   };
 
+  const shape = ratio ?? (game.coverRatio || 0.75);
   if (failed || !src) {
     return (
       <div className={cn("grid place-items-center overflow-hidden bg-gradient-to-br from-[#3d5a22] to-[#16220e] text-white", className)}
-        style={{ borderRadius: radius, aspectRatio: String(game.coverRatio || 0.75), ...style }}>
+        style={{ borderRadius: radius, aspectRatio: String(shape), ...style }}>
         <span className="px-3 text-center text-[13px] font-semibold leading-tight">{game.title}</span>
       </div>
     );
   }
   return (
     <div className={cn("relative overflow-hidden bg-gradient-to-br from-[#6d9f31] to-[#315321]", className)}
-      style={{ borderRadius: radius, aspectRatio: String(game.coverRatio || 0.75), boxShadow: shadow ? "0 10px 26px -12px rgba(0,0,0,.5)" : undefined, ...style }}>
+      style={{ borderRadius: radius, aspectRatio: String(shape), boxShadow: shadow ? "0 10px 26px -12px rgba(0,0,0,.5)" : undefined, ...style }}>
       {!loaded && <span className="absolute inset-0 grid place-items-center px-3 text-center text-[13px] font-semibold leading-tight text-white/90">{game.title}</span>}
-      {loaded && <img src={src} alt="" aria-hidden="true" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover opacity-50 blur-xl" />}
       <img
         src={src}
         alt={t("{title} cover art", { title: game.title })}
@@ -64,9 +67,13 @@ export function GameArt({
         decoding="async"
         fetchPriority={priority ? "high" : "auto"}
         onError={handleError}
-        onLoad={() => setLoaded(true)}
+        onLoad={(e) => {
+          const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+          if (w && h) setRatio(Math.min(MAX_RATIO, Math.max(MIN_RATIO, w / h)));
+          setLoaded(true);
+        }}
         style={{ opacity: loaded ? 1 : 0 }}
-        className="relative block h-full w-full object-contain"
+        className="block h-full w-full object-cover"
       />
       <span className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-inset ring-black/10" />
       <span className="pointer-events-none absolute inset-x-0 top-0 h-1/3 rounded-t-[inherit] bg-gradient-to-b from-white/10 to-transparent" />

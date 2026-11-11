@@ -9,7 +9,9 @@
  *
  * Method inspired by Nebula's metadata design (IGDB for metadata, SteamGridDB for images, match once on add).
  */
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { localizeArt } from "./artwork/localize-art.mjs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { normalizeTitle, scoreCandidate, confidentChoice, editionBase, yearOf } from "./artwork/title-match.mjs";
@@ -17,6 +19,9 @@ import { normalizeTitle, scoreCandidate, confidentChoice, editionBase, yearOf } 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CATALOG = resolve(ROOT, "src/data/catalog.json");
 const OUT = resolve(ROOT, "src/data/enrichment.json");
+const CACHE = resolve(ROOT, ".art-cache/enrichment.json");
+const IF_STALE = process.argv.includes("--if-stale");
+const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const { TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET, STEAMGRIDDB_KEY, GITHUB_TOKEN } = process.env;
 const UA = "Re-Port/1.2 (https://github.com/Nazatric/Re-Port; build-time catalog artwork)";
 const t0 = Date.now();
@@ -49,6 +54,21 @@ async function pool(items, n, fn) {
 
 const catalog = JSON.parse(await readFile(CATALOG, "utf8"));
 const games = catalog.games;
+
+// Weekly refresh: when the cached bundle is fresh, skip IGDB/SteamGridDB/README lookups and only localize art.
+if (IF_STALE && existsSync(CACHE)) {
+  const cached = JSON.parse(await readFile(CACHE, "utf8"));
+  const age = Date.now() - Date.parse(cached.generatedAt || 0);
+  if (Number.isFinite(age) && age < MAX_AGE_MS) {
+    log(`bundle cache is ${Math.round(age / 3600000)} h old: reusing it, localizing art only`);
+    const out = await localizeArt({ root: ROOT, out: cached, games, log });
+    await mkdir(dirname(OUT), { recursive: true });
+    await writeFile(OUT, JSON.stringify(out, null, 1) + "\n");
+    await mkdir(dirname(CACHE), { recursive: true });
+    await writeFile(CACHE, JSON.stringify(out, null, 1) + "\n");
+    process.exit(0);
+  }
+}
 log(`catalog: ${games.length} games`);
 
 // ---------- IGDB ----------
@@ -240,6 +260,10 @@ for (const g of games) {
 const missing = games.filter((g) => !out.games[g.id]?.cover);
 log(`still without a bundled cover: ${missing.length}`);
 for (const g of missing) log(`  no cover: ${g.id} | ${g.title} | ${g.platform} | ${g.year}`);
+await localizeArt({ root: ROOT, out, games, log });
+await mkdir(dirname(OUT), { recursive: true });
 await writeFile(OUT, JSON.stringify(out, null, 1) + "\n");
+await mkdir(dirname(CACHE), { recursive: true });
+await writeFile(CACHE, JSON.stringify(out, null, 1) + "\n");
 const count = (f) => Object.values(out.games).filter(f).length;
 log(`bundle: ${Object.keys(out.games).length} games, ${count((x) => x.cover)} covers, ${count((x) => x.description)} descriptions, ${count((x) => x.hero)} heroes`);

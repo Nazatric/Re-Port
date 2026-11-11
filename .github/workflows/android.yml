@@ -36,6 +36,15 @@ jobs:
       - name: Install and check web app
         run: |
           npm ci
+      - name: Restore artwork cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .art-cache
+            public/art
+          key: artwork-${{ github.run_id }}
+          restore-keys: |
+            artwork-
       - name: Build artwork bundle (IGDB, SteamGridDB, Steam CDN)
         continue-on-error: true
         env:
@@ -43,7 +52,7 @@ jobs:
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
           STEAMGRIDDB_KEY: ${{ secrets.STEAMGRIDDB_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: node scripts/build-art-bundle.mjs
+        run: node scripts/build-art-bundle.mjs --if-stale
       - name: Check web app
         run: |
           npm run typecheck

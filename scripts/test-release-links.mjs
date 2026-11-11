@@ -21,8 +21,8 @@ try {
   assert.equal(primaryPort(prototype).name, 'ProtoDroid', 'ProtoDroid is the main Prototype port');
   assert.equal(primaryPort(prototype).url, 'https://github.com/Nazatric/ProtoDroid');
   const morrowind = games.find((g) => g.id === 'the-elder-scrolls-iii-morrowind');
-  assert.equal(primaryPort(morrowind).name, 'Morrowind (OpenMW)');
-  assert.equal(downloadDestination(primaryPort(morrowind)), 'https://github.com/xyzz/openmw-android/releases');
+  assert.notEqual(primaryPort(morrowind).url, 'https://github.com/xyzz/openmw-android', 'archived OpenMW repo is no longer the main port');
+  assert.ok(downloadDestination(primaryPort(morrowind)).startsWith(primaryPort(morrowind).url), 'Morrowind main port downloads from its own repo');
   const port = { ...primaryPort(morrowind), version: '1.0', url: 'https://github.com/example/repo', download: 'https://github.com/example/repo/releases/tag/old' };
   assert.equal(downloadDestination(port), 'https://github.com/example/repo/releases/latest');
   assert.equal(downloadDestination({ ...port, version: 'v2-beta' }), 'https://github.com/example/repo/releases');
