@@ -71,19 +71,26 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          # Keyed on the Playwright version rather than the whole lockfile, so unrelated lockfile changes
+          # (such as the version bump) keep the cached browser. restore-keys reuses any earlier browser.
+          key: playwright-chromium-${{ runner.os }}-pw-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-chromium-${{ runner.os }}-pw-
+            playwright-chromium-${{ runner.os }}-
       - name: Install Playwright Chromium
         run: |
-          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
-            npx playwright install-deps chromium
-          else
-            # The browser download comes from Playwright's CDN and can fail transiently; retry before giving up.
-            for attempt in 1 2 3; do
-              npx playwright install --with-deps chromium && break
-              if [ "$attempt" = "3" ]; then exit 1; fi
-              sleep 20
-            done
-          fi
+          # Playwright skips the browser download when the cached copy is already present.
+          # The CDN download and apt steps are transient on hosted runners, so each one is retried.
+          for attempt in 1 2 3; do
+            npx playwright install-deps chromium && break
+            if [ "$attempt" = "3" ]; then exit 1; fi
+            sleep 20
+          done
+          for attempt in 1 2 3; do
+            npx playwright install chromium && break
+            if [ "$attempt" = "3" ]; then exit 1; fi
+            sleep 20
+          done
       - name: Check web and Android bridge flows
         run: |
           node scripts/run-smoke.mjs
