@@ -17,7 +17,7 @@ try {
   assert.equal(RELEASES_URL, 'https://github.com/Nazatric/Re-Port/releases/latest');
 
   const respond = (body, status = 200) => async () => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
-  assert.deepEqual(await checkForUpdate(respond({ tag_name: 'v1.2.0' })), { status: 'new', version: '1.2.0' });
+  assert.deepEqual(await checkForUpdate(respond({ tag_name: 'v1.3.0' })), { status: 'new', version: '1.3.0' });
   assert.deepEqual(await checkForUpdate(respond({ tag_name: 'v1.1.0' })), { status: 'current', version: '1.1.0' });
   assert.deepEqual(await checkForUpdate(respond({ tag_name: 'v1.0.0-rc1' })), { status: 'error' });
   assert.deepEqual(await checkForUpdate(respond({ message: 'rate limited' }, 403)), { status: 'error' });
