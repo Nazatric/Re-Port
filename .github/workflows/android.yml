@@ -79,13 +79,10 @@ jobs:
             playwright-chromium-${{ runner.os }}-
       - name: Install Playwright Chromium
         run: |
-          # Playwright skips the browser download when the cached copy is already present.
-          # The CDN download and apt steps are transient on hosted runners, so each one is retried.
-          for attempt in 1 2 3; do
-            npx playwright install-deps chromium && break
-            if [ "$attempt" = "3" ]; then exit 1; fi
-            sleep 20
-          done
+          # Only the browser is installed. The runner already ships the Chromium system libraries
+          # (libnss3, libgbm1, libatk, ...). `install-deps` also fetches fonts from Ubuntu apt mirrors,
+          # and those mirrors do not resolve from this runner image, so it is skipped.
+          # Playwright skips the download when the cached browser is already present.
           for attempt in 1 2 3; do
             npx playwright install chromium && break
             if [ "$attempt" = "3" ]; then exit 1; fi
