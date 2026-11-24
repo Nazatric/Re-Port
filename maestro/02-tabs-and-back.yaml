@@ -12,8 +12,7 @@ appId: dev.dandelion.store
 - waitForAnimationToEnd
 - tapOn: "Browse"
 - waitForAnimationToEnd
-- tapOn:
-    point: "30%,40%"
+- tapOn: "Open (?!filters|sort).*"
 - extendedWaitUntil:
     visible: "(?i).*(project page|release link|get latest apk|download source).*"
     timeout: 30000

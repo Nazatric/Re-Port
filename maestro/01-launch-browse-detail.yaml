@@ -1,5 +1,5 @@
 # Opens the app on a clean install, opens Browse and opens the first game card, then checks the detail page.
-# Cards are chosen by position, not by title, because the browse order is shuffled on every visit.
+# Cards are tapped by their accessibility label ("Open <title>"), so the shuffled browse order does not matter.
 appId: dev.dandelion.store
 ---
 - launchApp:
@@ -9,8 +9,7 @@ appId: dev.dandelion.store
     timeout: 60000
 - tapOn: "Browse"
 - waitForAnimationToEnd
-- tapOn:
-    point: "30%,40%"
+- tapOn: "Open (?!filters|sort).*"
 - extendedWaitUntil:
     visible: "(?i).*(project page|release link|get latest apk|download source).*"
     timeout: 30000
