@@ -22,3 +22,24 @@ const logcat = ['maestro-out/crash-buffer.txt', 'maestro-out/logcat-tail.txt'].f
 const crashLines = logcat.split('\n').filter((line) => /FATAL EXCEPTION|AndroidRuntime|Process: dev\.dandelion|ANR in|am_crash|died|Fatal signal/.test(line)).slice(0, 25);
 console.log(`::error title=Device crash lines (${crashLines.length})::${escape(crashLines.join(' | ') || 'no crash lines found in logcat')}`);
 
+
+// The nodes that mention the Thief II card, with their bounds and visibility flags, to explain a "not visible" assertion.
+if (existsSync('maestro-out/hierarchy-at-failure.txt')) {
+  try {
+    const tree = JSON.parse(readFileSync('maestro-out/hierarchy-at-failure.txt', 'utf8'));
+    const hits = [];
+    const walk = (node, depth) => {
+      const attrs = node.attributes ?? node;
+      const label = [attrs.text, attrs.accessibilityText, attrs.hintText].filter(Boolean).join(' / ');
+      if (/thief/i.test(label)) {
+        const flags = ['visible', 'enabled', 'clickable', 'focused'].map((k) => `${k}=${attrs[k] ?? '?'}`).join(' ');
+        hits.push(`depth=${depth} class=${attrs.class ?? '?'} bounds=${attrs.bounds ?? '?'} ${flags} label=${label.replace(/\s+/g, ' ').slice(0, 120)}`);
+      }
+      for (const child of node.children ?? []) walk(child, depth + 1);
+    };
+    for (const root of Array.isArray(tree) ? tree : [tree]) walk(root, 0);
+    console.log(`::error title=Thief nodes in hierarchy (${hits.length})::${escape(hits.join(' | ') || 'none')}`);
+  } catch (error) {
+    console.log(`::error title=Hierarchy parse failed::${escape(String(error.message))}`);
+  }
+}
