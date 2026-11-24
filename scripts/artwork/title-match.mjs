@@ -82,3 +82,13 @@ export function confidentChoice(scored, { min = 0.95, gap = 0.1 } = {}) {
 export function editionBase(value) {
   return String(value || "").replace(/\s*[:\-–(]\s*(?:the\s+)?(?:\d+\s+years?\s+celebration|(?:goty|game of the year|definitive|deluxe|complete|ultimate|gold|premium|anniversary|collector'?s|director'?s cut|enhanced|legendary)(?:\s+edition)?|edition)\)?\s*$/i, "").trim() || String(value || "").trim();
 }
+
+/**
+ * Hard release-year gate. A candidate whose known year is more than one year away from the catalog year
+ * is never accepted, whatever its title score (Doom 1993 must not take Doom 2016 art). Unknown years pass.
+ */
+export function sameRelease(queryYear, candidateYear) {
+  const q = Number(queryYear) || null, c = Number(candidateYear) || null;
+  if (!q || !c) return true;
+  return Math.abs(q - c) <= 1;
+}

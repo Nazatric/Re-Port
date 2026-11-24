@@ -1,0 +1,17 @@
+# Moves between the bottom tabs and returns from a detail page with the Android back button.
+appId: dev.dandelion.store
+---
+- launchApp:
+    clearState: true
+- tapOn: "Library"
+- tapOn: "Settings"
+- tapOn: "Home"
+- tapOn: "Browse"
+- tapOn: "Games, port projects.*"
+- inputText: "doom"
+- hideKeyboard
+- tapOn: "Doom.*"
+- assertVisible: "(?i).*port requirements.*"
+- back
+- assertVisible: "Browse"
+- takeScreenshot: back-to-browse

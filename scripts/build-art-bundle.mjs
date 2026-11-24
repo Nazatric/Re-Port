@@ -14,7 +14,7 @@ import { existsSync } from "node:fs";
 import { localizeArt } from "./artwork/localize-art.mjs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { normalizeTitle, scoreCandidate, confidentChoice, editionBase, yearOf } from "./artwork/title-match.mjs";
+import { normalizeTitle, scoreCandidate, confidentChoice, editionBase, yearOf, sameRelease } from "./artwork/title-match.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CATALOG = resolve(ROOT, "src/data/catalog.json");
@@ -86,14 +86,23 @@ async function igdb() {
 }
 const clean = (s) => String(s).replace(/["\\]/g, " ").trim();
 
+const GAME_FIELDS = "name,first_release_date,summary,cover.image_id,screenshots.image_id,involved_companies.company.name,involved_companies.developer";
+const yearOfUnix = (t) => (t ? new Date(t * 1000).getUTCFullYear() : null);
 async function matchIGDB(game, query) {
+  // Exact ID first: IGDB external_games maps a Steam AppID (external_game_source 1 = Steam) to one IGDB game.
+  if (game.steamAppId) {
+    const rows = await query(`fields game.${GAME_FIELDS.split(",").join(",game.")}; where uid = "${Number(game.steamAppId)}" & external_game_source = 1; limit 1;`);
+    const byId = Array.isArray(rows) ? rows[0]?.game : null;
+    return byId && sameRelease(game.year, yearOfUnix(byId.first_release_date)) ? byId : null;
+  }
+  // No Steam AppID: title search, accepted only with a strong, unambiguous, same-year match.
   const term = clean(editionBase(game.title));
-  const hits = await query(`search "${term}"; fields name,first_release_date,summary,cover.image_id,screenshots.image_id,involved_companies.company.name,involved_companies.developer; where version_parent = null; limit 8;`);
+  const hits = await query(`search "${term}"; fields ${GAME_FIELDS}; where version_parent = null; limit 8;`);
   if (!Array.isArray(hits) || !hits.length) return null;
   const scored = hits.map((h) => {
-    const year = h.first_release_date ? new Date(h.first_release_date * 1000).getUTCFullYear() : null;
-    return { h, ...scoreCandidate(game.title, h.name ?? "", { queryYear: game.year, candidateYear: year }) };
-  });
+    const year = yearOfUnix(h.first_release_date);
+    return { h, year, ...scoreCandidate(game.title, h.name ?? "", { queryYear: game.year, candidateYear: year }) };
+  }).filter((c) => sameRelease(game.year, c.year));
   return confidentChoice(scored, { min: 0.95, gap: 0.1 })?.h ?? null;
 }
 
@@ -101,13 +110,19 @@ async function matchIGDB(game, query) {
 const SGDB = "https://www.steamgriddb.com/api/v2";
 const sgdbHeaders = { Authorization: `Bearer ${STEAMGRIDDB_KEY}` };
 async function matchSGDB(game) {
+  // Exact ID first: SteamGridDB maps a Steam AppID straight to its own game id.
+  if (game.steamAppId) {
+    const byId = (await call(`${SGDB}/games/steam/${Number(game.steamAppId)}`, { headers: sgdbHeaders }))?.data;
+    if (!byId?.id) return null;
+    return sameRelease(game.year, yearOfUnix(byId.release_date)) ? byId : null;
+  }
   const term = encodeURIComponent(clean(editionBase(game.title)));
   const list = await call(`${SGDB}/search/autocomplete/${term}`, { headers: sgdbHeaders });
   const items = list?.data ?? [];
   const scored = items.map((g) => {
-    const year = g.release_date ? new Date(g.release_date * 1000).getUTCFullYear() : null;
-    return { g, ...scoreCandidate(game.title, g.name ?? "", { queryYear: game.year, candidateYear: year }) };
-  });
+    const year = yearOfUnix(g.release_date);
+    return { g, year, ...scoreCandidate(game.title, g.name ?? "", { queryYear: game.year, candidateYear: year }) };
+  }).filter((c) => sameRelease(game.year, c.year));
   return confidentChoice(scored, { min: 0.95, gap: 0.1 })?.g ?? null;
 }
 async function sgdbImages(id) {

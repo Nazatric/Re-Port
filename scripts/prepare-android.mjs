@@ -65,3 +65,30 @@ let build = fs.readFileSync(gradle, 'utf8');
 if (!/versionCode\s+\d+/.test(build) || !/versionName\s+["'][^"']+["']/.test(build)) throw new Error('Unexpected Android version configuration');
 build = build.replace(/versionCode\s+\d+/, `versionCode ${versionCode}`).replace(/versionName\s+["'][^"']+["']/, `versionName "${version}"`);
 fs.writeFileSync(gradle, build);
+
+// Release signing, only when the CI secrets are set. Without them the release build is skipped and the
+// debug APK is still produced. The keystore is written inside android/ (ignored by Git) and the passwords
+// stay in environment variables, so nothing secret is written to a tracked file.
+const { ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD } = process.env;
+if (ANDROID_KEYSTORE_BASE64) {
+  if (!ANDROID_KEYSTORE_PASSWORD || !ANDROID_KEY_ALIAS || !ANDROID_KEY_PASSWORD) {
+    throw new Error('Release signing needs ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD');
+  }
+  fs.writeFileSync('android/app/release.keystore', Buffer.from(ANDROID_KEYSTORE_BASE64, 'base64'));
+  let signed = fs.readFileSync(gradle, 'utf8');
+  if (!signed.includes('signingConfigs')) {
+    if (!/android\s*\{/.test(signed) || !/buildTypes\s*\{\s*release\s*\{/.test(signed)) throw new Error('Unexpected Android build.gradle layout for release signing');
+    signed = signed.replace(/android\s*\{/, `android {
+    signingConfigs {
+        release {
+            storeFile file("release.keystore")
+            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias System.getenv("ANDROID_KEY_ALIAS")
+            keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+        }
+    }`);
+    signed = signed.replace(/(buildTypes\s*\{\s*release\s*\{)/, '$1\n            signingConfig signingConfigs.release');
+    fs.writeFileSync(gradle, signed);
+  }
+  console.log('Release signing configured from CI secrets.');
+}
