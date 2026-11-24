@@ -12,9 +12,6 @@ appId: dev.dandelion.store
 - waitForAnimationToEnd
 - tapOn: "Browse"
 - waitForAnimationToEnd
-- extendedWaitUntil:
-    visible: "Games, port projects.*"
-    timeout: 30000
 - tapOn: "Games, port projects.*"
 - inputText: "thief ii"
 - hideKeyboard
