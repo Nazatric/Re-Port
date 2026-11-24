@@ -15,7 +15,7 @@ appId: dev.dandelion.store
 - tapOn:
     point: "30%,40%"
 - extendedWaitUntil:
-    visible: "(?i).*port requirements.*"
+    visible: "(?i).*(project page|release link|get latest apk|download source).*"
     timeout: 30000
 - back
 - waitForAnimationToEnd
