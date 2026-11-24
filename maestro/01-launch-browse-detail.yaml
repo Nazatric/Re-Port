@@ -8,8 +8,13 @@ appId: dev.dandelion.store
     timeout: 60000
 - tapOn: "Browse"
 - waitForAnimationToEnd
-# The search text can survive between launches, so tap the box whether it shows the placeholder or old text, then clear it.
-- tapOn: "(Games, port projects.*|thief ii)"
+# Focus the search box: try the placeholder, then any old query. Both are optional so a miss does not abort the flow.
+- tapOn:
+    text: "Games, port projects.*"
+    optional: true
+- tapOn:
+    text: "thief ii"
+    optional: true
 - eraseText: 40
 - inputText: "thief ii"
 - hideKeyboard
