@@ -8,7 +8,9 @@ appId: dev.dandelion.store
     timeout: 60000
 - tapOn: "Browse"
 - waitForAnimationToEnd
-- tapOn: "Games, port projects.*"
+# The search text can survive between launches, so tap the box whether it shows the placeholder or old text, then clear it.
+- tapOn: "(Games, port projects.*|thief ii)"
+- eraseText: 40
 - inputText: "thief ii"
 - hideKeyboard
 - extendedWaitUntil:
