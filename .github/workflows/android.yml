@@ -152,6 +152,9 @@ jobs:
           target: google_apis
           profile: pixel_6
           disable-animations: true
+          # A fresh, software-rendered emulator is slower to start than a device, so the first launch can
+          # stall on the system launcher. These options keep the emulator state clean and the GPU predictable.
+          emulator-options: -no-snapshot-save -no-boot-anim -noaudio -camera-back none -gpu swiftshader_indirect
           script: bash scripts/run-maestro.sh
       - name: Upload Maestro report and screenshots
         if: always()

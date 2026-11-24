@@ -6,8 +6,16 @@ export PATH="$HOME/.maestro/bin:$PATH"
 
 adb install -r apk/app-debug.apk || exit 1
 
+# One retry: an emulator that stalls on the launcher during the first launch is not a product failure.
 maestro test maestro/ --format junit --output maestro-report.xml --test-output-dir maestro-out
 status=$?
+if [ "$status" -ne 0 ]; then
+  echo "Maestro failed once; retrying after the device settles."
+  adb shell input keyevent KEYCODE_HOME || true
+  sleep 15
+  maestro test maestro/ --format junit --output maestro-report.xml --test-output-dir maestro-out
+  status=$?
+fi
 
 if [ "$status" -ne 0 ]; then
   # The failing step as an annotation on the run page, then the screen hierarchy and device log for the report.
