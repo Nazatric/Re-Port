@@ -1,4 +1,4 @@
-# Opens the app on a clean install, searches the catalog for Doom and opens its detail page.
+# Opens the app on a clean install, searches the catalog for Thief II and opens its detail page.
 appId: dev.dandelion.store
 ---
 - launchApp:
@@ -8,13 +8,16 @@ appId: dev.dandelion.store
     timeout: 60000
 - tapOn: "Browse"
 - waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Games, port projects.*"
+    timeout: 30000
 - tapOn: "Games, port projects.*"
-- inputText: "doom"
+- inputText: "thief ii"
 - hideKeyboard
 - extendedWaitUntil:
-    visible: "Doom"
+    visible: "Thief II: The Metal Age.*"
     timeout: 30000
-- tapOn: "Doom"
+- tapOn: "Thief II: The Metal Age.*"
 - extendedWaitUntil:
     visible: "(?i).*(project page|release link|get latest apk|download source).*"
     timeout: 30000

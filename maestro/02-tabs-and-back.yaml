@@ -1,4 +1,4 @@
-# Moves between the bottom tabs, opens a game from search and returns with the Android back button.
+# Moves between the bottom tabs, opens a game from search (Thief II) and returns with the Android back button.
 appId: dev.dandelion.store
 ---
 - launchApp:
@@ -12,13 +12,16 @@ appId: dev.dandelion.store
 - waitForAnimationToEnd
 - tapOn: "Browse"
 - waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Games, port projects.*"
+    timeout: 30000
 - tapOn: "Games, port projects.*"
-- inputText: "doom"
+- inputText: "thief ii"
 - hideKeyboard
 - extendedWaitUntil:
-    visible: "Doom"
+    visible: "Thief II: The Metal Age.*"
     timeout: 30000
-- tapOn: "Doom"
+- tapOn: "Thief II: The Metal Age.*"
 - extendedWaitUntil:
     visible: "(?i).*(project page|release link|get latest apk|download source).*"
     timeout: 30000
