@@ -1,6 +1,9 @@
 name: Link check
 
 on:
+  push:
+    branches: ["arena/dcbf2003-re-port"]
+    paths: [".github/workflows/links.yml"]
   workflow_dispatch:
   schedule:
     - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC
