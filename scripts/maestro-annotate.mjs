@@ -16,3 +16,9 @@ if (existsSync('maestro-out/hierarchy-at-failure.txt')) {
   const unique = [...new Set(texts)].slice(0, 120);
   console.log(`::error title=Visible text at failure (${unique.length})::${escape(unique.join(' | '))}`);
 }
+
+// Crash evidence from the device: the Java exception lines and the app's process lines.
+const logcat = ['maestro-out/crash-buffer.txt', 'maestro-out/logcat-tail.txt'].filter(existsSync).map((f) => readFileSync(f, 'utf8')).join('\n');
+const crashLines = logcat.split('\n').filter((line) => /FATAL EXCEPTION|AndroidRuntime|Process: dev\.dandelion|ANR in|am_crash|died|Fatal signal/.test(line)).slice(0, 25);
+console.log(`::error title=Device crash lines (${crashLines.length})::${escape(crashLines.join(' | ') || 'no crash lines found in logcat')}`);
+

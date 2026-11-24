@@ -15,6 +15,7 @@ if [ "$status" -ne 0 ]; then
   maestro hierarchy > maestro-out/hierarchy-at-failure.txt 2>&1 || true
   node scripts/maestro-annotate.mjs || true
   adb logcat -d -t 400 > maestro-out/logcat-tail.txt 2>&1 || true
+  adb logcat -d -b crash > maestro-out/crash-buffer.txt 2>&1 || true
   echo "::group::Device log (last 400 lines)"
   tail -400 maestro-out/logcat-tail.txt
   echo "::endgroup::"
