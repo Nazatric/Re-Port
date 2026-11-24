@@ -19,9 +19,9 @@ appId: dev.dandelion.store
 - inputText: "thief ii"
 - hideKeyboard
 - extendedWaitUntil:
-    visible: "(?s)Thief II: The Metal Age.*"
+    visible: "(?s).*Thief II: The Metal Age.*"
     timeout: 30000
-- tapOn: "(?s)Thief II: The Metal Age.*"
+- tapOn: "(?s).*Thief II: The Metal Age.*"
 - extendedWaitUntil:
     visible: "(?is).*(project page|release link|get latest apk|download source).*"
     timeout: 30000
