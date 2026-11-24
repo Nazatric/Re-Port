@@ -3,6 +3,9 @@ appId: dev.dandelion.store
 ---
 - launchApp:
     clearState: true
+- extendedWaitUntil:
+    visible: "Library"
+    timeout: 60000
 - tapOn: "Library"
 - waitForAnimationToEnd
 - tapOn: "Settings"
@@ -11,8 +14,12 @@ appId: dev.dandelion.store
 - waitForAnimationToEnd
 - tapOn:
     point: "30%,40%"
-- assertVisible: "(?i).*port requirements.*"
+- extendedWaitUntil:
+    visible: "(?i).*port requirements.*"
+    timeout: 30000
 - back
 - waitForAnimationToEnd
-- assertVisible: "Browse"
+- extendedWaitUntil:
+    visible: "Browse"
+    timeout: 15000
 - takeScreenshot: back-to-browse

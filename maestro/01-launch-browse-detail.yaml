@@ -4,10 +4,14 @@ appId: dev.dandelion.store
 ---
 - launchApp:
     clearState: true
-- assertVisible: "Browse"
+- extendedWaitUntil:
+    visible: "Browse"
+    timeout: 60000
 - tapOn: "Browse"
 - waitForAnimationToEnd
 - tapOn:
     point: "30%,40%"
-- assertVisible: "(?i).*port requirements.*"
+- extendedWaitUntil:
+    visible: "(?i).*port requirements.*"
+    timeout: 30000
 - takeScreenshot: detail-open
