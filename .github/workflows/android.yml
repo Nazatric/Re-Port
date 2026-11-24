@@ -152,23 +152,7 @@ jobs:
           target: google_apis
           profile: pixel_6
           disable-animations: true
-          script: |
-            adb install -r apk/app-debug.apk
-            export PATH="$HOME/.maestro/bin:$PATH"
-            set +e
-            maestro test maestro/ --format junit --output maestro-report.xml --test-output-dir maestro-out
-            status=$?
-            if [ "$status" -ne 0 ]; then
-              # Copy the failing step into an annotation, so the reason is visible on the run page.
-              node scripts/maestro-annotate.mjs || true
-              mkdir -p maestro-out
-              maestro hierarchy > maestro-out/hierarchy-at-failure.txt 2>&1 || true
-              adb logcat -d -t 400 > maestro-out/logcat-tail.txt 2>&1 || true
-              echo "::group::Device log (last 400 lines)"
-              tail -400 maestro-out/logcat-tail.txt
-              echo "::endgroup::"
-            fi
-            exit "$status"
+          script: bash scripts/run-maestro.sh
       - name: Upload Maestro report and screenshots
         if: always()
         uses: actions/upload-artifact@v4
