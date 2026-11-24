@@ -1,0 +1,45 @@
+name: Link check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # Report-only: external sites (Telegram, itch.io, mirrors) often time out or rate-limit,
+      # so a failure here must not block the Android build. Results are written to the job summary.
+      - name: Check links in the catalog, port data and docs
+        uses: lycheeverse/lychee-action@v2
+        with:
+          fail: false
+          output: lychee-report.md
+          args: >-
+            --verbose
+            --no-progress
+            --max-retries 3
+            --retry-wait-time 10
+            --max-concurrency 8
+            --timeout 20
+            --accept 200,206,429
+            --cache
+            --cache-exclude-status 429
+            src/data/catalog.json
+            src/data/ports.ts
+            README.md
+            docs/*.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show report
+        if: always()
+        run: |
+          if [ -f lychee-report.md ]; then cat lychee-report.md >> "$GITHUB_STEP_SUMMARY"; else echo "No report produced" >> "$GITHUB_STEP_SUMMARY"; fi
