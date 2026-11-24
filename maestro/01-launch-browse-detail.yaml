@@ -1,13 +1,13 @@
-# Opens the app on a clean install, searches the catalog and opens a game detail page.
+# Opens the app on a clean install, opens Browse and opens the first game card, then checks the detail page.
+# Cards are chosen by position, not by title, because the browse order is shuffled on every visit.
 appId: dev.dandelion.store
 ---
 - launchApp:
     clearState: true
 - assertVisible: "Browse"
 - tapOn: "Browse"
-- tapOn: "Games, port projects.*"
-- inputText: "doom"
-- hideKeyboard
-- tapOn: "Doom.*"
+- waitForAnimationToEnd
+- tapOn:
+    point: "30%,40%"
 - assertVisible: "(?i).*port requirements.*"
 - takeScreenshot: detail-open
