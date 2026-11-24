@@ -1,5 +1,4 @@
-# Opens the app on a clean install, opens Browse and opens the first game card, then checks the detail page.
-# Cards are tapped by their accessibility label ("Open <title>"), so the shuffled browse order does not matter.
+# Opens the app on a clean install, searches the catalog for Doom and opens its detail page.
 appId: dev.dandelion.store
 ---
 - launchApp:
@@ -9,7 +8,13 @@ appId: dev.dandelion.store
     timeout: 60000
 - tapOn: "Browse"
 - waitForAnimationToEnd
-- tapOn: "Open (?!filters|sort).*"
+- tapOn: "Games, port projects.*"
+- inputText: "doom"
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "Doom"
+    timeout: 30000
+- tapOn: "Doom"
 - extendedWaitUntil:
     visible: "(?i).*(project page|release link|get latest apk|download source).*"
     timeout: 30000

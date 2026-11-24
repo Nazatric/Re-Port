@@ -1,4 +1,4 @@
-# Moves between the bottom tabs, opens a game and returns with the Android back button.
+# Moves between the bottom tabs, opens a game from search and returns with the Android back button.
 appId: dev.dandelion.store
 ---
 - launchApp:
@@ -12,7 +12,13 @@ appId: dev.dandelion.store
 - waitForAnimationToEnd
 - tapOn: "Browse"
 - waitForAnimationToEnd
-- tapOn: "Open (?!filters|sort).*"
+- tapOn: "Games, port projects.*"
+- inputText: "doom"
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "Doom"
+    timeout: 30000
+- tapOn: "Doom"
 - extendedWaitUntil:
     visible: "(?i).*(project page|release link|get latest apk|download source).*"
     timeout: 30000
