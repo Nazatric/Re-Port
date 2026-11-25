@@ -129,6 +129,9 @@ jobs:
     needs: android
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Write access only for this job: it commits the Maestro logs back to the branch.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -162,6 +165,13 @@ jobs:
             maestro-report.xml
             maestro-out/
           if-no-files-found: warn
+      - name: Commit Maestro logs to the branch
+        if: always()
+        continue-on-error: true
+        env:
+          RUN_ID: ${{ github.run_id }}
+        run: bash scripts/commit-ci-logs.sh
+
 
   release:
     if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''

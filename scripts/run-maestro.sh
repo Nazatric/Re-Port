@@ -21,7 +21,7 @@ if [ "$status" -ne 0 ]; then
   # The failing step as an annotation on the run page, then the screen hierarchy and device log for the report.
   mkdir -p maestro-out
   maestro hierarchy > maestro-out/hierarchy-at-failure.txt 2>&1 || true
-  node scripts/maestro-annotate.mjs || true
+  node scripts/maestro-annotate.mjs 2>&1 | tee maestro-out/annotations.txt || true
   adb logcat -d -t 400 > maestro-out/logcat-tail.txt 2>&1 || true
   adb logcat -d -b crash > maestro-out/crash-buffer.txt 2>&1 || true
   echo "::group::Device log (last 400 lines)"
