@@ -150,8 +150,16 @@ async function fillMissingCovers(gameList, outGames) {
   const hasRealCover = (g) => !!g.cover && !g.cover.startsWith("data:");
   const todo = gameList.filter((g) => !hasRealCover(g) && !outGames[g.id]?.cover);
   let filled = 0;
-  const tally = {};
-  await pool(todo, 3, async (g) => {
+  let fromReadme = 0;
+  for (const g of todo) {
+    const e = outGames[g.id];
+    if (e?.readmeTitle && e.readmeShots?.[0]) {
+      outGames[g.id] = { ...e, hit: true, cover: e.readmeShots[0], coverSource: "readme" };
+      fromReadme++;
+    }
+  }
+  const tally = { readme: fromReadme };
+  await pool(todo.filter((g) => !outGames[g.id]?.cover), 3, async (g) => {
     await sleep(250);
     const appId = await matchSteamByTitle(g, (url) => call(url), tally).catch(() => null);
     if (!appId) return;
@@ -160,8 +168,8 @@ async function fillMissingCovers(gameList, outGames) {
     outGames[g.id] = { ...(outGames[g.id] ?? {}), hit: true, cover: art.cover, coverSource: "steam-search", steamAppId: appId };
     filled++;
   });
-  log(`keyless Steam title match: ${filled} covers added for ${todo.length} games without art`);
-  console.log(`::notice title=Keyless Steam covers::${filled} added for ${todo.length} games without art; outcomes ${JSON.stringify(tally)}`);
+  log(`keyless fill: ${fromReadme} covers from a README that names the game, ${filled} from Steam title match, of ${todo.length} games without art`);
+  console.log(`::notice title=Keyless covers::${filled} from Steam, ${fromReadme} from README, of ${todo.length} games without art; Steam outcomes ${JSON.stringify(tally)}`);
 }
 
 // ---------- Run ----------
@@ -197,7 +205,7 @@ const repoOf = (url) => { const m = String(url).match(/github\.com\/([^/]+)\/([^
 const ghHeaders = GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: "application/vnd.github+json" } : { Accept: "application/vnd.github+json" };
 async function readmeImages(owner, repo) {
   const r = await call(`https://api.github.com/repos/${owner}/${repo}/readme`, { headers: ghHeaders });
-  if (!r?.content) return [];
+  if (!r?.content) return { images: [], text: "" };
   const text = Buffer.from(r.content, "base64").toString("utf8");
   const dir = r.path?.includes("/") ? r.path.slice(0, r.path.lastIndexOf("/") + 1) : "";
   const base = `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${dir}`;
@@ -213,7 +221,7 @@ async function readmeImages(owner, repo) {
     if (!out.includes(url)) out.push(url);
     if (out.length >= 6) break;
   }
-  return out;
+  return { images: out, text };
 }
 
 // ---------- libretro-thumbnails (keyless, console box art matched by title score) ----------
@@ -256,12 +264,27 @@ log(`libretro: ${libretro.size} console covers matched`);
 
 // README images for each game's GitHub port (first two repos). Verified: they come from the developer's own repository.
 const readmeOut = new Map();
+const readmeTitle = new Set();
+// How many catalog games use each GitHub repository. A pack repository (many games) never supplies a README cover.
+const repoGameCount = new Map();
+for (const g of games) for (const key of new Set(g.ports.filter((p) => p.kind === "github").map((p) => repoOf(p.url)?.owner + "/" + repoOf(p.url)?.repo))) repoGameCount.set(key, (repoGameCount.get(key) ?? 0) + 1);
 {
   const jobs = games.map((g) => ({ g, repos: [...new Map(g.ports.filter((p) => p.kind === "github").map((p) => [repoOf(p.url)?.owner + "/" + repoOf(p.url)?.repo, repoOf(p.url)])).values()].filter(Boolean).slice(0, 2) })).filter((j) => j.repos.length);
   try {
     await pool(jobs, 4, async ({ g, repos }) => {
       const imgs = [];
-      for (const r of repos) { try { imgs.push(...(await readmeImages(r.owner, r.repo))); } catch { /* skip this repo */ } }
+      let namesGame = false;
+      const want = normalizeTitle(editionBase(g.title));
+      for (const r of repos) {
+        try {
+          const { images, text } = await readmeImages(r.owner, r.repo);
+          imgs.push(...images);
+          // A README counts only if it names this game, so a multi-game pack cannot give unrelated art.
+          const solo = repoGameCount.get(`${r.owner}/${r.repo}`) === 1;
+          if (solo && want && ` ${normalizeTitle(text)} `.includes(` ${want} `)) namesGame = true;
+        } catch { /* skip this repo */ }
+      }
+      if (namesGame) readmeTitle.add(g.id);
       if (imgs.length) readmeOut.set(g.id, [...new Set(imgs)].slice(0, 6));
     });
   } catch (err) { log(`README pass stopped early: ${err?.message ?? err}`); }
@@ -290,6 +313,7 @@ for (const g of games) {
   else if (sg?.hero) e.hero = sg.hero;
   if (g.steamAppId) e.steamAppId = g.steamAppId;
   if (readmeOut.get(g.id)) e.readmeShots = readmeOut.get(g.id);
+  if (readmeTitle.has(g.id)) e.readmeTitle = true;
   e.hit = !!(e.cover || e.description);
   if (!e.cover && libretro.get(g.id)) { e.cover = libretro.get(g.id); e.coverSource = "libretro"; }
   e.hit = !!(e.cover || e.description);
