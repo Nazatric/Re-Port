@@ -42,8 +42,12 @@ export async function pickSteamApp({ title, year }, items, detailsById) {
 }
 
 /** Fetches the Steam search and the details for the candidates, then applies pickSteamApp. */
-export async function matchSteamByTitle(game, fetchJson) {
+export async function matchSteamByTitle(game, fetchJson, tally = {}) {
+  const bump = (k) => { tally[k] = (tally[k] ?? 0) + 1; };
   const search = await fetchJson(SEARCH(game.title));
+  if (!search) bump("searchFailed");
+  else if (!(search.items ?? []).length) bump("searchEmpty");
+  else if (!(search.items ?? []).some((i) => i.type === "app" && normalizeTitle(i.name) === normalizeTitle(game.title))) bump("noExactTitle");
   const details = new Map();
   const detailsById = async (id) => {
     if (!details.has(id)) {
@@ -53,6 +57,8 @@ export async function matchSteamByTitle(game, fetchJson) {
     }
     return details.get(id);
   };
-  return pickSteamApp({ title: game.title, year: game.year }, search?.items ?? [], detailsById);
+  const id = await pickSteamApp({ title: game.title, year: game.year }, search?.items ?? [], detailsById);
+  if (!id && search?.items?.length) bump("exactRejectedByYearOrAmbiguous");
+  return id;
 }
 

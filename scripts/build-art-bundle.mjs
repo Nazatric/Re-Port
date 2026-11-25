@@ -148,9 +148,10 @@ async function steamCdn(appId) {
 async function fillMissingCovers(gameList, outGames) {
   const todo = gameList.filter((g) => !outGames[g.id]?.cover);
   let filled = 0;
+  const tally = {};
   await pool(todo, 3, async (g) => {
     await sleep(250);
-    const appId = await matchSteamByTitle(g, (url) => call(url)).catch(() => null);
+    const appId = await matchSteamByTitle(g, (url) => call(url), tally).catch(() => null);
     if (!appId) return;
     const art = await steamCdn(appId);
     if (!art?.cover) return;
@@ -158,7 +159,7 @@ async function fillMissingCovers(gameList, outGames) {
     filled++;
   });
   log(`keyless Steam title match: ${filled} covers added for ${todo.length} games without art`);
-  console.log(`::notice title=Keyless Steam covers::${filled} added for ${todo.length} games without art`);
+  console.log(`::notice title=Keyless Steam covers::${filled} added for ${todo.length} games without art; outcomes ${JSON.stringify(tally)}`);
 }
 
 // ---------- Run ----------
