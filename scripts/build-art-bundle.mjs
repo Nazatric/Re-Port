@@ -304,3 +304,4 @@ await mkdir(dirname(CACHE), { recursive: true });
 await writeFile(CACHE, JSON.stringify(out, null, 1) + "\n");
 const count = (f) => Object.values(out.games).filter(f).length;
 log(`bundle: ${Object.keys(out.games).length} games, ${count((x) => x.cover)} covers, ${count((x) => x.description)} descriptions, ${count((x) => x.hero)} heroes`);
+console.log(`::notice title=Artwork bundle::${Object.keys(out.games).length} games, ${count((x) => x.cover)} covers, ${count((x) => x.description)} descriptions, ${count((x) => x.hero)} heroes; IGDB ${igdbOut.size}, SteamGridDB ${sgdbOut.size}`);

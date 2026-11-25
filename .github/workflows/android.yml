@@ -50,9 +50,10 @@ jobs:
           path: |
             .art-cache
             .art-out
-          key: artwork-${{ github.run_id }}
+          # v2: a new prefix forces one full rebuild (IGDB, SteamGridDB, keyless Steam) instead of reusing the old bundle.
+          key: artwork-v2-${{ github.run_id }}
           restore-keys: |
-            artwork-
+            artwork-v2-
       - name: Build artwork bundle (IGDB, SteamGridDB, Steam CDN)
         continue-on-error: true
         env:
