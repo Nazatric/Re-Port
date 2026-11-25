@@ -10,8 +10,15 @@ appId: dev.dandelion.store
 - waitForAnimationToEnd
 - tapOn: "Settings"
 - waitForAnimationToEnd
-- tapOn: "Browse"
-- waitForAnimationToEnd
+# The first tap can land while the app is still loading Home, so retry until a Browse-only label is on screen.
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn: "Browse"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: "Open filters"
+          timeout: 8000
 # Focus the search box: try the placeholder, then any old query. Both are optional so a miss does not abort the flow.
 - tapOn:
     text: "Games, port projects.*"
