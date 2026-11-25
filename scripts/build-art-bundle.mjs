@@ -146,7 +146,9 @@ async function steamCdn(appId) {
 // ---------- Keyless Steam title match (no key) for games still without a cover ----------
 // Only an exact title match with a matching release year is used (see artwork/keyless-steam.mjs).
 async function fillMissingCovers(gameList, outGames) {
-  const todo = gameList.filter((g) => !outGames[g.id]?.cover);
+  // Only games with no real catalog cover (none, or a generated title card) and no bundle cover.
+  const hasRealCover = (g) => !!g.cover && !g.cover.startsWith("data:");
+  const todo = gameList.filter((g) => !hasRealCover(g) && !outGames[g.id]?.cover);
   let filled = 0;
   const tally = {};
   await pool(todo, 3, async (g) => {
