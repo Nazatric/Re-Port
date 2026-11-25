@@ -18,10 +18,10 @@ appId: dev.dandelion.store
 - eraseText: 40
 - inputText: "thief ii"
 - hideKeyboard
-- extendedWaitUntil:
-    visible: "(?s).*Thief II: The Metal Age.*"
-    timeout: 30000
-- tapOn: "(?s).*Thief II: The Metal Age.*"
+# tapOn waits for the card itself; a separate visibility check fails while the keyboard still covers the list.
+- tapOn:
+    text: "(?s).*Thief II: The Metal Age.*"
+    index: 0
 - extendedWaitUntil:
     visible: "(?is).*(project page|release link|get latest apk|download source).*"
     timeout: 30000
