@@ -26,7 +26,9 @@ console.log(`::error title=Device crash lines (${crashLines.length})::${escape(c
 // The nodes that mention the Thief II card, with their bounds and visibility flags, to explain a "not visible" assertion.
 if (existsSync('maestro-out/hierarchy-at-failure.txt')) {
   try {
-    const tree = JSON.parse(readFileSync('maestro-out/hierarchy-at-failure.txt', 'utf8'));
+    const raw = readFileSync('maestro-out/hierarchy-at-failure.txt', 'utf8');
+    // maestro prints warnings before the JSON, so start at the first object.
+    const tree = JSON.parse(raw.slice(Math.min(...['{', '['].map((c) => raw.indexOf(c)).filter((i) => i >= 0))));
     const hits = [];
     const walk = (node, depth) => {
       const attrs = node.attributes ?? node;
