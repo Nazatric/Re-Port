@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="test" tests="2" failures="1" time="321.643" timestamp="2026-11-25T02:46:24">
+    <testcase id="01-launch-browse-detail" name="01-launch-browse-detail" classname="01-launch-browse-detail" file="maestro/01-launch-browse-detail.yaml" time="259.927" timestamp="2026-11-25T02:46:24" status="SUCCESS"/>
+    <testcase id="02-tabs-and-back" name="02-tabs-and-back" classname="02-tabs-and-back" file="maestro/02-tabs-and-back.yaml" time="61.652" timestamp="2026-11-25T02:50:44" status="ERROR">
+      <failure>Assertion is false: "Library" is visible</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

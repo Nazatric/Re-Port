@@ -1,0 +1,5 @@
+::error title=Maestro flow failed::Assertion is false: "Library" is visible
+::error title=Visible text at failure (6)::2:51 | 2:51 AM | Android System notification: | Wifi signal full. | Phone three bars. | Battery charging, 100 percent.
+::error title=Device crash lines (0)::no crash lines found in logcat
+::notice title=Screen root bounds::unknown
+::error title=Thief nodes in hierarchy (0)::none
