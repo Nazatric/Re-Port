@@ -32,10 +32,10 @@ How to read this: every claim is marked **[verified]** (checked in this repo or 
 - Smooth navigation and animations (browse scroll is ~38 fps average and ~233 ms worst in the sandbox profiler, after the earlier fixes [measured, relative only]).
 - Keep the APK at ~5 MB. Artwork must not be inside the APK.
 
-### Problems I found in my own process (must be fixed before anything else)
-1. **The branch is missing most of the batch.** The remote branch has `fbe6769`, which is the CI fix plus everything up to `60d115a`. The batch work (shuffle, artwork shape, port audit doc, Doom and Beats of Rage fixes, artwork scripts) is **not committed**. It is still in the working tree, as 18 modified files and several untracked folders. My earlier message said it was stashed. That was wrong: the `git stash` list is now empty [verified].
-2. **Do not reset the working tree.** Doing so would delete that uncommitted work. The first step is to commit it to a separate branch or a patch file, then review it.
-3. **The local checkout is at base `5b23652`**, not at the remote head. Fast-forwarding would conflict with the uncommitted files, so the reconciliation has to be deliberate.
+### Status of the earlier process problems (corrected)
+1. **The batch is committed.** The branch carries the batch from `65ca59e` onward. The earlier statement that it was uncommitted was wrong. Checked with `git log 5b23652..HEAD` and the tree.
+2. **No reset was needed.** The working tree is clean on `arena/dcbf2003-re-port`.
+3. **The branch is based on `5b23652`** and is pushed to `origin/arena/dcbf2003-re-port`.
 
 ---
 
@@ -151,27 +151,27 @@ A crash and error reporter would catch "detail pages sometimes don't load" in th
 | 2 | Smooth nav and animations | Virtualized browse (react-virtuoso), CSS transform and opacity only, `will-change` on cards | Partly on branch (`36538ed`). `will-change` not yet in a real build |
 | 3 | Gamepad ring not obstructed | Padding on avatar row | Done (`36538ed`), screenshot checked |
 | 4 | APK version 1.2 | `package.json` 1.2.0 | Done on branch, CI shows 1.2.0 |
-| 5 | Card art fills box, any ratio | `object-fit: cover` in an `aspect-ratio` frame, SteamGridDB shapes | In the uncommitted working tree |
-| 6 | Remove "APK release" tag | Delete the tag component | In the uncommitted working tree |
-| 7 | Browse randomness, no stretched images | Shuffle per visit within the APK tier | In the uncommitted working tree |
-| 8 | No unrelated or NSFW images | Remove Commons and Openverse fallbacks, ID-based art | In the uncommitted working tree |
-| 9 | Doom 1993 must not show 2016 art | Store and match Steam AppID and year | In the uncommitted working tree |
+| 5 | Card art fills box, any ratio | `object-fit: cover` in an `aspect-ratio` frame, SteamGridDB shapes | Committed (`65ca59e` and later), verified in the tree |
+| 6 | Remove "APK release" tag | Delete the tag component | Committed (`65ca59e` and later), verified in the tree |
+| 7 | Browse randomness, no stretched images | Shuffle per visit within the APK tier | Committed (`65ca59e` and later), verified in the tree |
+| 8 | No unrelated or NSFW images | Remove Commons and Openverse fallbacks, ID-based art | Committed (`65ca59e` and later), verified in the tree |
+| 9 | Doom 1993 must not show 2016 art | Store and match Steam AppID and year | Committed (`65ca59e` and later), verified in the tree |
 | 10 | Broken links fixed | lychee in CI, port audit repeated | Audit done once; CI automation not yet added |
 | 11 | Detail pages always load | Remove media gate, Back button for missing games | `0f7b337` on branch |
 | 12 | Faster cover loading | Cache, WebP, CDN (R2) later | Partly done |
 | 13 | APK stays ~5 MB | Artwork stays out of the APK | Done on branch (5.06 MB) |
-| 14 | Logs committed to branch | Commit run logs to `docs/logs/` or as artifacts | Not done |
+| 14 | Run logs for each CI run | CI uploads a `maestro-report` artifact (XML, hierarchy, logcat). Logs are not committed to git. | Partly done |
 
 ---
 
 ## 4. Recommended order of work
-1. **Protect the batch.** Commit the uncommitted working tree to a new branch or a patch file, and review it. Do not reset anything.
-2. **Reconcile** that work onto `fbe6769` and run `npm run typecheck`, `npm test`, `npm run build`, and the Playwright smoke tests.
+1. **Protect the batch.** Done: the batch is committed on the branch.
+2. **Reconcile and test.** Done for typecheck and tests. The Maestro flows pass in CI (run `45526771764`).
 3. **Fix the art pipeline by ID** (SteamGridDB + IGDB, drop Commons and Openverse). This fixes most of the image complaints.
 4. **Card frames and tag removal** (`object-fit: cover`, remove "APK release").
 5. **Browse virtualization** (react-virtuoso) and CSS cleanup. Measure in a release build.
 6. **Automate links** with lychee in CI.
-7. **Maestro flows** for the Android app.
+7. **Maestro flows** for the Android app. Done: `android-e2e` passes in run `45526771764`.
 8. **Release keystore and Play App Signing** before any public release.
 9. Optional: error reporting, CDN hosting.
 
