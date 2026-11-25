@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="test" tests="1" failures="0" time="270.565" timestamp="2026-11-25T02:58:17">
+    <testcase id="01-launch-browse-detail" name="01-launch-browse-detail" classname="01-launch-browse-detail" file="maestro/01-launch-browse-detail.yaml" time="270.545" timestamp="2026-11-25T02:58:17" status="SUCCESS"/>
+  </testsuite>
+</testsuites>
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="test" tests="1" failures="0" time="228.82" timestamp="2026-11-25T03:04:29">
+    <testcase id="02-tabs-and-back" name="02-tabs-and-back" classname="02-tabs-and-back" file="maestro/02-tabs-and-back.yaml" time="228.803" timestamp="2026-11-25T03:04:29" status="SUCCESS"/>
+  </testsuite>
+</testsuites>
