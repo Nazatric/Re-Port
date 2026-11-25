@@ -158,6 +158,7 @@ async function fillMissingCovers(gameList, outGames) {
     filled++;
   });
   log(`keyless Steam title match: ${filled} covers added for ${todo.length} games without art`);
+  console.log(`::notice title=Keyless Steam covers::${filled} added for ${todo.length} games without art`);
 }
 
 // ---------- Run ----------
