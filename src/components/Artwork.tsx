@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { Game } from "@/data/ports";
 import { resolveArtwork } from "@/lib/artwork";
 import { cn } from "@/utils/cn";
@@ -22,29 +22,57 @@ export function GameArt({
   priority?: boolean;
   shadow?: boolean;
 }) {
-  // A generated title card (data: URL) is not real artwork, so it is replaced by a looked-up cover like a missing one.
-  const hasRealCover = !!game.cover && !game.cover.startsWith("data:");
-  const [src, setSrc] = useState<string | null>(hasRealCover ? game.cover : null);
+  // Every image the catalog has for this game, best first. A failed one moves to the next.
+  // A generated title card (data: URL) is not real artwork, so it is skipped.
+  const candidates = useMemo(() => {
+    const list = [
+      game.cover && !game.cover.startsWith("data:") ? game.cover : "",
+      game.hero ?? "",
+      game.shots[0] ? thumbShot(game.shots[0]) : "",
+      game.readmeShots?.[0] ?? "",
+    ];
+    return [...new Set(list.filter(Boolean))];
+  }, [game]);
+  const [pos, setPos] = useState(0);
+  // undefined = not looked up yet, null = no keyless match.
+  const [keyless, setKeyless] = useState<string | null | undefined>(undefined);
+  const [round, setRound] = useState(0);
+  const [sawError, setSawError] = useState(false);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [retrying, setRetrying] = useState(false);
+  const exhausted = pos >= candidates.length;
+  const src = exhausted ? (keyless || null) : candidates[pos];
 
-  // Games without a bundled cover resolve one from the keyless artwork sources once, then show it.
+  // A different game starts from its first candidate again.
   useEffect(() => {
-    if (hasRealCover) return;
-    let live = true;
-    resolveArtwork(game).then((url) => { if (!live) return; if (url) setSrc(url); else setFailed(true); }).catch(() => { if (live) setFailed(true); });
-    return () => { live = false; };
-  }, [game, hasRealCover]);
+    setPos(0); setKeyless(undefined); setRound(0); setSawError(false); setFailed(false); setLoaded(false);
+  }, [game.id]);
 
-  const handleError = async () => {
-    if (retrying || failed) return;
-    setRetrying(true);
-    try {
-      const next = await resolveArtwork(game);
-      if (next && next !== src) { setLoaded(false); setSrc(next); }
-      else setFailed(true);
-    } catch { setFailed(true); } finally { setRetrying(false); }
+  // Every catalog candidate failed: look up a keyless Steam cover once.
+  useEffect(() => {
+    if (!exhausted || keyless !== undefined || failed) return;
+    let live = true;
+    resolveArtwork(game).then((u) => { if (live) setKeyless(u ?? null); }).catch(() => { if (live) setKeyless(null); });
+    return () => { live = false; };
+  }, [exhausted, keyless, failed, game]);
+
+  useEffect(() => {
+    if (!exhausted || keyless === undefined || keyless) return;
+    // Nothing to try at all: show the title card straight away.
+    if (!sawError) { setFailed(true); return; }
+    // Images failed (often a network blip): retry the list a couple of times before giving up.
+    if (round >= 2) { setFailed(true); return; }
+    const timer = window.setTimeout(() => {
+      setPos(0); setKeyless(undefined); setSawError(false); setRound((r) => r + 1);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [exhausted, keyless, round, sawError]);
+
+  const handleError = () => {
+    setLoaded(false);
+    setSawError(true);
+    if (!exhausted) setPos((p) => p + 1);
+    else setKeyless(null);
   };
 
   // The frame uses the catalog's ratio from the first paint and never changes after an image loads.
@@ -63,6 +91,7 @@ export function GameArt({
       style={{ borderRadius: radius, aspectRatio: String(shape), boxShadow: shadow ? "0 10px 26px -12px rgba(0,0,0,.5)" : undefined, ...style }}>
       {!loaded && <span className="absolute inset-0 grid place-items-center px-3 text-center text-[13px] font-semibold leading-tight text-white/90">{game.title}</span>}
       <img
+        key={src}
         src={src}
         alt={t("{title} cover art", { title: game.title })}
         draggable={false}
@@ -70,9 +99,7 @@ export function GameArt({
         decoding="async"
         fetchPriority={priority ? "high" : "auto"}
         onError={handleError}
-        onLoad={() => {
-          setLoaded(true);
-        }}
+        onLoad={() => setLoaded(true)}
         style={{ opacity: loaded ? 1 : 0 }}
         className="block h-full w-full object-cover"
       />
