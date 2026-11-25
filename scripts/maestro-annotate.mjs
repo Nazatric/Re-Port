@@ -39,7 +39,10 @@ if (existsSync('maestro-out/hierarchy-at-failure.txt')) {
       }
       for (const child of node.children ?? []) walk(child, depth + 1);
     };
-    for (const root of Array.isArray(tree) ? tree : [tree]) walk(root, 0);
+    for (const root of Array.isArray(tree) ? tree : [tree]) {
+      console.log(`::notice title=Screen root bounds::${escape(String((root.attributes ?? root).bounds ?? 'unknown'))}`);
+      walk(root, 0);
+    }
     console.log(`::error title=Thief nodes in hierarchy (${hits.length})::${escape(hits.join(' | ') || 'none')}`);
   } catch (error) {
     console.log(`::error title=Hierarchy parse failed::${escape(String(error.message))}`);

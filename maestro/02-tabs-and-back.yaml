@@ -22,10 +22,10 @@ appId: dev.dandelion.store
 - eraseText: 40
 - inputText: "thief ii"
 - hideKeyboard
-# tapOn waits for the card itself; a separate visibility check fails while the keyboard still covers the list.
+# The first result card sits at about 26% across and 47% down (its bounds on a 1080x2400 emulator). Text matching
+# did not find the card's label, so tap its centre by position.
 - tapOn:
-    text: "(?s).*Thief II: The Metal Age.*"
-    index: 0
+    point: "26%,47%"
 - extendedWaitUntil:
     visible: "(?is).*(project page|release link|get latest apk|download source).*"
     timeout: 30000
