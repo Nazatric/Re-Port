@@ -22,18 +22,20 @@ export function GameArt({
   priority?: boolean;
   shadow?: boolean;
 }) {
-  const [src, setSrc] = useState(game.cover);
+  // A generated title card (data: URL) is not real artwork, so it is replaced by a looked-up cover like a missing one.
+  const hasRealCover = !!game.cover && !game.cover.startsWith("data:");
+  const [src, setSrc] = useState<string | null>(hasRealCover ? game.cover : null);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [retrying, setRetrying] = useState(false);
 
   // Games without a bundled cover resolve one from the keyless artwork sources once, then show it.
   useEffect(() => {
-    if (game.cover) return;
+    if (hasRealCover) return;
     let live = true;
     resolveArtwork(game).then((url) => { if (!live) return; if (url) setSrc(url); else setFailed(true); }).catch(() => { if (live) setFailed(true); });
     return () => { live = false; };
-  }, [game]);
+  }, [game, hasRealCover]);
 
   const handleError = async () => {
     if (retrying || failed) return;

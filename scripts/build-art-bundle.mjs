@@ -15,6 +15,7 @@ import { localizeArt } from "./artwork/localize-art.mjs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { normalizeTitle, scoreCandidate, confidentChoice, editionBase, yearOf, sameRelease } from "./artwork/title-match.mjs";
+import { matchSteamByTitle } from "./artwork/keyless-steam.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CATALOG = resolve(ROOT, "src/data/catalog.json");
@@ -61,6 +62,7 @@ if (IF_STALE && existsSync(CACHE)) {
   const age = Date.now() - Date.parse(cached.generatedAt || 0);
   if (Number.isFinite(age) && age < MAX_AGE_MS) {
     log(`bundle cache is ${Math.round(age / 3600000)} h old: reusing it, localizing art only`);
+    await fillMissingCovers(games, cached.games);
     const out = await localizeArt({ root: ROOT, out: cached, games, log });
     await mkdir(dirname(OUT), { recursive: true });
     await writeFile(OUT, JSON.stringify(out, null, 1) + "\n");
@@ -139,6 +141,23 @@ async function steamCdn(appId) {
   const base = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appId}/`;
   const ok = async (f) => { const r = await call(base + f, { method: "HEAD", json: false }); return r?.ok ? base + f : null; };
   return { cover: (await ok("library_600x900_2x.jpg")) ?? (await ok("library_600x900.jpg")), hero: await ok("library_hero.jpg") };
+}
+
+// ---------- Keyless Steam title match (no key) for games still without a cover ----------
+// Only an exact title match with a matching release year is used (see artwork/keyless-steam.mjs).
+async function fillMissingCovers(gameList, outGames) {
+  const todo = gameList.filter((g) => !outGames[g.id]?.cover);
+  let filled = 0;
+  await pool(todo, 3, async (g) => {
+    await sleep(250);
+    const appId = await matchSteamByTitle(g, (url) => call(url)).catch(() => null);
+    if (!appId) return;
+    const art = await steamCdn(appId);
+    if (!art?.cover) return;
+    outGames[g.id] = { ...(outGames[g.id] ?? {}), hit: true, cover: art.cover, coverSource: "steam-search", steamAppId: appId };
+    filled++;
+  });
+  log(`keyless Steam title match: ${filled} covers added for ${todo.length} games without art`);
 }
 
 // ---------- Run ----------
@@ -272,6 +291,7 @@ for (const g of games) {
   e.hit = !!(e.cover || e.description);
   if (e.hit) out.games[g.id] = e;
 }
+await fillMissingCovers(games, out.games);
 const missing = games.filter((g) => !out.games[g.id]?.cover);
 log(`still without a bundled cover: ${missing.length}`);
 for (const g of missing) log(`  no cover: ${g.id} | ${g.title} | ${g.platform} | ${g.year}`);

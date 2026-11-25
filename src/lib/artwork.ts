@@ -1,35 +1,33 @@
 import type { Game } from "@/data/ports";
 import { swrJson } from "./cache";
 
-/** Keyless artwork waterfall. Only used when a bundled cover URL fails to load.
- *  Order: Libretro console art -> Steam Store public search -> Wikipedia REST ->
- *  Steam (year-checked) -> Wikipedia exact article. Unfiltered image searches were removed (unrelated and NSFW results). Every result is cached with SWR. */
+/** Keyless artwork fallback, used only when a game has no real cover or its cover fails to load.
+ *  Only Steam, and only an exact title match with a compatible release year. Wikipedia and unfiltered
+ *  image searches are not used, because they returned unrelated images. Results are cached with SWR. */
 
 interface SteamSearch { items?: { type: string; name: string; id: number; tiny_image?: string }[] }
-interface SteamDetail { [key: string]: { data?: { header_image?: string; release_date?: { date?: string } } } }
-interface WikiSummary { thumbnail?: { source: string }; originalimage?: { source: string } }
+interface SteamDetail { [key: string]: { success?: boolean; data?: { type?: string; header_image?: string; release_date?: { date?: string } } } }
 
 const clean = (s: string) => s.split(/[:+,]/)[0].replace(/\([^)]*\)/g, "").trim();
 const enc = encodeURIComponent;
+const key = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 
-const providers: ((title: string, year: number) => Promise<string | null>)[] = [
-  async (t, year) => {
-    const d = await swrJson<SteamSearch>(`steam:search:${t}`, `https://store.steampowered.com/api/storesearch/?term=${enc(t)}&l=english&cc=us`);
-    const hit = (d.items ?? []).find((i) => i.type === "app" && i.name.toLowerCase() === t.toLowerCase()) ??
-      (d.items ?? []).find((i) => i.type === "app");
-    if (!hit) return null;
+const steamProvider = async (t: string, year: number): Promise<string | null> => {
+  const d = await swrJson<SteamSearch>(`steam:search:${t}`, `https://store.steampowered.com/api/storesearch/?term=${enc(t)}&l=english&cc=us`);
+  const exact = (d.items ?? []).filter((i) => i.type === "app" && key(i.name) === key(t));
+  for (const hit of exact) {
     const detail = await swrJson<SteamDetail>(`steam:app:${hit.id}`, `https://store.steampowered.com/api/appdetails?appids=${hit.id}&l=english&cc=us`);
     const data = detail[String(hit.id)]?.data;
-    // Reject a same-named game from another year (e.g. Doom 2016 for Doom 1993).
-    const steamYear = Number((data?.release_date?.date ?? "").match(/\b(19|20)\d{2}\b/)?.[0]);
-    if (year && steamYear && Math.abs(steamYear - year) > 1) return null;
-    return data?.header_image ?? hit.tiny_image ?? null;
-  },
-  async (t) => {
-    const d = await swrJson<WikiSummary>(`wiki:${t}`, `https://en.wikipedia.org/api/rest_v1/page/summary/${enc(t.replace(/ /g, "_"))}`);
-    return d.thumbnail?.source ?? d.originalimage?.source ?? null;
-  },
-];
+    if (!data || data.type !== "game") continue;
+    // A same-named game from another year is not this game (e.g. Doom 2016 for Doom 1993).
+    const steamYear = Number((data.release_date?.date ?? "").match(/\b(19|20)\d{2}\b/)?.[0]);
+    if (year && steamYear && Math.abs(steamYear - year) > 1) continue;
+    return data.header_image ?? hit.tiny_image ?? null;
+  }
+  return null;
+};
+
+const providers: ((title: string, year: number) => Promise<string | null>)[] = [steamProvider];
 
 const fallbackCache = new Map<string, string | null>();
 
