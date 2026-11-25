@@ -317,7 +317,8 @@ for (const g of games) {
   e.hit = !!(e.cover || e.description);
   if (!e.cover && libretro.get(g.id)) { e.cover = libretro.get(g.id); e.coverSource = "libretro"; }
   e.hit = !!(e.cover || e.description);
-  if (e.hit) out.games[g.id] = e;
+  // Entries with README screenshots are kept too: the app shows them, and the README cover rule reads them.
+  if (e.hit || e.readmeShots) out.games[g.id] = e;
 }
 await fillMissingCovers(games, out.games);
 const missing = games.filter((g) => !out.games[g.id]?.cover);
