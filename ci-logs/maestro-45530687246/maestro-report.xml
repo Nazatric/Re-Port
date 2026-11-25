@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="test" tests="2" failures="1" time="411.592" timestamp="2026-11-25T02:21:13">
+    <testcase id="02-tabs-and-back" name="02-tabs-and-back" classname="02-tabs-and-back" file="maestro/02-tabs-and-back.yaml" time="229.863" timestamp="2026-11-25T02:21:13" status="SUCCESS"/>
+    <testcase id="01-launch-browse-detail" name="01-launch-browse-detail" classname="01-launch-browse-detail" file="maestro/01-launch-browse-detail.yaml" time="181.702" timestamp="2026-11-25T02:25:03" status="ERROR">
+      <failure>Assertion is false: "(?is).*(project page|release link|get latest apk|download source).*" is visible</failure>
+    </testcase>
+  </testsuite>
+</testsuites>
