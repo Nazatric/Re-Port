@@ -2,8 +2,9 @@ import type { Game } from "@/data/ports";
 import { swrJson } from "./cache";
 
 /** Keyless artwork fallback, used only when a game has no real cover or its cover fails to load.
- *  Only Steam, and only an exact title match with a compatible release year. Wikipedia and unfiltered
- *  image searches are not used, because they returned unrelated images. Results are cached with SWR. */
+ *  Steam CDN covers are fetched by AppID first; the title search matches an exact name with a
+ *  compatible release year. Wikipedia and unfiltered image searches are not used, because they
+ *  returned unrelated images. Results are cached with SWR. All of it is real, free game art. */
 
 interface SteamSearch { items?: { type: string; name: string; id: number; tiny_image?: string }[] }
 interface SteamDetail { [key: string]: { success?: boolean; data?: { type?: string; header_image?: string; release_date?: { date?: string } } } }
@@ -12,7 +13,24 @@ const clean = (s: string) => s.split(/[:+,]/)[0].replace(/\([^)]*\)/g, "").trim(
 const enc = encodeURIComponent;
 const key = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 
-const steamProvider = async (t: string, year: number): Promise<string | null> => {
+/** Steam CDN portrait covers by AppID. No key needed; the catalog often carries a Steam AppID,
+ *  so these work for games whose title match fails, and they are real game art from the source. */
+const steamCdnProvider = async (game: Game): Promise<string | null> => {
+  if (!game.steamAppId) return null;
+  const base = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${game.steamAppId}/`;
+  for (const file of ["library_600x900_2x.jpg", "library_600x900.jpg"]) {
+    const url = `${base}${file}`;
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (res.ok) return url;
+    } catch { /* try the next file */ }
+  }
+  return null;
+};
+
+const steamTitleProvider = async (game: Game): Promise<string | null> => {
+  const t = clean(game.title);
+  const year = game.year;
   const d = await swrJson<SteamSearch>(`steam:search:${t}`, `https://store.steampowered.com/api/storesearch/?term=${enc(t)}&l=english&cc=us`);
   const exact = (d.items ?? []).filter((i) => i.type === "app" && key(i.name) === key(t));
   for (const hit of exact) {
@@ -27,17 +45,16 @@ const steamProvider = async (t: string, year: number): Promise<string | null> =>
   return null;
 };
 
-const providers: ((title: string, year: number) => Promise<string | null>)[] = [steamProvider];
+const providers: ((game: Game) => Promise<string | null>)[] = [steamCdnProvider, steamTitleProvider];
 
 const fallbackCache = new Map<string, string | null>();
 
 /** Resolve a replacement URL for a broken artwork; returns null after all sources fail. */
 export async function resolveArtwork(game: Game): Promise<string | null> {
   if (fallbackCache.has(game.id)) return fallbackCache.get(game.id) ?? null;
-  const title = clean(game.title);
   for (const provider of providers) {
     try {
-      const url = await provider(title, game.year);
+      const url = await provider(game);
       if (url) {
         fallbackCache.set(game.id, url);
         return url;

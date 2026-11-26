@@ -27,9 +27,9 @@ export function GameArt({
   const candidates = useMemo(() => {
     const list = [
       game.cover && !game.cover.startsWith("data:") ? game.cover : "",
-      game.hero ?? "",
+      game.hero || "",
       game.shots[0] ? thumbShot(game.shots[0]) : "",
-      game.readmeShots?.[0] ?? "",
+      game.readmeShots?.[0] || "",
     ];
     return [...new Set(list.filter(Boolean))];
   }, [game]);
@@ -68,7 +68,9 @@ export function GameArt({
     return () => window.clearTimeout(timer);
   }, [exhausted, keyless, round, sawError]);
 
-  const handleError = () => {
+  // Only the image currently on screen counts as failed; a late error for a previous src is ignored.
+  const handleError = (erroredSrc: string) => {
+    if (erroredSrc !== src) return;
     setLoaded(false);
     setSawError(true);
     if (!exhausted) setPos((p) => p + 1);
@@ -98,7 +100,7 @@ export function GameArt({
         loading={priority ? "eager" : "lazy"}
         decoding="async"
         fetchPriority={priority ? "high" : "auto"}
-        onError={handleError}
+        onError={() => handleError(src)}
         onLoad={() => setLoaded(true)}
         style={{ opacity: loaded ? 1 : 0 }}
         className="block h-full w-full object-cover"
