@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Meadow — a hand-drawn portrait scene for the "meadow" theme.
+     Soft greens, a sun above rolling hills, layered hills, grass tufts, a few trees
+     and a small bird. Deliberately not AI-generated: simple vector shapes drawn for Re:Port. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 1200" width="620" height="1200">
+  <defs>
+    <linearGradient id="meadow-ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a8d89b"/>
+      <stop offset="0.5" stop-color="#6f9e52"/>
+      <stop offset="1" stop-color="#2f5e2f"/>
+    </linearGradient>
+    <radialGradient id="sun2" cx="0.55" cy="0.35" r="0.55">
+      <stop offset="0" stop-color="#ffd27a"/>
+      <stop offset="0.55" stop-color="#ff9c48"/>
+      <stop offset="1" stop-color="transparent"/>
+    </radialGradient>
+    <filter id="glow2"><feGaussianBlur stdDeviation="22"/></filter>
+  </defs>
+
+  <!-- Sky — a gentle gradient above the hills. -->
+  <rect width="620" y="0" height="620" fill="#b8e3ff"/>
+  <rect width="620" y="620" height="580" fill="#5fa94d"/>
+
+  <!-- Sun low on the horizon, peeking over the hills. -->
+  <circle cx="470" cy="720" r="140" fill="#ffd27a" opacity="0.85"/>
+  <circle cx="460" cy="710" r="105" fill="url(#sun2)" filter="url(#glow2)" opacity="0.8"/>
+
+  <!-- Distant hills. -->
+  <g fill="#2f5e2f">
+    <path d="M-20 750 C 120 710 240 760 400 700 V860 Z"/>
+    <path d="M140 820 C 300 780 430 850 580 780 V860 Z"/>
+  </g>
+  <!-- Mid hills with tufts of grass. -->
+  <g fill="#3d6e3f">
+    <path d="M40 900 C 180 860 300 930 460 880 V860 Z"/>
+    <path d="M300 940 C 480 900 580 975 760 910 V860 Z"/>
+  </g>
+  <!-- Foreground hill — the ground band begins here. -->
+  <path d="M-20 1000 Q 160 950 330 1010 Q 500 960 660 1015 Q 830 975 1000 1040 Q 1160 1000 1320 1060 V1200 H-20 Z" fill="#2f5e2f"/>
+
+  <!-- Grass tufts on the foreground hill. -->
+  <g fill="#7fb84d" opacity="0.9">
+    <path d="M80 1180 Q 86 1050 96 1180 Z"/>
+    <path d="M150 1185 Q 156 1060 166 1185 Z"/>
+    <path d="M220 1180 Q 226 1085 236 1180 Z"/>
+    <path d="M300 1190 Q 306 1130 316 1190 Z"/>
+    <path d="M420 1185 Q 426 1170 436 1185 Z"/>
+    <path d="M520 1190 Q 526 1065 536 1190 Z"/>
+    <path d="M610 1185 Q 616 1150 626 1185 Z"/>
+    <path d="M480 1180 Q 486 1160 496 1180 Z"/>
+    <path d="M290 1165 Q 296 1135 306 1165 Z"/>
+  </g>
+
+  <!-- Ground band — soft green gradient. -->
+  <rect width="620" y="1200" height="0" fill="#2f5e2f"/>
+  <rect x="0" y="1060" width="620" height="140" fill="url(#meadow-ground)"/>
+
+  <!-- Small trees: a few broad-topped pines and thin birches. -->
+  <g fill="#3d6e3f">
+    <path d="M90 1110 C 108 1080 126 1110 144 1080 V1120 Z"/>
+    <path d="M215 1110 C 233 1080 251 1110 269 1080 V1120 Z"/>
+    <path d="M390 1100 C 408 1070 426 1100 444 1070 V1120 Z"/>
+    <path d="M500 1120 C 508 1090 516 1120 524 1090 V1140 Z"/>
+    <path d="M120 1160 C 128 1130 136 1160 144 1130 V1185 Z"/>
+    <path d="M240 1175 C 248 1140 256 1175 264 1145 V1185 Z"/>
+  </g>
+
+  <!-- A small bird flying across the upper area. -->
+  <g stroke="#5a5a5a" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.8">
+    <path d="M180 300 C 205 285 240 275 270 290 C 240 305 205 315 180 300 Z" fill="#7f7f7f" stroke="none"/>
+    <path d="M240 300 C 250 288 280 280 300 292" stroke="#9a9a9a"/>
+    <path d="M270 300 C 255 292 250 278 240 290" stroke="#9a9a9a"/>
+  </g>
+
+  <!-- Simple cloud. -->
+  <g fill="#ffffff" opacity="0.8">
+    <path d="M150 260 Q 200 230 300 250 Q 370 210 490 240 Q 560 210 660 250 Q 730 220 850 260 L850 300 Q 650 280 450 300 Q 280 280 150 300 Z"/>
+  </g>
+</svg>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Sky — a hand-drawn landscape scene for the "sky" theme.
+     Blue sky gradient, a sun near the horizon, layered clouds, distant hills and birds.
+     Deliberately not AI-generated: simple vector shapes drawn for Re:Port. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fcfff"/>
+      <stop offset="0.35" stop-color="#d9ecff"/>
+      <stop offset="0.48" stop-color="#ffe09f"/>
+      <stop offset="0.58" stop-color="#ffb86c"/>
+      <stop offset="0.72" stop-color="#e8a84a"/>
+      <stop offset="0.9" stop-color="#a86a22"/>
+      <stop offset="1" stop-color="#5a4618"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.7" cy="0.75" r="0.55">
+      <stop offset="0" stop-color="#ffe9c8"/>
+      <stop offset="0.45" stop-color="#ffb86c"/>
+      <stop offset="1" stop-color="transparent"/>
+    </radialGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="26"/></filter>
+  </defs>
+
+  <!-- Sky body. -->
+  <rect width="1280" height="720" fill="url(#sky)"/>
+
+  <!-- Sun behind the horizon (top-right of the frame). -->
+  <circle cx="940" cy="470" r="150" fill="url(#sun)" filter="url(#glow)" opacity="0.95"/>
+  <circle cx="930" cy="462" r="118" fill="#ffcb7e" opacity="0.55"/>
+
+  <!-- Distant horizon hills (silhouettes). -->
+  <g fill="#244032">
+    <path d="M-80 470 C 150 430 320 470 560 400 V540 Z"/>
+    <path d="M300 520 C 560 470 700 510 900 435 V540 Z"/>
+  </g>
+  <!-- Close hills with grass tufts. -->
+  <g fill="#1d3c2e">
+    <path d="M120 520 C 200 500 300 530 400 490 V540 Z"/>
+    <path d="M700 560 C 880 540 1000 575 1200 500 V540 Z"/>
+  </g>
+
+  <!-- Clouds, three layers at different heights. -->
+  <g fill="#ffffff" opacity="0.75">
+    <path d="M140 90 Q 220 60 330 85 Q 390 50 500 80 Q 560 45 680 75 Q 740 45 830 80 Q 900 55 1020 90 L1020 130 Q 840 115 700 125 Q 520 110 140 130 Z"/>
+    <path d="M110 190 Q 190 160 295 180 Q 335 140 435 170 Q 480 135 575 170 Q 620 140 720 175 L720 215 Q 550 200 400 210 Q 230 195 110 215 Z"/>
+    <path d="M760 300 Q 850 275 975 300 Q 1020 270 1100 300 L1100 330 Q 900 315 760 335 Z"/>
+  </g>
+
+  <!-- Bills flying above the hills. -->
+  <g stroke="#e8e8e8" stroke-width="2" stroke-linecap="round" opacity="0.8">
+    <path d="M140 45 C 190 30 260 50 320 40" fill="none"/>
+    <path d="M460 50 C 560 35 640 60 750 50" fill="none"/>
+    <path d="M240 90 C 300 75 370 95 430 85" fill="none"/>
+  </g>
+
+  <!-- Subtle horizon line where the sun sits. -->
+  <line x1="0" y1="545" x2="1280" y2="545" stroke="#5a4618" stroke-width="1.2" opacity="0.55"/>
+</svg>
